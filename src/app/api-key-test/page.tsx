@@ -230,9 +230,9 @@ export default function ApiKeyTestPage() {
         <ol className="list-decimal ml-5 text-sm">
           <li className="mb-1">Go to the <a href="https://console.cloud.google.com/apis/dashboard" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google Cloud Console</a></li>
           <li className="mb-1">Create a new project or select an existing project</li>
-          <li className="mb-1">Navigate to APIs & Services > Library</li>
+          <li className="mb-1">Navigate to APIs &amp; Services {'->'} Library</li>
           <li className="mb-1">Search for "YouTube Data API v3" and enable it</li>
-          <li className="mb-1">Go to APIs & Services > Credentials</li>
+          <li className="mb-1">Go to APIs &amp; Services {'->'} Credentials</li>
           <li className="mb-1">Click "Create Credentials" and select "API Key"</li>
           <li className="mb-1">Copy your new API key and paste it in the field above</li>
           <li className="mb-1">Optionally, restrict the API key to YouTube Data API v3 only</li>
