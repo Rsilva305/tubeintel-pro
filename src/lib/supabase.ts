@@ -87,7 +87,7 @@ export const signIn = async (email: string, password: string): Promise<SignInRes
         if (!profileError && profileData && profileData.youtube_channel_id) {
           hasCompletedOnboarding = true;
           // Store the channel ID in localStorage for easier access
-          localStorage.setItem('youtubeChannelId', profileData.youtube_channel_id);
+          localStorage.setItem('youtubeChannelId', profileData.youtube_channel_id.toString());
         }
       } catch (profileError) {
         console.error('Error checking profile:', profileError);
@@ -165,7 +165,7 @@ export const getCurrentUser = async () => {
         if (!profileError && profileData && profileData.youtube_channel_id) {
           hasCompletedOnboarding = true;
           // Store the channel ID in localStorage for easier access
-          localStorage.setItem('youtubeChannelId', profileData.youtube_channel_id);
+          localStorage.setItem('youtubeChannelId', profileData.youtube_channel_id.toString());
         }
       } catch (profileError) {
         console.error('Error checking profile:', profileError);
