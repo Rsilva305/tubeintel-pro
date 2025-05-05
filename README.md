@@ -1,6 +1,14 @@
 # TubeIntel Pro
+YouTube Analytics Dashboard for Content Creators
 
-A YouTube analytics dashboard for tracking your channel performance and monitoring competitors.
+## Features
+- Real-time analytics
+- Competitor analysis
+- Content optimization recommendations
+- Performance tracking
+
+## Branch Protection Testing
+This line was added to test branch protection rules.
 
 ## Features
 
