@@ -48,8 +48,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const handleLogout = async () => {
     try {
       await signOut();
-      // Redirect to login after logout
-      router.push('/login');
+      // Redirect to landing page after logout
+      router.push('/');
     } catch (error) {
       console.error('Logout error:', error);
     }
