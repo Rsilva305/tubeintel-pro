@@ -8,12 +8,18 @@ import { Competitor, Video } from '@/types';
 import { competitorsApi, videosApi } from '@/services/api';
 import { getUseRealApi } from '@/services/api/config';
 
-// Mock suggested competitors for demo
+// Mock suggested competitors for demo - Expanded to 10+ competitors
 const suggestedCompetitors = [
   { id: 'sugg1', name: 'TechReviewer', thumbnailUrl: 'https://via.placeholder.com/150?text=TR', subscriberCount: 208000, videoCount: 342, viewCount: 15600000, youtubeId: 'UCTR123456789' },
   { id: 'sugg2', name: 'GamingDaily', thumbnailUrl: 'https://via.placeholder.com/150?text=GD', subscriberCount: 620000, videoCount: 527, viewCount: 48000000, youtubeId: 'UCGD987654321' },
   { id: 'sugg3', name: 'FoodChannel', thumbnailUrl: 'https://via.placeholder.com/150?text=FC', subscriberCount: 779000, videoCount: 623, viewCount: 53000000, youtubeId: 'UCFC456789123' },
   { id: 'sugg4', name: 'TravelVlog', thumbnailUrl: 'https://via.placeholder.com/150?text=TV', subscriberCount: 318000, videoCount: 287, viewCount: 22000000, youtubeId: 'UCTV789123456' },
+  { id: 'sugg5', name: 'MusicMasters', thumbnailUrl: 'https://via.placeholder.com/150?text=MM', subscriberCount: 1250000, videoCount: 412, viewCount: 89000000, youtubeId: 'UCMM567890123' },
+  { id: 'sugg6', name: 'DIYCreator', thumbnailUrl: 'https://via.placeholder.com/150?text=DIY', subscriberCount: 435000, videoCount: 328, viewCount: 31000000, youtubeId: 'UCDIY12345678' },
+  { id: 'sugg7', name: 'ScienceExplorer', thumbnailUrl: 'https://via.placeholder.com/150?text=SCI', subscriberCount: 890000, videoCount: 275, viewCount: 65000000, youtubeId: 'UCSCI87654321' },
+  { id: 'sugg8', name: 'FitnessPro', thumbnailUrl: 'https://via.placeholder.com/150?text=FIT', subscriberCount: 520000, videoCount: 380, viewCount: 42000000, youtubeId: 'UCFIT12345678' },
+  { id: 'sugg9', name: 'BeautyTips', thumbnailUrl: 'https://via.placeholder.com/150?text=BTY', subscriberCount: 1800000, videoCount: 520, viewCount: 112000000, youtubeId: 'UCBTY98765432' },
+  { id: 'sugg10', name: 'CookingExpert', thumbnailUrl: 'https://via.placeholder.com/150?text=CKG', subscriberCount: 670000, videoCount: 430, viewCount: 58000000, youtubeId: 'UCCK765432109' }
 ];
 
 // Mock similar videos for demo that would come from competitor channels
@@ -238,6 +244,8 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   const [activeVideoTab, setActiveVideoTab] = useState<'competitors' | 'similar'>('competitors');
   const [addChannelError, setAddChannelError] = useState<string | null>(null);
   const [isAddingChannel, setIsAddingChannel] = useState<boolean>(false);
+  const [showSuggestedCompetitors, setShowSuggestedCompetitors] = useState<boolean>(true);
+  const competitorCarouselRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchCompetitors = async () => {
@@ -640,6 +648,21 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
         video.description.toLowerCase().includes(videoSearchQuery.toLowerCase())
       );
 
+  // Function to scroll competitor carousel
+  const scrollCompetitorCarousel = (direction: 'left' | 'right') => {
+    if (competitorCarouselRef.current) {
+      const scrollAmount = 300; // px to scroll
+      const currentScroll = competitorCarouselRef.current.scrollLeft;
+      
+      competitorCarouselRef.current.scrollTo({
+        left: direction === 'left' 
+          ? Math.max(currentScroll - scrollAmount, 0) 
+          : currentScroll + scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="w-full flex items-center justify-center h-64">
@@ -732,56 +755,99 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
         </div>
       </div>
 
-      {/* Suggested competitors */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-2">
-            <FaChartBar className="text-indigo-500" />
-            <h2 className="text-xl font-bold text-gray-800 dark:text-white">Suggested competitors</h2>
-            <div className="text-gray-400 dark:text-gray-500 cursor-help" title="Channels similar to your current competitors">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      {/* Suggested competitors - Now with toggle and more options */}
+      {showSuggestedCompetitors && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center gap-2">
+              <FaChartBar className="text-indigo-500" />
+              <h2 className="text-xl font-bold text-gray-800 dark:text-white">Suggested competitors</h2>
+              <div className="text-gray-400 dark:text-gray-500 cursor-help" title="Channels similar to your current competitors">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+            <button 
+              onClick={() => setShowSuggestedCompetitors(false)}
+              className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+              title="Hide suggested competitors"
+            >
+              <FaTimes size={18} />
+            </button>
+          </div>
+
+          {/* Competitor Carousel with scroll indicators */}
+          <div className="relative">
+            <div 
+              ref={competitorCarouselRef}
+              className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 pb-2"
+              style={{ scrollbarWidth: 'thin' }}
+            >
+              <div className="flex gap-8 pb-8 px-2" style={{ width: 'max-content', minWidth: '100%' }}>
+                {suggestedCompetitors.map((competitor) => (
+                  <div key={competitor.id} className="flex-shrink-0 flex flex-col items-center text-center" style={{ minWidth: '120px' }}>
+                    <div className="relative group">
+                      <div className="w-28 h-28 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 ring-4 ring-gray-100 dark:ring-gray-800 shadow-md hover:shadow-lg transition-all duration-200">
+                        <img 
+                          src={competitor.thumbnailUrl}
+                          alt={competitor.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="absolute -bottom-2 -right-2 bg-white dark:bg-gray-800 rounded-full p-2 shadow-sm">
+                        {getCompetitorIcon(competitor)}
+                      </div>
+                      <div className="opacity-0 group-hover:opacity-100 absolute inset-0 bg-black bg-opacity-40 rounded-full flex items-center justify-center transition-all duration-200">
+                        <button 
+                          className="bg-indigo-600 dark:bg-indigo-500 text-white p-2 rounded-full hover:bg-indigo-700"
+                          onClick={() => {
+                            // In a real implementation, we would add this competitor
+                            alert(`Would add ${competitor.name} to your tracked competitors`);
+                          }}
+                        >
+                          <FaPlus size={16} />
+                        </button>
+                      </div>
+                    </div>
+                    <h3 className="text-gray-800 dark:text-white font-medium text-base mt-4 max-w-[120px] truncate">{competitor.name}</h3>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">{formatNumber(competitor.subscriberCount)} subs</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Scroll indicators with click handlers */}
+            <div 
+              onClick={() => scrollCompetitorCarousel('left')}
+              className="absolute left-0 top-1/2 -translate-y-1/2 w-8 h-8 bg-white dark:bg-gray-700 shadow-md rounded-full flex items-center justify-center z-10 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </div>
+            <div 
+              onClick={() => scrollCompetitorCarousel('right')}
+              className="absolute right-0 top-1/2 -translate-y-1/2 w-8 h-8 bg-white dark:bg-gray-700 shadow-md rounded-full flex items-center justify-center z-10 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </div>
           </div>
         </div>
-
-        {/* Competitor Carousel - Updated with circles */}
-        <div className="overflow-x-auto">
-          <div className="flex gap-8 pb-8 overflow-x-auto px-2">
-            {suggestedCompetitors.map((competitor) => (
-              <div key={competitor.id} className="flex-shrink-0 flex flex-col items-center text-center">
-                <div className="relative group">
-                  <div className="w-28 h-28 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 ring-4 ring-gray-100 dark:ring-gray-800 shadow-md hover:shadow-lg transition-all duration-200">
-                    <img 
-                      src={competitor.thumbnailUrl}
-                      alt={competitor.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="absolute -bottom-2 -right-2 bg-white dark:bg-gray-800 rounded-full p-2 shadow-sm">
-                    {getCompetitorIcon(competitor)}
-                  </div>
-                  <div className="opacity-0 group-hover:opacity-100 absolute inset-0 bg-black bg-opacity-40 rounded-full flex items-center justify-center transition-all duration-200">
-                    <button 
-                      className="bg-indigo-600 dark:bg-indigo-500 text-white p-2 rounded-full hover:bg-indigo-700"
-                      onClick={() => {
-                        // In a real implementation, we would add this competitor
-                        alert(`Would add ${competitor.name} to your tracked competitors`);
-                      }}
-                    >
-                      <FaPlus size={16} />
-                    </button>
-                  </div>
-                </div>
-                <h3 className="text-gray-800 dark:text-white font-medium text-base mt-4 max-w-[120px] truncate">{competitor.name}</h3>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">{formatNumber(competitor.subscriberCount)} subs</p>
-                
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      )}
+      
+      {/* Show button to restore suggested competitors when hidden */}
+      {!showSuggestedCompetitors && (
+        <button 
+          onClick={() => setShowSuggestedCompetitors(true)} 
+          className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm px-4 py-3 mb-6 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        >
+          <FaChartBar className="text-indigo-500" />
+          <span>Show suggested competitors</span>
+        </button>
+      )}
 
       {/* Search and Controls */}
       <div className="flex justify-between items-center mb-6">
