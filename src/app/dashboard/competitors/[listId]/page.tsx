@@ -502,7 +502,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                 {/* Views slider */}
                 <div>
                   <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
-                    Minimum Views: {formatNumber(viewsThreshold)}
+                    Views: {formatNumber(viewsThreshold)}
                   </label>
                   <div className="flex flex-col">
                     <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
@@ -536,7 +536,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                 {/* Subscribers slider */}
                 <div>
                   <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
-                    Minimum Subscribers: {formatNumber(subscribersThreshold)}
+                    Subscribers: {formatNumber(subscribersThreshold)}
                   </label>
                   <div className="flex flex-col">
                     <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
@@ -570,7 +570,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                 {/* Video Duration slider */}
                 <div>
                   <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
-                    Maximum Video Duration: {Math.floor(videoDurationThreshold / 60)}h {videoDurationThreshold % 60}m
+                    Video Duration: {Math.floor(videoDurationThreshold / 60)}h {videoDurationThreshold % 60}m
                   </label>
                   <div className="flex flex-col">
                     <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
