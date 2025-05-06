@@ -708,6 +708,33 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                         >
                           Last 90 days
                         </button>
+                        <button 
+                          onClick={() => setDateRange([
+                            new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                            new Date().toISOString().split('T')[0]
+                          ])}
+                          className="bg-white dark:bg-gray-600 text-xs text-gray-700 dark:text-gray-300 px-2 py-1 rounded border border-gray-300 dark:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-500"
+                        >
+                          Last 180 days
+                        </button>
+                        <button 
+                          onClick={() => setDateRange([
+                            new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                            new Date().toISOString().split('T')[0]
+                          ])}
+                          className="bg-white dark:bg-gray-600 text-xs text-gray-700 dark:text-gray-300 px-2 py-1 rounded border border-gray-300 dark:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-500"
+                        >
+                          Last 365 days
+                        </button>
+                        <button 
+                          onClick={() => setDateRange([
+                            "2010-01-01", // YouTube started in 2005, but using 2010 as a reasonable "all time" starting point
+                            new Date().toISOString().split('T')[0]
+                          ])}
+                          className="bg-white dark:bg-gray-600 text-xs text-gray-700 dark:text-gray-300 px-2 py-1 rounded border border-gray-300 dark:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-500"
+                        >
+                          All time
+                        </button>
                       </div>
                     </div>
                   </div>
