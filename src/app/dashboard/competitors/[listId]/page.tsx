@@ -733,7 +733,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
       </div>
 
       {/* Suggested competitors */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2">
             <FaChartBar className="text-indigo-500" />
@@ -746,35 +746,37 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
           </div>
         </div>
 
-        {/* Competitor Carousel */}
+        {/* Competitor Carousel - Updated with circles */}
         <div className="overflow-x-auto">
-          <div className="flex gap-4 pb-4 overflow-x-auto">
+          <div className="flex gap-8 pb-8 overflow-x-auto px-2">
             {suggestedCompetitors.map((competitor) => (
-              <div key={competitor.id} className="flex-shrink-0 w-[220px] bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden">
-                <div className="p-4 flex flex-col items-center text-center">
-                  <div className="w-16 h-16 rounded-full overflow-hidden mb-3 bg-gray-200 dark:bg-gray-600 relative">
+              <div key={competitor.id} className="flex-shrink-0 flex flex-col items-center text-center">
+                <div className="relative group">
+                  <div className="w-28 h-28 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 ring-4 ring-gray-100 dark:ring-gray-800 shadow-md hover:shadow-lg transition-all duration-200">
                     <img 
                       src={competitor.thumbnailUrl}
                       alt={competitor.name}
-                      className="w-16 h-16 object-cover"
+                      className="w-full h-full object-cover"
                     />
-                    <div className="absolute -bottom-1 -right-1 bg-white dark:bg-gray-800 rounded-full p-1 shadow-sm">
-                      {getCompetitorIcon(competitor)}
-                    </div>
                   </div>
-                  <h3 className="text-gray-800 dark:text-white font-medium text-base mb-1">{competitor.name}</h3>
-                  <p className="text-gray-500 dark:text-gray-400 text-sm mb-3">{formatNumber(competitor.subscriberCount)} subscribers</p>
-                  <button 
-                    className="w-full flex items-center justify-center gap-1 bg-transparent border border-indigo-600 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 px-3 py-1.5 rounded-md text-sm transition-colors"
-                    onClick={() => {
-                      // In a real implementation, we would add this competitor
-                      alert(`Would add ${competitor.name} to your tracked competitors`);
-                    }}
-                  >
-                    <FaPlus size={14} />
-                    <span>Track competitor</span>
-                  </button>
+                  <div className="absolute -bottom-2 -right-2 bg-white dark:bg-gray-800 rounded-full p-2 shadow-sm">
+                    {getCompetitorIcon(competitor)}
+                  </div>
+                  <div className="opacity-0 group-hover:opacity-100 absolute inset-0 bg-black bg-opacity-40 rounded-full flex items-center justify-center transition-all duration-200">
+                    <button 
+                      className="bg-indigo-600 dark:bg-indigo-500 text-white p-2 rounded-full hover:bg-indigo-700"
+                      onClick={() => {
+                        // In a real implementation, we would add this competitor
+                        alert(`Would add ${competitor.name} to your tracked competitors`);
+                      }}
+                    >
+                      <FaPlus size={16} />
+                    </button>
+                  </div>
                 </div>
+                <h3 className="text-gray-800 dark:text-white font-medium text-base mt-4 max-w-[120px] truncate">{competitor.name}</h3>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">{formatNumber(competitor.subscriberCount)} subs</p>
+                
               </div>
             ))}
           </div>
