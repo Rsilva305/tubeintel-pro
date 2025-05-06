@@ -1,3 +1,10 @@
+/**
+ * Theme Context for TubeIntel Pro
+ * Provides dark/light mode functionality throughout the application
+ * Uses localStorage to persist user preference between sessions
+ * Also respects system preferences by default
+ */
+
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 type Theme = 'light' | 'dark';
