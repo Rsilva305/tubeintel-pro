@@ -1,24 +1,61 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Competitor } from '@/types';
+import { useState, useRef, useEffect } from 'react';
 import { competitorsApi } from '@/services/api';
+import { Competitor } from '@/types';
 import { getUseRealApi } from '@/services/api/config';
+import { FaPlus, FaTimes, FaEllipsisV, FaThumbtack, FaPencilAlt, FaCopy, FaTrash } from 'react-icons/fa';
+import Link from 'next/link';
+
+// New interface for competitor lists
+interface CompetitorList {
+  id: string;
+  name: string;
+  isPinned: boolean;
+  competitors: Competitor[];
+}
 
 export default function CompetitorsPage() {
-  const [competitors, setCompetitors] = useState<Competitor[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [listName, setListName] = useState('');
+  const [competitorLists, setCompetitorLists] = useState<CompetitorList[]>([]);
+  const [editingListId, setEditingListId] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAdding, setIsAdding] = useState(false);
-  const [newCompetitorId, setNewCompetitorId] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [useRealApi, setUseRealApi] = useState(getUseRealApi());
+  const [useRealApi] = useState(getUseRealApi());
+  const menuRef = useRef<HTMLDivElement>(null);
 
+  // Close menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpenMenuId(null);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, []);
+
+  // Load competitor data
   useEffect(() => {
     const fetchCompetitors = async () => {
       try {
-        const data = await competitorsApi.getAllCompetitors();
-        setCompetitors(data);
+        // For demonstration, we'll create a single default list with all competitors
+        const competitors = await competitorsApi.getAllCompetitors();
+        
+        // Only create the default list if we don't have any lists yet
+        if (competitorLists.length === 0) {
+          setCompetitorLists([
+            {
+              id: "default",
+              name: "All Competitors",
+              isPinned: true,
+              competitors: competitors
+            }
+          ]);
+        }
       } catch (error) {
         console.error('Error fetching competitors:', error);
       } finally {
@@ -29,192 +66,275 @@ export default function CompetitorsPage() {
     fetchCompetitors();
   }, []);
 
-  // Listen for API mode changes
-  useEffect(() => {
-    const handleApiChange = () => {
-      setUseRealApi(getUseRealApi());
-    };
+  const openModal = (listId?: string) => {
+    if (listId !== undefined) {
+      setEditingListId(listId);
+      const list = competitorLists.find(l => l.id === listId);
+      if (list) setListName(list.name);
+    } else {
+      setEditingListId(null);
+      setListName('');
+    }
+    setIsModalOpen(true);
+  }
 
-    // Check for API mode changes every second
-    const interval = setInterval(handleApiChange, 1000);
-    return () => clearInterval(interval);
-  }, []);
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setListName('');
+    setEditingListId(null);
+  }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSave = () => {
+    if (listName.trim()) {
+      if (editingListId !== null) {
+        // Update existing list
+        setCompetitorLists(
+          competitorLists.map(list => 
+            list.id === editingListId 
+              ? { ...list, name: listName } 
+              : list
+          )
+        );
+      } else {
+        // Create new list
+        const newList = {
+          id: Date.now().toString(),
+          name: listName,
+          isPinned: false,
+          competitors: []
+        };
+        setCompetitorLists([...competitorLists, newList]);
+      }
+      setListName('');
+      closeModal();
+    }
+  }
+
+  const toggleMenu = (id: string, e: React.MouseEvent) => {
     e.preventDefault();
-    
-    if (!newCompetitorId) {
-      setError('Please enter a YouTube channel ID');
-      return;
-    }
+    e.stopPropagation();
+    setOpenMenuId(openMenuId === id ? null : id);
+  }
 
-    setError(null);
-    setIsAdding(true);
-    
-    try {
-      // When using real API, we only need the YouTube ID
-      // The API will fetch all other details
-      const competitorData = {
-        youtubeId: newCompetitorId,
-        name: useRealApi ? '' : `Competitor ${competitors.length + 1}`, // API will override this for real API
-        thumbnailUrl: 'https://via.placeholder.com/150', // API will override this for real API
-        subscriberCount: 0, // API will override this for real API
-        videoCount: 0, // API will override this for real API
-        viewCount: 0 // API will override this for real API
+  const closeAllMenus = () => {
+    setOpenMenuId(null);
+  }
+
+  const pinList = (id: string) => {
+    setCompetitorLists(
+      competitorLists.map(list => 
+        list.id === id 
+          ? { ...list, isPinned: !list.isPinned } 
+          : list
+      )
+    );
+    closeAllMenus();
+  }
+
+  const duplicateList = (id: string) => {
+    const listToDuplicate = competitorLists.find(list => list.id === id);
+    if (listToDuplicate) {
+      const duplicatedList = {
+        ...listToDuplicate,
+        id: Date.now().toString(),
+        name: `${listToDuplicate.name} (copy)`,
       };
-      
-      const competitor = await competitorsApi.addCompetitor(competitorData);
-      setCompetitors(prev => [...prev, competitor]);
-      setNewCompetitorId('');
-      setShowForm(false);
-    } catch (error) {
-      console.error('Error adding competitor:', error);
-      setError('Could not add this channel. Please check the ID and try again.');
-    } finally {
-      setIsAdding(false);
+      setCompetitorLists([...competitorLists, duplicatedList]);
     }
-  };
+    closeAllMenus();
+  }
 
-  const handleRemoveCompetitor = async (id: string) => {
-    try {
-      await competitorsApi.removeCompetitor(id);
-      setCompetitors(prev => prev.filter(competitor => competitor.id !== id));
-    } catch (error) {
-      console.error('Error removing competitor:', error);
-    }
-  };
+  const deleteList = (id: string) => {
+    // Don't delete the default list
+    if (id === "default") return;
+    
+    setCompetitorLists(competitorLists.filter(list => list.id !== id));
+    closeAllMenus();
+  }
+
+  // Sort lists so pinned items appear first
+  const sortedLists = [...competitorLists].sort((a, b) => {
+    if (a.isPinned && !b.isPinned) return -1;
+    if (!a.isPinned && b.isPinned) return 1;
+    return 0;
+  });
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-8">
-        <div className="flex justify-center items-center h-40">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-          <p className="ml-4 text-gray-500">Loading competitors...</p>
-        </div>
+      <div className="w-full flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+        <p className="ml-4 text-gray-600">Loading competitors...</p>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Competitor Channel Tracker</h1>
-        <button 
-          onClick={() => setShowForm(!showForm)}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded"
-        >
-          {showForm ? 'Cancel' : 'Add Competitor'}
-        </button>
+    <div className="w-full max-w-[1200px] mx-auto">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">Tracked Competitors</h1>
       </div>
-
-      {/* Info box for the user */}
-      <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
-        <p className="text-blue-700">
-          Track your competitor channels to understand how your content stacks up.
-          {useRealApi 
-            ? ' Add channels using their YouTube IDs to get real data.' 
-            : ' You are in mock data mode. Enable real YouTube API in Settings to track real channels.'}
-        </p>
-      </div>
-
-      {/* Add Competitor Form */}
-      {showForm && (
-        <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-          <h2 className="text-xl font-semibold mb-4">Add New Competitor</h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="youtubeId" className="block text-sm font-medium text-gray-700 mb-1">
-                YouTube Channel ID
-              </label>
-              <input
-                type="text"
-                id="youtubeId"
-                value={newCompetitorId}
-                onChange={(e) => setNewCompetitorId(e.target.value)}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                placeholder="e.g. UC_x5XG1OV2P6uZZ5FSM9Ttw"
-              />
-              <p className="mt-1 text-sm text-gray-500">
-                Find a channel ID by going to the channel's page and looking at the URL. 
-                It's usually in the format 'UC_x5XG1OV2P6uZZ5FSM9Ttw'.
-              </p>
-            </div>
-            
-            {error && (
-              <div className="bg-red-100 border-l-4 border-red-500 p-4">
-                <p className="text-red-700">{error}</p>
-              </div>
-            )}
-            
-            <div className="flex justify-end">
-              <button 
-                type="submit"
-                disabled={isAdding}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded disabled:opacity-50"
-              >
-                {isAdding ? 'Adding...' : 'Add Competitor'}
-              </button>
-            </div>
-          </form>
+      
+      {competitorLists.length === 0 ? (
+        // Empty state container
+        <div className="flex items-center justify-center py-24">
+          <div className="w-full max-w-lg h-64 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center p-8 text-center">
+            <p className="text-gray-500 mb-6">You haven't created any competitor lists yet.</p>
+            <button 
+              onClick={() => openModal()}
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              <FaPlus size={18} />
+              <span>Create new competitor list</span>
+            </button>
+          </div>
         </div>
-      )}
+      ) : (
+        // Competitor lists grid
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Create new competitor list button - Always first */}
+          <div 
+            className="border border-dashed border-gray-300 rounded-lg p-5 cursor-pointer hover:bg-gray-50 transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              openModal();
+            }}
+          >
+            <div className="flex justify-between items-start">
+              <div className="flex items-center gap-2 text-indigo-600">
+                <FaPlus size={18} />
+                <span className="font-medium">Create new competitor list</span>
+              </div>
+            </div>
+            <p className="text-gray-500 text-sm mt-1">Add a new collection</p>
+          </div>
+          
+          {/* Competitor lists */}
+          {sortedLists.map((list) => (
+            <div key={list.id} className="relative">
+              <Link href={`/dashboard/competitors/${list.id}?name=${encodeURIComponent(list.name)}`}>
+                <div className="bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-5 transition-colors cursor-pointer group shadow-sm">
+                  <div className="flex justify-between items-start">
+                    <h3 className="text-gray-800 font-medium text-lg">{list.name}</h3>
+                    <button 
+                      onClick={(e) => toggleMenu(list.id, e)}
+                      className="text-gray-500 hover:text-gray-700 p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                    >
+                      <FaEllipsisV size={16} />
+                    </button>
+                  </div>
+                  <p className="text-gray-500 text-sm mt-1">{list.competitors.length} competitors</p>
+                </div>
+              </Link>
 
-      {/* Competitors Grid */}
-      {competitors.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {competitors.map(competitor => (
-            <div key={competitor.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="p-6">
-                <div className="flex items-center mb-4">
-                  <img 
-                    src={competitor.thumbnailUrl} 
-                    alt={competitor.name} 
-                    className="w-12 h-12 rounded-full mr-4"
-                  />
-                  <div>
-                    <h3 className="font-semibold text-lg">{competitor.name}</h3>
-                    <p className="text-gray-500 text-sm truncate">{competitor.youtubeId}</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="bg-gray-50 p-3 rounded-md">
-                    <p className="text-gray-500 text-xs">Subscribers</p>
-                    <p className="font-semibold">{competitor.subscriberCount.toLocaleString()}</p>
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded-md">
-                    <p className="text-gray-500 text-xs">Videos</p>
-                    <p className="font-semibold">{competitor.videoCount.toLocaleString()}</p>
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded-md col-span-2">
-                    <p className="text-gray-500 text-xs">Total Views</p>
-                    <p className="font-semibold">{competitor.viewCount.toLocaleString()}</p>
-                  </div>
-                </div>
-                <div className="flex justify-between">
-                  <a 
-                    href={`https://youtube.com/channel/${competitor.youtubeId}`}
-                    target="_blank"
-                    rel="noopener noreferrer" 
-                    className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
-                  >
-                    View Channel
-                  </a>
+              {/* Context menu */}
+              {openMenuId === list.id && (
+                <div 
+                  ref={menuRef}
+                  className="absolute top-12 right-3 bg-white border border-gray-200 rounded-md shadow-lg py-2 z-50"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <button 
-                    onClick={() => handleRemoveCompetitor(competitor.id)}
-                    className="text-red-600 hover:text-red-800 text-sm font-medium"
+                    className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      pinList(list.id);
+                    }}
                   >
-                    Remove
+                    <FaThumbtack size={16} className={list.isPinned ? 'text-indigo-600' : ''} />
+                    {list.isPinned ? 'Unpin' : 'Pin'}
+                  </button>
+                  <button 
+                    className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      openModal(list.id);
+                    }}
+                  >
+                    <FaPencilAlt size={16} />
+                    Rename
+                  </button>
+                  <button 
+                    className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      duplicateList(list.id);
+                    }}
+                  >
+                    <FaCopy size={16} />
+                    Duplicate
+                  </button>
+                  <button 
+                    className={`flex items-center gap-3 w-full px-4 py-2 text-sm hover:bg-gray-100 transition-colors text-left ${
+                      list.id === "default" ? "text-gray-400 cursor-not-allowed" : "text-red-500 hover:text-red-600"
+                    }`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (list.id !== "default") {
+                        deleteList(list.id);
+                      }
+                    }}
+                    disabled={list.id === "default"}
+                  >
+                    <FaTrash size={16} />
+                    Delete
                   </button>
                 </div>
-              </div>
+              )}
             </div>
           ))}
         </div>
-      ) : (
-        <div className="bg-white rounded-lg shadow-md p-8 text-center">
-          <p className="text-gray-500 mb-4">No competitors added yet.</p>
-          <p className="text-gray-700">Add your first competitor to start tracking their channel performance.</p>
+      )}
+
+      {/* Modal Dialog */}
+      {isModalOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div 
+            className="bg-white rounded-lg w-full max-w-md p-6 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button 
+              onClick={closeModal} 
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            >
+              <FaTimes size={20} />
+            </button>
+            <h3 className="text-xl font-bold text-gray-800 mb-4">
+              {editingListId !== null ? 'Rename competitor list' : 'Create competitor list'}
+            </h3>
+            <div className="mb-4">
+              <label className="block text-gray-600 text-sm mb-2">Name</label>
+              <input 
+                type="text" 
+                value={listName}
+                onChange={(e) => setListName(e.target.value)}
+                className="w-full bg-white border border-gray-300 text-gray-800 rounded-lg py-2 px-3 focus:outline-none focus:border-indigo-500"
+                placeholder="Enter list name"
+                autoFocus
+              />
+            </div>
+            <div className="flex justify-end">
+              <button 
+                onClick={closeModal}
+                className="bg-transparent text-gray-600 hover:text-gray-800 px-4 py-2 rounded-lg mr-2"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSave}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg"
+                disabled={!listName.trim()}
+              >
+                {editingListId !== null ? 'Save' : 'Create'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
