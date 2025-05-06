@@ -77,7 +77,7 @@ export default function InsightsPage() {
       
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Video List */}
-        <div className="lg:col-span-1 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+        <div className="lg:col-span-1 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
           <h2 className="text-xl font-semibold mb-4 dark:text-white">Your Videos</h2>
           <div className="space-y-4 max-h-[600px] overflow-y-auto">
             {videos.length > 0 ? (
@@ -85,7 +85,7 @@ export default function InsightsPage() {
                 <div 
                   key={video.id}
                   onClick={() => handleVideoSelect(video)}
-                  className={`p-3 rounded-md cursor-pointer ${
+                  className={`p-3 rounded-xl cursor-pointer ${
                     selectedVideo?.id === video.id 
                       ? 'bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700' 
                       : 'bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
@@ -109,7 +109,7 @@ export default function InsightsPage() {
         {/* Insight Content */}
         <div className="lg:col-span-3">
           {selectedVideo ? (
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
               <div className="flex justify-between items-start mb-6">
                 <div>
                   <h2 className="text-xl font-semibold dark:text-white">{selectedVideo.title}</h2>
@@ -179,7 +179,7 @@ export default function InsightsPage() {
               )}
             </div>
           ) : (
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md text-center py-12">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md text-center py-12">
               <p className="text-gray-500 dark:text-gray-400 mb-4">No video selected.</p>
               <p className="text-gray-700 dark:text-gray-300">Select a video from the list to view or generate insights.</p>
             </div>

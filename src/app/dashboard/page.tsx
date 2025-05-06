@@ -96,29 +96,29 @@ export default function DashboardPage() {
                 <p className="opacity-80 mt-1">Last updated: {new Date().toLocaleDateString()}</p>
               </div>
               <div className="mt-4 md:mt-0">
-                <button className="bg-white bg-opacity-20 hover:bg-opacity-30 transition-all duration-200 px-4 py-2 rounded-md text-sm font-medium">
+                <button className="bg-white bg-opacity-20 hover:bg-opacity-30 transition-all duration-200 px-4 py-2 rounded-xl text-sm font-medium">
                   Refresh Data
                 </button>
               </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-              <div className="bg-white bg-opacity-20 p-4 rounded-lg">
+              <div className="bg-white bg-opacity-20 p-4 rounded-xl">
                 <p className="text-sm font-medium opacity-70">Total Views</p>
                 <p className="text-3xl font-bold mt-1">{totalViews.toLocaleString()}</p>
               </div>
-              <div className="bg-white bg-opacity-20 p-4 rounded-lg">
+              <div className="bg-white bg-opacity-20 p-4 rounded-xl">
                 <p className="text-sm font-medium opacity-70">Total Likes</p>
                 <p className="text-3xl font-bold mt-1">{totalLikes.toLocaleString()}</p>
               </div>
-              <div className="bg-white bg-opacity-20 p-4 rounded-lg">
+              <div className="bg-white bg-opacity-20 p-4 rounded-xl">
                 <p className="text-sm font-medium opacity-70">Average VPH</p>
                 <p className="text-3xl font-bold mt-1">{averageVph}</p>
               </div>
             </div>
           </div>
           
-          <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-900">
+          <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-900">
             <h3 className="text-md font-semibold text-blue-800 dark:text-blue-300 flex items-center">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -137,7 +137,7 @@ export default function DashboardPage() {
         {!isLoading && (
           <section className="mb-10">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-indigo-200 dark:border-indigo-900">
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-indigo-200 dark:border-indigo-900">
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Average VPH</h3>
                 <div className="mt-1 flex items-baseline">
                   <p className="text-2xl font-semibold text-indigo-600 dark:text-indigo-400">
@@ -147,7 +147,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-purple-200 dark:border-purple-900">
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-purple-200 dark:border-purple-900">
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Highest VPH</h3>
                 <div className="mt-1 flex items-baseline">
                   <p className="text-2xl font-semibold text-purple-600 dark:text-purple-400">
@@ -162,7 +162,7 @@ export default function DashboardPage() {
                 </p>
               </div>
               
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-green-200 dark:border-green-900">
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-green-200 dark:border-green-900">
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">VPH Trend</h3>
                 <div className="mt-1 flex items-baseline">
                   <p className="text-2xl font-semibold text-green-600 dark:text-green-400">
@@ -181,8 +181,8 @@ export default function DashboardPage() {
           {alerts.length > 0 ? (
             <div className="grid grid-cols-1 gap-4">
               {alerts.map((alert) => (
-                <div key={alert.id} className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-blue-200 dark:border-blue-900 hover:shadow-md transition-shadow duration-200">
-                  <span className="inline-block rounded-full bg-blue-100 dark:bg-blue-900 px-3 py-1 text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">
+                <div key={alert.id} className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-blue-200 dark:border-blue-900 hover:shadow-md transition-shadow duration-200">
+                  <span className="inline-block rounded-xl bg-blue-100 dark:bg-blue-900 px-3 py-1 text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">
                     {alert.type.toUpperCase()} Alert
                   </span>
                   <p className="text-gray-800 dark:text-gray-200">{alert.message}</p>
@@ -216,16 +216,16 @@ export default function DashboardPage() {
                     <option value="vph">Highest VPH</option>
                   </select>
                 </div>
-                <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-md">
+                <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl">
                   <button 
-                    className={`p-2 ${viewMode === 'list' ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400'} rounded-l-md`}
+                    className={`p-2 ${viewMode === 'list' ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400'} rounded-l-xl`}
                     onClick={() => handleViewModeChange('list')}
                     title="List View"
                   >
                     <FaTable size={16} />
                   </button>
                   <button 
-                    className={`p-2 ${viewMode === 'grid' ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400'} rounded-r-md`}
+                    className={`p-2 ${viewMode === 'grid' ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400'} rounded-r-xl`}
                     onClick={() => handleViewModeChange('grid')}
                     title="Grid View"
                   >
@@ -295,7 +295,7 @@ function VideoCard({ video, showVph = false }: VideoCardProps) {
   const trendPercent = Math.floor(Math.random() * 20) + 1; // 1-20%
   
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border ${isHighVph && showVph ? 'border-green-300 dark:border-green-700' : 'border-gray-200 dark:border-gray-700'} hover:shadow-md transition-shadow duration-200`}>
+    <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border ${isHighVph && showVph ? 'border-green-300 dark:border-green-700' : 'border-gray-200 dark:border-gray-700'} hover:shadow-md transition-shadow duration-200`}>
       <div className="flex">
         <div className="w-32 h-24 bg-gray-200 dark:bg-gray-700 flex-shrink-0">
           <img src={video.thumbnailUrl} alt={video.title} className="w-full h-full object-cover" />
@@ -304,17 +304,17 @@ function VideoCard({ video, showVph = false }: VideoCardProps) {
           <h3 className="font-medium text-gray-900 dark:text-white truncate">{video.title}</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{new Date(video.publishedAt).toLocaleDateString()}</p>
           <div className="flex flex-wrap gap-2 mt-2">
-            <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full px-2 py-1">
+            <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
               {video.viewCount.toLocaleString()} views
             </span>
-            <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full px-2 py-1">
+            <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
               {video.likeCount.toLocaleString()} likes
             </span>
             {showVph && (
-              <span className={`text-xs ${isHighVph ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300' : 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'} rounded-full px-2 py-1 font-medium relative group cursor-help`}>
+              <span className={`text-xs ${isHighVph ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300' : 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'} rounded-xl px-2 py-1 font-medium relative group cursor-help`}>
                 {video.vph.toLocaleString()} VPH
                 {isHighVph && <span className="ml-1">🔥</span>}
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded p-2 w-48 shadow-lg z-10">
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded-xl p-2 w-48 shadow-lg z-10">
                   <div className="relative">
                     <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
                     <p>Views Per Hour (VPH) - A metric showing how quickly this video is gaining views.</p>
@@ -324,7 +324,7 @@ function VideoCard({ video, showVph = false }: VideoCardProps) {
               </span>
             )}
             {showVph && (
-              <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full px-2 py-1">
+              <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
                 {vphTrend === 'up' ? (
                   <span className="text-green-600 dark:text-green-400">↑ {trendPercent}%</span>
                 ) : (
@@ -346,7 +346,7 @@ function VideoGridCard({ video, showVph = false }: VideoCardProps) {
   const trendPercent = Math.floor(Math.random() * 20) + 1;
   
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border ${isHighVph && showVph ? 'border-green-300 dark:border-green-700' : 'border-gray-200 dark:border-gray-700'} hover:shadow-md transition-shadow duration-200 flex flex-col h-full`}>
+    <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border ${isHighVph && showVph ? 'border-green-300 dark:border-green-700' : 'border-gray-200 dark:border-gray-700'} hover:shadow-md transition-shadow duration-200 flex flex-col h-full`}>
       <div className="relative w-full pt-[56.25%]"> {/* 16:9 aspect ratio */}
         <img 
           src={video.thumbnailUrl} 
@@ -360,16 +360,16 @@ function VideoGridCard({ video, showVph = false }: VideoCardProps) {
         
         <div className="mt-auto pt-3">
           <div className="flex flex-wrap gap-2">
-            <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full px-2 py-1">
+            <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
               {video.viewCount.toLocaleString()} views
             </span>
             {showVph && (
-              <span className={`text-xs ${isHighVph ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300' : 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'} rounded-full px-2 py-1 font-medium`}>
+              <span className={`text-xs ${isHighVph ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300' : 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'} rounded-xl px-2 py-1 font-medium`}>
                 {video.vph.toLocaleString()} VPH {isHighVph && '🔥'}
               </span>
             )}
             {showVph && (
-              <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full px-2 py-1">
+              <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
                 {vphTrend === 'up' ? (
                   <span className="text-green-600 dark:text-green-400">↑ {trendPercent}%</span>
                 ) : (

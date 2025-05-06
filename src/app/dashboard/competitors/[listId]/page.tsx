@@ -785,7 +785,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center">
           <button 
-            className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 p-2 rounded-lg text-gray-700 dark:text-gray-300 mr-2"
+            className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 p-2 rounded-xl text-gray-700 dark:text-gray-300 mr-2"
             onClick={() => setIsFilterOpen(!isFilterOpen)}
           >
             <FaFilter size={18} />
@@ -796,7 +796,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
               placeholder="Search competitors"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-60 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600"
+              className="w-60 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600"
             />
             <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -808,7 +808,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
 
         <div className="flex items-center gap-3">
           <div className="flex items-center">
-            <button className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-lg text-sm">
+            <button className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-xl text-sm">
               <span>Sort by: {sortBy}</span>
               <FaChevronDown size={14} />
             </button>
@@ -829,7 +829,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
       {/* New Filter Popup */}
       {isFilterOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-4xl p-6 relative overflow-y-auto max-h-[90vh]">
+          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-4xl p-6 relative overflow-y-auto max-h-[90vh]">
             <button 
               onClick={() => setIsFilterOpen(false)} 
               className="absolute top-4 right-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
@@ -1334,13 +1334,13 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                 }
               })
               .map(competitor => (
-                <div key={competitor.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow">
+                <div key={competitor.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow">
                   <div className="p-6">
                     <div className="flex items-center mb-4">
                       <img 
                         src={competitor.thumbnailUrl} 
                         alt={competitor.name} 
-                        className="w-12 h-12 rounded-full mr-4"
+                        className="w-12 h-12 rounded-xl mr-4"
                       />
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
@@ -1388,7 +1388,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
       </div>
 
       {/* Similar Videos Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2">
             <FaYoutube className="text-red-500" />
@@ -1402,7 +1402,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
           
           {/* Add Channel Button */}
           <button 
-            className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-sm transition-colors"
+            className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-sm transition-colors"
             onClick={() => setIsAddChannelModalOpen(true)}
           >
             <FaPlus size={14} />
@@ -1444,7 +1444,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                 placeholder="Search videos"
                 value={videoSearchQuery}
                 onChange={(e) => setVideoSearchQuery(e.target.value)}
-                className="w-full sm:w-64 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600"
+                className="w-full sm:w-64 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600"
               />
               <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500">
                 <FaSearch size={14} />
@@ -1456,7 +1456,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
           <div className="flex items-center gap-3 self-end sm:self-auto">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500 dark:text-gray-400">Videos per row:</span>
-              <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-md">
+              <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-xl">
                 {[1, 2, 3, 4, 5, 6].map((columns) => (
                   <button 
                     key={columns}
@@ -1470,7 +1470,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
             </div>
             
             <button 
-              className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-lg text-sm"
+              className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-xl text-sm"
               onClick={toggleVideoInfo}
               title={showVideoInfo ? "Hide video info" : "Show video info"}
             >
@@ -1486,7 +1486,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
             {filteredVideos.map((video) => (
               <div 
                 key={video.id} 
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow duration-200 cursor-pointer group"
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow duration-200 cursor-pointer group"
                 onClick={() => openVideoOnYouTube(video.youtubeId)}
               >
                 <div className="relative pt-[56.25%]"> {/* 16:9 aspect ratio */}
@@ -1512,13 +1512,13 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                     </div>
                     
                     <div className="flex flex-wrap gap-2 mt-2">
-                      <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full px-2 py-1">
+                      <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
                         {formatNumber(video.viewCount)} views
                       </span>
-                      <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full px-2 py-1">
+                      <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
                         {formatNumber(video.likeCount)} likes
                       </span>
-                      <span className="text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 rounded-full px-2 py-1 font-medium">
+                      <span className="text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 rounded-xl px-2 py-1 font-medium">
                         {video.vph} VPH
                       </span>
                     </div>
@@ -1549,7 +1549,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
           onClick={(e) => e.stopPropagation()}
         >
           <div 
-            className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md p-6 relative"
+            className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md p-6 relative"
             onClick={(e) => e.stopPropagation()}
           >
             <button 
@@ -1571,7 +1571,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                   id="channelId"
                   value={newChannelId}
                   onChange={(e) => setNewChannelId(e.target.value)}
-                  className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="e.g. UC_x5XG1OV2P6uZZ5FSM9Ttw"
                   autoFocus
                 />
@@ -1581,7 +1581,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
               </div>
 
               {addChannelError && (
-                <div className="bg-red-100 dark:bg-red-900/30 border-l-4 border-red-500 p-4 mb-4">
+                <div className="bg-red-100 dark:bg-red-900/30 border-l-4 border-red-500 p-4 mb-4 rounded-r-xl">
                   <p className="text-red-700 dark:text-red-300">{addChannelError}</p>
                 </div>
               )}
@@ -1590,14 +1590,14 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                 <button 
                   type="button"
                   onClick={() => setIsAddChannelModalOpen(false)}
-                  className="bg-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 px-4 py-2 rounded-lg mr-2"
+                  className="bg-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 px-4 py-2 rounded-xl mr-2"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit"
                   disabled={isAddingChannel || !newChannelId.trim()}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg disabled:opacity-50"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl disabled:opacity-50"
                 >
                   {isAddingChannel ? 'Adding...' : 'Add Channel'}
                 </button>
@@ -1614,7 +1614,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
           onClick={(e) => e.stopPropagation()}
         >
           <div 
-            className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md p-6 relative"
+            className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md p-6 relative"
             onClick={(e) => e.stopPropagation()}
           >
             <button 
@@ -1636,7 +1636,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                   id="youtubeId"
                   value={newCompetitorId}
                   onChange={(e) => setNewCompetitorId(e.target.value)}
-                  className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="e.g. UC_x5XG1OV2P6uZZ5FSM9Ttw"
                   autoFocus
                 />
@@ -1647,7 +1647,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
               </div>
 
               {error && (
-                <div className="bg-red-100 dark:bg-red-900/30 border-l-4 border-red-500 p-4 mb-4">
+                <div className="bg-red-100 dark:bg-red-900/30 border-l-4 border-red-500 p-4 mb-4 rounded-r-xl">
                   <p className="text-red-700 dark:text-red-300">{error}</p>
                 </div>
               )}
@@ -1656,14 +1656,14 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                 <button 
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="bg-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 px-4 py-2 rounded-lg mr-2"
+                  className="bg-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 px-4 py-2 rounded-xl mr-2"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit"
                   disabled={isAdding || !newCompetitorId.trim()}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg disabled:opacity-50"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl disabled:opacity-50"
                 >
                   {isAdding ? 'Adding...' : 'Add Competitor'}
                 </button>

@@ -207,11 +207,11 @@ export default function CompetitorsPage() {
       {competitorLists.length === 0 ? (
         // Empty state container
         <div className="flex items-center justify-center py-24">
-          <div className="w-full max-w-lg h-64 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg flex flex-col items-center justify-center p-8 text-center">
+          <div className="w-full max-w-lg h-64 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl flex flex-col items-center justify-center p-8 text-center">
             <p className="text-gray-500 dark:text-gray-400 mb-6">You haven't created any competitor lists yet.</p>
             <button 
               onClick={() => openModal()}
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors"
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl transition-colors"
             >
               <FaPlus size={18} />
               <span>Create new competitor list</span>
@@ -223,7 +223,7 @@ export default function CompetitorsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Create new competitor list button - Always first */}
           <div 
-            className="border border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            className="border border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             onClick={(e) => {
               e.stopPropagation();
               openModal();
@@ -242,7 +242,7 @@ export default function CompetitorsPage() {
           {sortedLists.map((list) => (
             <div key={list.id} className="relative">
               <Link href={`/dashboard/competitors/${list.id}?name=${encodeURIComponent(list.name)}`}>
-                <div className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg p-5 transition-colors cursor-pointer group shadow-sm">
+                <div className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded-xl p-5 transition-colors cursor-pointer group shadow-sm">
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2">
                       {getListIcon(list)}
@@ -263,7 +263,7 @@ export default function CompetitorsPage() {
               {openMenuId === list.id && (
                 <div 
                   ref={menuRef}
-                  className="absolute top-12 right-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg py-2 z-50"
+                  className="absolute top-12 right-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg py-2 z-50"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <button 
@@ -329,7 +329,7 @@ export default function CompetitorsPage() {
           onClick={(e) => e.stopPropagation()}
         >
           <div 
-            className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md p-6 relative"
+            className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md p-6 relative"
             onClick={(e) => e.stopPropagation()}
           >
             <button 
@@ -347,7 +347,7 @@ export default function CompetitorsPage() {
                 type="text" 
                 value={listName}
                 onChange={(e) => setListName(e.target.value)}
-                className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 placeholder="Enter list name"
                 autoFocus
               />
@@ -358,13 +358,13 @@ export default function CompetitorsPage() {
             <div className="flex justify-end">
               <button 
                 onClick={closeModal}
-                className="bg-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 px-4 py-2 rounded-lg mr-2"
+                className="bg-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 px-4 py-2 rounded-xl mr-2"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleSave}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl"
                 disabled={!listName.trim()}
               >
                 {editingListId !== null ? 'Save' : 'Create'}
