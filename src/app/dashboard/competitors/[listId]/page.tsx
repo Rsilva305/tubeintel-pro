@@ -187,7 +187,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   const handleViewMultiplierInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value);
     if (!isNaN(value)) {
-      setViewMultiplierThreshold(Math.max(0, Math.min(value, 10))); // Keep between 0 and 10
+      setViewMultiplierThreshold(Math.max(0, Math.min(value, 500))); // Increased cap to 500x
     }
   };
 
@@ -512,7 +512,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                 {/* Add View Multiplier slider after Video Duration slider */}
                 <div>
                   <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium flex items-center">
-                    View Multiplier: {viewMultiplierThreshold.toFixed(1)}x
+                    View Multiplier: {viewMultiplierThreshold < 10 ? viewMultiplierThreshold.toFixed(1) : viewMultiplierThreshold.toFixed(0)}x
                     <div className="ml-1.5 text-xs text-gray-500 dark:text-gray-400 cursor-help group relative">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -525,17 +525,24 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                   <div className="flex flex-col">
                     <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
                       <span>0x</span>
-                      <span>10x</span>
+                      <span className="text-center ml-12">10x</span>
+                      <span className="text-center ml-12">50x</span>
+                      <span className="text-center ml-12">100x</span>
+                      <span>500x</span>
                     </div>
                     <input 
                       type="range" 
                       min="0" 
-                      max="10" 
-                      step="0.1"
+                      max="500" 
+                      step={viewMultiplierThreshold < 10 ? "0.1" : (viewMultiplierThreshold < 50 ? "1" : "5")}
                       value={viewMultiplierThreshold}
                       onChange={(e) => setViewMultiplierThreshold(parseFloat(e.target.value))}
                       className="slider-track mb-2"
                     />
+                    <div className="text-xs text-center text-gray-500 dark:text-gray-400 mt-1 mb-2">
+                      Current: {viewMultiplierThreshold < 10 ? viewMultiplierThreshold.toFixed(1) : viewMultiplierThreshold.toFixed(0)}x median views
+                    </div>
+                    
                     {/* Input field for direct value entry */}
                     <div className="flex items-center mt-2">
                       <label className="text-xs text-gray-500 dark:text-gray-400 mr-2">Custom value:</label>
@@ -543,8 +550,8 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                         <input
                           type="number"
                           min="0"
-                          max="10"
-                          step="0.1"
+                          max="500"
+                          step="0.5"
                           value={viewMultiplierThreshold}
                           onChange={handleViewMultiplierInput}
                           className="w-20 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-white"
