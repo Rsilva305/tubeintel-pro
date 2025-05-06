@@ -142,37 +142,37 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center bg-gray-50 px-4">
+    <div className="min-h-screen flex flex-col justify-center items-center bg-gray-50 dark:bg-gray-900 px-4">
       <div className="w-full max-w-md">
         {/* Logo and Title */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-2">
             <FaYoutube className="text-red-500 text-4xl mr-2" />
-            <h1 className="text-3xl font-bold">TubeIntel Pro</h1>
+            <h1 className="text-3xl font-bold dark:text-white">TubeIntel Pro</h1>
           </div>
-          <p className="text-gray-600">Let's set up your YouTube channel</p>
+          <p className="text-gray-600 dark:text-gray-400">Let's set up your YouTube channel</p>
         </div>
         
         {/* Onboarding Card */}
-        <div className="bg-white rounded-lg shadow-md p-8">
-          <h2 className="text-2xl font-bold text-center mb-6">Channel Setup</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
+          <h2 className="text-2xl font-bold text-center mb-6 dark:text-white">Channel Setup</h2>
           
           {user && (
-            <p className="text-center mb-6">
+            <p className="text-center mb-6 dark:text-gray-300">
               Welcome, <span className="font-semibold">{user.username || user.email?.split('@')[0]}</span>! 
               Let's complete your setup.
             </p>
           )}
           
           {error && (
-            <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4">
+            <div className="bg-red-100 dark:bg-red-900/30 border-l-4 border-red-500 text-red-700 dark:text-red-300 p-4 mb-4">
               <p>{error}</p>
             </div>
           )}
           
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="channelUrl" className="block text-gray-700 mb-2">
+              <label htmlFor="channelUrl" className="block text-gray-700 dark:text-gray-300 mb-2">
                 YouTube Channel URL
               </label>
               <input
@@ -180,22 +180,22 @@ export default function OnboardingPage() {
                 type="text"
                 value={channelUrl}
                 onChange={handleUrlChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
                 placeholder="https://youtube.com/channel/..."
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Enter your full YouTube channel URL (e.g., https://youtube.com/channel/UC...)
               </p>
             </div>
             
             <div className="flex items-center">
-              <div className="flex-grow border-t border-gray-300"></div>
-              <span className="mx-4 text-gray-500">OR</span>
-              <div className="flex-grow border-t border-gray-300"></div>
+              <div className="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
+              <span className="mx-4 text-gray-500 dark:text-gray-400">OR</span>
+              <div className="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
             </div>
             
             <div>
-              <label htmlFor="channelId" className="block text-gray-700 mb-2">
+              <label htmlFor="channelId" className="block text-gray-700 dark:text-gray-300 mb-2">
                 Channel ID
               </label>
               <input
@@ -203,10 +203,10 @@ export default function OnboardingPage() {
                 type="text"
                 value={channelId}
                 onChange={(e) => setChannelId(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
                 placeholder="UC..."
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Enter your YouTube channel ID directly if you know it
               </p>
             </div>
@@ -220,8 +220,8 @@ export default function OnboardingPage() {
             </button>
           </form>
           
-          <div className="mt-6 bg-blue-50 border border-blue-100 rounded-lg p-4">
-            <p className="text-sm text-blue-800">
+          <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-4">
+            <p className="text-sm text-blue-800 dark:text-blue-300">
               <span className="font-semibold">Note:</span> {isDemo 
                 ? "You're in demo mode. Your channel ID will only be stored locally." 
                 : "Your YouTube channel ID will be stored in your profile and used to fetch analytics."
