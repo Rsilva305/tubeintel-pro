@@ -71,25 +71,25 @@ export default function SettingsPage() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6 dark:text-white">Settings</h1>
+      <h1 className="text-2xl font-bold mb-6">Settings</h1>
       
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-6">
-        <h2 className="text-xl font-semibold mb-4 dark:text-white">YouTube Channel Connection</h2>
+      <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+        <h2 className="text-xl font-semibold mb-4">YouTube Channel Connection</h2>
         
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-gray-700 dark:text-gray-300 font-medium">API Mode:</span>
+            <span className="text-gray-700 font-medium">API Mode:</span>
             <ApiToggle />
           </div>
-          <p className="text-sm text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded border border-blue-100 dark:border-blue-800">
+          <p className="text-sm text-gray-600 bg-blue-50 p-3 rounded">
             Toggle between using real YouTube data or mock data.
             For production use, keep the real YouTube API enabled.
           </p>
         </div>
         
         {connectedChannel && (
-          <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-            <h3 className="font-medium text-green-800 dark:text-green-300 mb-2">Connected Channel</h3>
+          <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
+            <h3 className="font-medium text-green-800 mb-2">Connected Channel</h3>
             <div className="flex items-center">
               {connectedChannel.thumbnailUrl && (
                 <img 
@@ -99,8 +99,8 @@ export default function SettingsPage() {
                 />
               )}
               <div>
-                <p className="font-semibold dark:text-white">{connectedChannel.name}</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="font-semibold">{connectedChannel.name}</p>
+                <p className="text-sm text-gray-600">
                   {connectedChannel.subscriberCount.toLocaleString()} subscribers • 
                   {connectedChannel.videoCount.toLocaleString()} videos
                 </p>
@@ -111,7 +111,7 @@ export default function SettingsPage() {
         
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label htmlFor="channelId" className="block text-gray-700 dark:text-gray-300 mb-2">
+            <label htmlFor="channelId" className="block text-gray-700 mb-2">
               YouTube Channel ID:
             </label>
             <input
@@ -119,19 +119,17 @@ export default function SettingsPage() {
               id="channelId"
               value={channelId}
               onChange={(e) => setChannelId(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="e.g. UC_x5XG1OV2P6uZZ5FSM9Ttw"
             />
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <p className="mt-1 text-sm text-gray-500">
               Find your channel ID by going to your YouTube channel page and looking at the URL. It's usually in the format 'UC_x5XG1OV2P6uZZ5FSM9Ttw'.
             </p>
           </div>
           
           {message && (
             <div className={`p-3 rounded-md mb-4 ${
-              message.type === 'success' 
-                ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800' 
-                : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800'
+              message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
             }`}>
               {message.text}
             </div>
@@ -147,22 +145,22 @@ export default function SettingsPage() {
         </form>
       </div>
       
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold mb-4 dark:text-white">Help & Resources</h2>
-        <div className="space-y-3 dark:text-gray-300">
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <h2 className="text-xl font-semibold mb-4">Help & Resources</h2>
+        <div className="space-y-3">
           <p>To use TubeIntel Pro effectively:</p>
           <ol className="list-decimal pl-5 space-y-2">
             <li>Connect your YouTube channel using your channel ID</li>
             <li>Add competitor channels on the Competitors page</li>
             <li>Visit the Dashboard regularly to see insights and analytics</li>
           </ol>
-          <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
+          <p className="mt-3 text-sm text-gray-600">
             For more help on using YouTube analytics effectively, visit the
             <a 
               href="https://support.google.com/youtube/answer/9002587" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-blue-600 dark:text-blue-400 hover:underline ml-1"
+              className="text-blue-600 hover:underline ml-1"
             >
               YouTube Creator Academy
             </a>
