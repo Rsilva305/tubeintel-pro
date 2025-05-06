@@ -50,6 +50,9 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
     new Date().toISOString().split('T')[0] // today
   ]);
 
+  // Add new state for view multiplier
+  const [viewMultiplierThreshold, setViewMultiplierThreshold] = useState<number>(1.5); // Default to 1.5x
+
   useEffect(() => {
     const fetchCompetitors = async () => {
       try {
@@ -141,13 +144,17 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
     const filteredCompetitors = competitors.filter(competitor => {
       const meetsViewsThreshold = competitor.viewCount >= viewsThreshold;
       const meetsSubscribersThreshold = competitor.subscriberCount >= subscribersThreshold;
+      
+      // For view multiplier we'd need data on median views per channel
+      // const hasHighMultiplier = competitor.viewMultiplier >= viewMultiplierThreshold;
+      
       // For video duration we would need actual data about average video length
       
       // Check if within date range - would need actual data on when added
       // const addedDate = new Date(competitor.addedAt);
       // const isWithinDateRange = addedDate >= new Date(dateRange[0]) && addedDate <= new Date(dateRange[1]);
       
-      return meetsViewsThreshold && meetsSubscribersThreshold;
+      return meetsViewsThreshold && meetsSubscribersThreshold; // && hasHighMultiplier;
     });
     
     console.log(`Filter applied: Competitors matching criteria: ${filteredCompetitors.length}`);
@@ -160,6 +167,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
     setViewsThreshold(10000000);
     setSubscribersThreshold(100000);
     setVideoDurationThreshold(60);
+    setViewMultiplierThreshold(1.5);
     setDateRange([
       new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       new Date().toISOString().split('T')[0]
@@ -196,6 +204,14 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
     const hours = Math.floor(videoDurationThreshold / 60);
     const minutes = safeParseInt(e.target.value, 0);
     setVideoDurationThreshold(hours * 60 + Math.min(minutes, 59)); // Cap at 59m
+  };
+
+  // Handler for view multiplier input
+  const handleViewMultiplierInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value);
+    if (!isNaN(value)) {
+      setViewMultiplierThreshold(Math.max(0, Math.min(value, 10))); // Keep between 0 and 10
+    }
   };
 
   if (isLoading) {
@@ -515,6 +531,52 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                           />
                           <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">m</span>
                         </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Add View Multiplier slider after Video Duration slider */}
+                <div>
+                  <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium flex items-center">
+                    View Multiplier: {viewMultiplierThreshold.toFixed(1)}x
+                    <div className="ml-1.5 text-xs text-gray-500 dark:text-gray-400 cursor-help group relative">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div className="absolute left-full ml-2 w-60 p-2 bg-white dark:bg-gray-700 shadow-lg rounded text-xs border border-gray-200 dark:border-gray-600 hidden group-hover:block z-10">
+                        View Multiplier is the ratio of video views to the channel's median views. A value of 2 means videos with twice the channel's normal performance.
+                      </div>
+                    </div>
+                  </label>
+                  <div className="flex flex-col">
+                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
+                      <span>0x</span>
+                      <span>10x</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="10" 
+                      step="0.1"
+                      value={viewMultiplierThreshold}
+                      onChange={(e) => setViewMultiplierThreshold(parseFloat(e.target.value))}
+                      className="slider-track mb-2"
+                    />
+                    {/* Input field for direct value entry */}
+                    <div className="flex items-center mt-2">
+                      <label className="text-xs text-gray-500 dark:text-gray-400 mr-2">Custom value:</label>
+                      <div className="flex items-center">
+                        <input
+                          type="number"
+                          min="0"
+                          max="10"
+                          step="0.1"
+                          value={viewMultiplierThreshold}
+                          onChange={handleViewMultiplierInput}
+                          className="w-20 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-white"
+                        />
+                        <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">x median</span>
                       </div>
                     </div>
                   </div>
