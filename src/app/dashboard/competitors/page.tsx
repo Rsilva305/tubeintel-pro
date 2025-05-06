@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { competitorsApi } from '@/services/api';
 import { Competitor } from '@/types';
 import { getUseRealApi } from '@/services/api/config';
-import { FaPlus, FaTimes, FaEllipsisV, FaThumbtack, FaPencilAlt, FaCopy, FaTrash } from 'react-icons/fa';
+import { FaPlus, FaTimes, FaEllipsisV, FaThumbtack, FaPencilAlt, FaCopy, FaTrash, FaYoutube, FaChartLine, FaUsers, FaGlobe, FaGamepad, FaLaptop, FaFilm, FaMusic, FaRegStar } from 'react-icons/fa';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -25,6 +25,7 @@ export default function CompetitorsPage() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [useRealApi] = useState(getUseRealApi());
+  const [listCategory, setListCategory] = useState('default');
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Close menu when clicking outside
@@ -86,37 +87,58 @@ export default function CompetitorsPage() {
     setEditingListId(null);
   }
 
-  const handleSave = () => {
-    if (listName.trim()) {
-      if (editingListId !== null) {
-        // Update existing list
-        setCompetitorLists(
-          competitorLists.map(list => 
-            list.id === editingListId 
-              ? { ...list, name: listName } 
-              : list
-          )
-        );
-      } else {
-        // Create new list
-        const newListId = Date.now().toString();
-        const newList = {
-          id: newListId,
-          name: listName,
-          isPinned: false,
-          competitors: []
-        };
-        setCompetitorLists([...competitorLists, newList]);
-        
-        // Optionally navigate to the new list after creation
-        setTimeout(() => {
-          router.push(`/dashboard/competitors/${newListId}?name=${encodeURIComponent(listName)}`);
-        }, 300);
-      }
-      setListName('');
-      closeModal();
+  // Function to get an icon based on list ID or name
+  const getListIcon = (list: CompetitorList) => {
+    // First check if the list has a designated category
+    const listId = list.id.toLowerCase();
+    const listNameLower = list.name.toLowerCase();
+    
+    // Look for keywords in the name to determine icon
+    if (listNameLower.includes('gaming') || listNameLower.includes('game')) {
+      return <FaGamepad size={18} className="text-purple-500" />;
+    } else if (listNameLower.includes('tech') || listNameLower.includes('technology')) {
+      return <FaLaptop size={18} className="text-blue-500" />;
+    } else if (listNameLower.includes('music') || listNameLower.includes('audio')) {
+      return <FaMusic size={18} className="text-pink-500" />;
+    } else if (listNameLower.includes('film') || listNameLower.includes('movie') || listNameLower.includes('video')) {
+      return <FaFilm size={18} className="text-red-500" />;
+    } else if (listNameLower.includes('top') || listNameLower.includes('best')) {
+      return <FaRegStar size={18} className="text-yellow-500" />;
+    } else if (listNameLower.includes('grow') || listNameLower.includes('trending')) {
+      return <FaChartLine size={18} className="text-green-500" />;
+    } else if (listId === 'default' || listNameLower.includes('all')) {
+      return <FaYoutube size={18} className="text-red-500" />;
     }
-  }
+    
+    // Default icon
+    return <FaUsers size={18} className="text-indigo-500" />;
+  };
+
+  const handleSave = () => {
+    if (!listName.trim()) return;
+    
+    if (editingListId !== null) {
+      // Edit existing list
+      setCompetitorLists(
+        competitorLists.map(list => 
+          list.id === editingListId 
+            ? { ...list, name: listName } 
+            : list
+        )
+      );
+    } else {
+      // Create new list
+      const newList: CompetitorList = {
+        id: Date.now().toString(),
+        name: listName,
+        isPinned: false,
+        competitors: []
+      };
+      setCompetitorLists([...competitorLists, newList]);
+    }
+    
+    closeModal();
+  };
 
   const toggleMenu = (id: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -222,7 +244,10 @@ export default function CompetitorsPage() {
               <Link href={`/dashboard/competitors/${list.id}?name=${encodeURIComponent(list.name)}`}>
                 <div className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg p-5 transition-colors cursor-pointer group shadow-sm">
                   <div className="flex justify-between items-start">
-                    <h3 className="text-gray-800 dark:text-white font-medium text-lg">{list.name}</h3>
+                    <div className="flex items-center gap-2">
+                      {getListIcon(list)}
+                      <h3 className="text-gray-800 dark:text-white font-medium text-lg">{list.name}</h3>
+                    </div>
                     <button 
                       onClick={(e) => toggleMenu(list.id, e)}
                       className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
@@ -326,6 +351,9 @@ export default function CompetitorsPage() {
                 placeholder="Enter list name"
                 autoFocus
               />
+              <p className="mt-1 text-xs text-gray-500">
+                Use keywords like 'Gaming', 'Tech', 'Music', etc. to automatically assign an icon
+              </p>
             </div>
             <div className="flex justify-end">
               <button 
