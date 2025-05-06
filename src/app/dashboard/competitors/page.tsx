@@ -6,6 +6,7 @@ import { Competitor } from '@/types';
 import { getUseRealApi } from '@/services/api/config';
 import { FaPlus, FaTimes, FaEllipsisV, FaThumbtack, FaPencilAlt, FaCopy, FaTrash } from 'react-icons/fa';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 // New interface for competitor lists
 interface CompetitorList {
@@ -16,6 +17,7 @@ interface CompetitorList {
 }
 
 export default function CompetitorsPage() {
+  const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [listName, setListName] = useState('');
   const [competitorLists, setCompetitorLists] = useState<CompetitorList[]>([]);
@@ -97,13 +99,19 @@ export default function CompetitorsPage() {
         );
       } else {
         // Create new list
+        const newListId = Date.now().toString();
         const newList = {
-          id: Date.now().toString(),
+          id: newListId,
           name: listName,
           isPinned: false,
           competitors: []
         };
         setCompetitorLists([...competitorLists, newList]);
+        
+        // Optionally navigate to the new list after creation
+        setTimeout(() => {
+          router.push(`/dashboard/competitors/${newListId}?name=${encodeURIComponent(listName)}`);
+        }, 300);
       }
       setListName('');
       closeModal();
@@ -314,7 +322,7 @@ export default function CompetitorsPage() {
                 type="text" 
                 value={listName}
                 onChange={(e) => setListName(e.target.value)}
-                className="w-full bg-white border border-gray-300 text-gray-800 rounded-lg py-2 px-3 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-white border border-gray-300 text-gray-800 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 placeholder="Enter list name"
                 autoFocus
               />
