@@ -157,7 +157,88 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
     return isNaN(parsed) ? fallback : parsed;
   };
 
-  // Handler for views input
+  // Helper function to calculate appropriate step based on value range
+  const calculateStep = (value: number, min: number, max: number, baseStep: number = 1): number => {
+    const range = max - min;
+    const percentage = (value - min) / range;
+    
+    if (percentage < 0.1) return baseStep / 10; // Fine control at the beginning
+    if (percentage < 0.3) return baseStep;      // Normal control in lower range
+    if (percentage < 0.7) return baseStep * 5;  // Medium control in middle range
+    return baseStep * 10;                       // Coarse control in high range
+  };
+
+  // Views slider step function - dynamic based on position
+  const getViewsStep = (): number => {
+    const maxViews = 500000000;
+    if (viewsThreshold < 1000000) return 50000;       // 0-1M: steps of 50K
+    if (viewsThreshold < 10000000) return 500000;     // 1M-10M: steps of 500K
+    if (viewsThreshold < 50000000) return 1000000;    // 10M-50M: steps of 1M
+    if (viewsThreshold < 100000000) return 5000000;   // 50M-100M: steps of 5M
+    return 10000000;                                  // 100M+: steps of 10M
+  };
+
+  // Subscribers slider step function
+  const getSubscribersStep = (): number => {
+    const maxSubs = 500000000;
+    if (subscribersThreshold < 100000) return 5000;       // 0-100K: steps of 5K
+    if (subscribersThreshold < 1000000) return 50000;     // 100K-1M: steps of 50K
+    if (subscribersThreshold < 10000000) return 500000;   // 1M-10M: steps of 500K
+    if (subscribersThreshold < 100000000) return 5000000; // 10M-100M: steps of 5M
+    return 10000000;                                      // 100M+: steps of 10M
+  };
+
+  // Video duration step function
+  const getVideoDurationStep = (): number => {
+    if (videoDurationThreshold < 60) return 1;         // 0-1hr: steps of 1 minute
+    if (videoDurationThreshold < 180) return 5;        // 1-3hrs: steps of 5 minutes
+    if (videoDurationThreshold < 360) return 10;       // 3-6hrs: steps of 10 minutes
+    if (videoDurationThreshold < 720) return 30;       // 6-12hrs: steps of 30 minutes
+    return 60;                                         // 12hr+: steps of 60 minutes (1 hour)
+  };
+
+  // View multiplier step function
+  const getViewMultiplierStep = (): number => {
+    if (viewMultiplierThreshold < 5) return 0.1;       // 0-5x: steps of 0.1
+    if (viewMultiplierThreshold < 20) return 0.5;      // 5-20x: steps of 0.5
+    if (viewMultiplierThreshold < 100) return 1;       // 20-100x: steps of 1
+    if (viewMultiplierThreshold < 200) return 5;       // 100-200x: steps of 5
+    return 10;                                         // 200x+: steps of 10
+  };
+
+  // Views slider input change
+  const handleViewsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value)) {
+      setViewsThreshold(value);
+    }
+  };
+
+  // Subscribers slider input change
+  const handleSubscribersChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value)) {
+      setSubscribersThreshold(value);
+    }
+  };
+
+  // Video duration slider input change
+  const handleVideoDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value)) {
+      setVideoDurationThreshold(value);
+    }
+  };
+
+  // View multiplier slider input change
+  const handleViewMultiplierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value);
+    if (!isNaN(value)) {
+      setViewMultiplierThreshold(value);
+    }
+  };
+
+  // Update existing handler for views
   const handleViewsInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = safeParseInt(e.target.value, 0);
     setViewsThreshold(Math.min(value, 500000000)); // Cap at 500M
@@ -391,7 +472,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
             <div className="grid grid-cols-3 gap-8">
               {/* Left column with sliders */}
               <div className="col-span-2 space-y-8">
-                {/* Views slider - modified to single handle */}
+                {/* Views slider */}
                 <div>
                   <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
                     Minimum Views: {formatNumber(viewsThreshold)}
@@ -405,9 +486,9 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                       type="range" 
                       min="0" 
                       max="500000000" 
-                      step="1000000"
+                      step={getViewsStep()}
                       value={viewsThreshold}
-                      onChange={handleViewsInput}
+                      onChange={handleViewsChange}
                       className="slider-track mb-2"
                     />
                     {/* Added input field for direct value entry */}
@@ -425,7 +506,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                   </div>
                 </div>
                 
-                {/* Subscribers slider - modified to single handle */}
+                {/* Subscribers slider */}
                 <div>
                   <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
                     Minimum Subscribers: {formatNumber(subscribersThreshold)}
@@ -439,9 +520,9 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                       type="range" 
                       min="0" 
                       max="500000000" 
-                      step="100000"
+                      step={getSubscribersStep()}
                       value={subscribersThreshold}
-                      onChange={handleSubscribersInput}
+                      onChange={handleSubscribersChange}
                       className="slider-track mb-2"
                     />
                     {/* Added input field for direct value entry */}
@@ -459,7 +540,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                   </div>
                 </div>
                 
-                {/* Video Duration slider - modified to single handle and 24 hour range */}
+                {/* Video Duration slider */}
                 <div>
                   <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
                     Maximum Video Duration: {Math.floor(videoDurationThreshold / 60)}h {videoDurationThreshold % 60}m
@@ -473,9 +554,9 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                       type="range" 
                       min="0" 
                       max="1440" 
-                      step="10"
+                      step={getVideoDurationStep()}
                       value={videoDurationThreshold}
-                      onChange={handleHoursInput}
+                      onChange={handleVideoDurationChange}
                       className="slider-track mb-2"
                     />
                     {/* Added input field for direct value entry with hours and minutes */}
@@ -534,9 +615,9 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                       type="range" 
                       min="0" 
                       max="500" 
-                      step={viewMultiplierThreshold < 10 ? "0.1" : (viewMultiplierThreshold < 50 ? "1" : "5")}
+                      step={getViewMultiplierStep()}
                       value={viewMultiplierThreshold}
-                      onChange={(e) => setViewMultiplierThreshold(parseFloat(e.target.value))}
+                      onChange={handleViewMultiplierChange}
                       className="slider-track mb-2"
                     />
                     <div className="text-xs text-center text-gray-500 dark:text-gray-400 mt-1 mb-2">
