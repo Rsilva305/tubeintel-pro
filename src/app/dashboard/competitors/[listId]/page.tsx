@@ -682,13 +682,15 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
         <h1 className="text-2xl font-bold dark:text-white">{listName}</h1>
       </div>
 
-      {/* Performance Section - Redesigned for individual channel analytics */}
+      {/* Tracked Channels section (formerly Performance Analytics) */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2">
-            <FaChartBar className="text-indigo-500" />
-            <h2 className="text-xl font-bold text-gray-800 dark:text-white">Performance Analytics</h2>
-            <div className="text-gray-400 dark:text-gray-500 cursor-help" title="Metrics and analytics for each tracked competitor">
+            <FaYoutube className="text-red-500" />
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white">
+              Tracked Channels <span className="text-gray-500 dark:text-gray-400 font-normal text-base">({competitors.length})</span>
+            </h2>
+            <div className="text-gray-400 dark:text-gray-500 cursor-help" title="Channels you're currently tracking in this list">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -711,20 +713,21 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
               </label>
             </div>
             <div className="flex items-center gap-2">
-              <button className="text-indigo-600 dark:text-indigo-400 bg-transparent p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
-                <FaChartBar size={20} />
-              </button>
-              <button className="text-gray-400 dark:text-gray-500 bg-transparent p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
-                <FaDownload size={20} />
+              <button 
+                className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-xl text-sm transition-colors"
+                onClick={() => setIsModalOpen(true)}
+              >
+                <FaPlus size={14} />
+                <span className="text-xs sm:text-sm">Add channel</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Channel analytics table */}
-        <div className="overflow-x-auto">
+        {/* Channel analytics table with scrolling for >4 channels */}
+        <div className={`${competitors.length > 4 ? 'max-h-[400px] overflow-y-auto pr-2' : ''} overflow-x-auto`}>
           <table className="min-w-full">
-            <thead>
+            <thead className="bg-white dark:bg-gray-800 sticky top-0 z-10">
               <tr className="border-b border-gray-200 dark:border-gray-700">
                 <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Channel</th>
                 <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Subscribers</th>
@@ -732,6 +735,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                 <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Avg. Views</th>
                 <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Engagement</th>
                 <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Growth</th>
+                <th className="py-3 px-4 text-right text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -801,6 +805,17 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                         </span>
                       </div>
                     </td>
+                    <td className="py-4 px-4 text-right">
+                      <div className="relative inline-block">
+                        <button 
+                          className="text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 transition-colors"
+                          onClick={() => handleRemoveCompetitor(competitor.id)}
+                          title="Remove this channel"
+                        >
+                          <FaTimes size={18} />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 );
               })}
@@ -809,12 +824,12 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
           
           {competitors.length === 0 && (
             <div className="text-center py-8">
-              <p className="text-gray-500 dark:text-gray-400">No competitors added to analyze.</p>
+              <p className="text-gray-500 dark:text-gray-400">No channels tracked yet.</p>
               <button 
                 onClick={() => setIsModalOpen(true)}
                 className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm transition-colors"
               >
-                Add your first competitor
+                Add your first channel
               </button>
             </div>
           )}
