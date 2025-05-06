@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FaYoutube, FaUser, FaCog, FaSun, FaMoon } from 'react-icons/fa';
+import { Zap } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { signOut } from '@/lib/supabase';
 
@@ -53,10 +54,17 @@ export default function TopNav({ username = 'User' }: TopNavProps): JSX.Element 
 
       {/* User Controls */}
       <div className="flex items-center gap-4">
+        {/* Test API Link */}
         <Link href="/test-api" className="mr-2 flex items-center text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
           <FaYoutube className="mr-1" />
           <span>Test API</span>
         </Link>
+        
+        {/* Extension Button */}
+        <button className="flex items-center gap-1 text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-lg transition-colors">
+          <Zap className="h-4 w-4" />
+          <span className="text-sm font-medium">Extension</span>
+        </button>
         
         {/* Dark Mode Toggle */}
         <button 
@@ -96,7 +104,7 @@ export default function TopNav({ username = 'User' }: TopNavProps): JSX.Element 
           </button>
           
           {dropdownOpen && (
-            <div className={`absolute right-0 mt-2 w-48 ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg shadow-lg z-50 py-2`}>
+            <div className={`absolute right-0 mt-2 w-56 ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg shadow-lg z-50 py-2`}>
               <div className={`px-4 py-2 border-b ${borderColor} mb-2`}>
                 <div className="flex items-center gap-2">
                   <div className={`w-8 h-8 rounded-full ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'} overflow-hidden flex items-center justify-center`}>
@@ -108,8 +116,20 @@ export default function TopNav({ username = 'User' }: TopNavProps): JSX.Element 
                 </div>
               </div>
               
-              <Link href="/dashboard/settings" className={`block px-4 py-2 ${theme === 'dark' ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>
-                Account Settings
+              <Link href="/discord" className={`block px-4 py-2 ${theme === 'dark' ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>
+                Discord
+              </Link>
+              <Link href="/billing" className={`block px-4 py-2 ${theme === 'dark' ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>
+                Billing
+              </Link>
+              <Link href="/affiliates" className={`block px-4 py-2 ${theme === 'dark' ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>
+                Affiliates
+              </Link>
+              <Link href="/support" className={`block px-4 py-2 ${theme === 'dark' ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>
+                Contact support
+              </Link>
+              <Link href="/bug-report" className={`block px-4 py-2 ${theme === 'dark' ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>
+                Report a bug
               </Link>
               
               <div className={`border-t ${borderColor} mt-2 pt-2`}>
