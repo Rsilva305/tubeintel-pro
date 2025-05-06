@@ -41,10 +41,10 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
-  // New filter states
-  const [viewsRange, setViewsRange] = useState<[number, number]>([0, 50000000]);
-  const [subscribersRange, setSubscribersRange] = useState<[number, number]>([0, 1000000]);
-  const [videoDurationRange, setVideoDurationRange] = useState<[number, number]>([0, 60]); // in minutes
+  // Modified filter states (changed from range arrays to single values)
+  const [viewsThreshold, setViewsThreshold] = useState<number>(10000000); // Default to 10M
+  const [subscribersThreshold, setSubscribersThreshold] = useState<number>(100000); // Default to 100K
+  const [videoDurationThreshold, setVideoDurationThreshold] = useState<number>(60); // Default to 60 minutes (1 hour)
   const [dateRange, setDateRange] = useState<[string, string]>([
     new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days ago
     new Date().toISOString().split('T')[0] // today
@@ -114,15 +114,29 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   // Function to handle filter apply
   const applyFilter = () => {
     // In a real app, this would filter based on the selected criteria
-    // For now, we'll just close the filter menu
+    // Here's how we might filter the competitors based on the thresholds:
+    const filteredCompetitors = competitors.filter(competitor => {
+      const meetsViewsThreshold = competitor.viewCount >= viewsThreshold;
+      const meetsSubscribersThreshold = competitor.subscriberCount >= subscribersThreshold;
+      // For video duration we would need actual data about average video length
+      
+      // Check if within date range - would need actual data on when added
+      // const addedDate = new Date(competitor.addedAt);
+      // const isWithinDateRange = addedDate >= new Date(dateRange[0]) && addedDate <= new Date(dateRange[1]);
+      
+      return meetsViewsThreshold && meetsSubscribersThreshold;
+    });
+    
+    console.log(`Filter applied: Competitors matching criteria: ${filteredCompetitors.length}`);
+    // For demo purposes, we're not actually changing the displayed list
     setIsFilterOpen(false);
   }
 
-  // Function to reset filters
+  // Function to reset filters (updated for single values)
   const resetFilter = () => {
-    setViewsRange([0, 50000000]);
-    setSubscribersRange([0, 1000000]);
-    setVideoDurationRange([0, 60]);
+    setViewsThreshold(10000000);
+    setSubscribersThreshold(100000);
+    setVideoDurationThreshold(60);
     setDateRange([
       new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       new Date().toISOString().split('T')[0]
@@ -329,94 +343,67 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
             <div className="grid grid-cols-3 gap-8">
               {/* Left column with sliders */}
               <div className="col-span-2 space-y-8">
-                {/* Views slider */}
+                {/* Views slider - modified to single handle */}
                 <div>
                   <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
-                    Views
+                    Minimum Views: {formatNumber(viewsThreshold)}
                   </label>
                   <div className="flex flex-col">
                     <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
-                      <span>{formatNumber(viewsRange[0])}</span>
-                      <span>{formatNumber(viewsRange[1])}</span>
+                      <span>0</span>
+                      <span>500M</span>
                     </div>
                     <input 
                       type="range" 
                       min="0" 
-                      max="50000000" 
-                      step="100000"
-                      value={viewsRange[0]}
-                      onChange={(e) => setViewsRange([parseInt(e.target.value), viewsRange[1]])}
-                      className="slider-track mb-1"
-                    />
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="50000000" 
-                      step="100000"
-                      value={viewsRange[1]}
-                      onChange={(e) => setViewsRange([viewsRange[0], parseInt(e.target.value)])}
+                      max="500000000" 
+                      step="1000000"
+                      value={viewsThreshold}
+                      onChange={(e) => setViewsThreshold(parseInt(e.target.value))}
                       className="slider-track"
                     />
                   </div>
                 </div>
                 
-                {/* Subscribers slider */}
+                {/* Subscribers slider - modified to single handle */}
                 <div>
                   <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
-                    Subscribers
+                    Minimum Subscribers: {formatNumber(subscribersThreshold)}
                   </label>
                   <div className="flex flex-col">
                     <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
-                      <span>{formatNumber(subscribersRange[0])}</span>
-                      <span>{formatNumber(subscribersRange[1])}</span>
+                      <span>0</span>
+                      <span>500M</span>
                     </div>
                     <input 
                       type="range" 
                       min="0" 
-                      max="1000000" 
-                      step="1000"
-                      value={subscribersRange[0]}
-                      onChange={(e) => setSubscribersRange([parseInt(e.target.value), subscribersRange[1]])}
-                      className="slider-track mb-1"
-                    />
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="1000000" 
-                      step="1000"
-                      value={subscribersRange[1]}
-                      onChange={(e) => setSubscribersRange([subscribersRange[0], parseInt(e.target.value)])}
+                      max="500000000" 
+                      step="100000"
+                      value={subscribersThreshold}
+                      onChange={(e) => setSubscribersThreshold(parseInt(e.target.value))}
                       className="slider-track"
                     />
                   </div>
                 </div>
                 
-                {/* Video Duration slider */}
+                {/* Video Duration slider - modified to single handle and 24 hour range */}
                 <div>
                   <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
-                    Video Duration (minutes)
+                    Maximum Video Duration: {Math.floor(videoDurationThreshold / 60)}h {videoDurationThreshold % 60}m
                   </label>
                   <div className="flex flex-col">
                     <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
-                      <span>{videoDurationRange[0]} min</span>
-                      <span>{videoDurationRange[1]} min</span>
+                      <span>0</span>
+                      <span>24h</span>
                     </div>
                     <input 
                       type="range" 
                       min="0" 
-                      max="60" 
-                      step="1"
-                      value={videoDurationRange[0]}
-                      onChange={(e) => setVideoDurationRange([parseInt(e.target.value), videoDurationRange[1]])}
-                      className="slider-track mb-1"
-                    />
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="60" 
-                      step="1"
-                      value={videoDurationRange[1]}
-                      onChange={(e) => setVideoDurationRange([videoDurationRange[0], parseInt(e.target.value)])}
+                      max="1440" 
+                      step="10"
+                      value={videoDurationThreshold}
+                      onChange={(e) => setVideoDurationThreshold(parseInt(e.target.value))}
                       className="slider-track"
                     />
                   </div>
