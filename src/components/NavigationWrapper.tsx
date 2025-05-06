@@ -34,9 +34,9 @@ export default function NavigationWrapper({ children }: NavigationWrapperProps) 
   };
   
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900 w-full h-full overflow-hidden">
       <Sidebar collapsed={collapsed} toggleSidebar={toggleSidebar} />
-      <div className={`flex-1 flex flex-col ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      <div className={`flex-1 flex flex-col ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'} min-h-screen`}>
         <TopNav username={username} />
         <main className="flex-1 p-6 overflow-y-auto">{children}</main>
       </div>

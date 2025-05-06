@@ -8,6 +8,17 @@
   --background-end-rgb: 255, 255, 255;
 }
 
+/* Dark mode enhancement to ensure full coverage */
+html.dark {
+  background-color: rgb(17, 24, 39); /* bg-gray-900 */
+}
+
+html, body {
+  height: 100%;
+  min-height: 100vh;
+  width: 100%;
+}
+
 body {
   color: rgb(var(--foreground-rgb));
   background: linear-gradient(

@@ -42,6 +42,12 @@ export default function TopNav({ username = 'User' }: TopNavProps): JSX.Element 
     }
   };
 
+  const handleComingSoonClick = (feature: string) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    alert(`${feature} feature coming soon!`);
+    setDropdownOpen(false);
+  };
+
   const bgColor = theme === 'dark' ? 'bg-gray-800' : 'bg-white';
   const borderColor = theme === 'dark' ? 'border-gray-700' : 'border-gray-200';
   const textColor = theme === 'dark' ? 'text-white' : 'text-gray-900';
@@ -61,7 +67,10 @@ export default function TopNav({ username = 'User' }: TopNavProps): JSX.Element 
         </Link>
         
         {/* Extension Button */}
-        <button className="flex items-center gap-1 text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-lg transition-colors">
+        <button 
+          onClick={handleComingSoonClick('Browser Extension')}
+          className="flex items-center gap-1 text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-lg transition-colors"
+        >
           <Zap className="h-4 w-4" />
           <span className="text-sm font-medium">Extension</span>
         </button>
@@ -116,21 +125,21 @@ export default function TopNav({ username = 'User' }: TopNavProps): JSX.Element 
                 </div>
               </div>
               
-              <Link href="/discord" className={`block px-4 py-2 ${theme === 'dark' ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>
+              <a href="#" onClick={handleComingSoonClick('Discord')} className={`block px-4 py-2 ${theme === 'dark' ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>
                 Discord
-              </Link>
-              <Link href="/billing" className={`block px-4 py-2 ${theme === 'dark' ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>
+              </a>
+              <a href="#" onClick={handleComingSoonClick('Billing')} className={`block px-4 py-2 ${theme === 'dark' ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>
                 Billing
-              </Link>
-              <Link href="/affiliates" className={`block px-4 py-2 ${theme === 'dark' ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>
+              </a>
+              <a href="#" onClick={handleComingSoonClick('Affiliates')} className={`block px-4 py-2 ${theme === 'dark' ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>
                 Affiliates
-              </Link>
-              <Link href="/support" className={`block px-4 py-2 ${theme === 'dark' ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>
+              </a>
+              <a href="#" onClick={handleComingSoonClick('Contact Support')} className={`block px-4 py-2 ${theme === 'dark' ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>
                 Contact support
-              </Link>
-              <Link href="/bug-report" className={`block px-4 py-2 ${theme === 'dark' ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>
+              </a>
+              <a href="#" onClick={handleComingSoonClick('Bug Report')} className={`block px-4 py-2 ${theme === 'dark' ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>
                 Report a bug
-              </Link>
+              </a>
               
               <div className={`border-t ${borderColor} mt-2 pt-2`}>
                 <button 
