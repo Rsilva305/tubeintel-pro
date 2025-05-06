@@ -53,6 +53,16 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   // Add new state for view multiplier
   const [viewMultiplierThreshold, setViewMultiplierThreshold] = useState<number>(1.5); // Default to 1.5x
 
+  // State for advanced filters
+  const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState<boolean>(false);
+  const [channelAgeThreshold, setChannelAgeThreshold] = useState<number>(12); // Default to 12 months
+  const [videoCommentsThreshold, setVideoCommentsThreshold] = useState<number>(1000);
+  const [videoLikesThreshold, setVideoLikesThreshold] = useState<number>(5000);
+  const [videoCountThreshold, setVideoCountThreshold] = useState<number>(50);
+  const [totalChannelViewsThreshold, setTotalChannelViewsThreshold] = useState<number>(1000000);
+  const [includeKeywords, setIncludeKeywords] = useState<string>("");
+  const [excludeKeywords, setExcludeKeywords] = useState<string>("");
+
   useEffect(() => {
     const fetchCompetitors = async () => {
       try {
@@ -172,6 +182,15 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
       new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       new Date().toISOString().split('T')[0]
     ]);
+    
+    // Reset advanced filters
+    setChannelAgeThreshold(12);
+    setVideoCommentsThreshold(1000);
+    setVideoLikesThreshold(5000);
+    setVideoCountThreshold(50);
+    setTotalChannelViewsThreshold(1000000);
+    setIncludeKeywords("");
+    setExcludeKeywords("");
   }
 
   // Helper function to safely parse input values
@@ -292,6 +311,82 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
     const value = parseFloat(e.target.value);
     if (!isNaN(value)) {
       setViewMultiplierThreshold(Math.max(0, Math.min(value, 500))); // Increased cap to 500x
+    }
+  };
+
+  // Channel age step function
+  const getChannelAgeStep = (): number => {
+    if (channelAgeThreshold < 12) return 1;        // 0-12 months: steps of 1 month
+    if (channelAgeThreshold < 36) return 3;        // 1-3 years: steps of 3 months
+    if (channelAgeThreshold < 60) return 6;        // 3-5 years: steps of 6 months
+    return 12;                                     // 5+ years: steps of 1 year
+  };
+
+  // Video comments step function
+  const getVideoCommentsStep = (): number => {
+    if (videoCommentsThreshold < 1000) return 50;
+    if (videoCommentsThreshold < 10000) return 500;
+    if (videoCommentsThreshold < 100000) return 5000;
+    return 10000;
+  };
+
+  // Video likes step function
+  const getVideoLikesStep = (): number => {
+    if (videoLikesThreshold < 1000) return 100;
+    if (videoLikesThreshold < 10000) return 500;
+    if (videoLikesThreshold < 100000) return 5000;
+    return 10000;
+  };
+
+  // Video count step function
+  const getVideoCountStep = (): number => {
+    if (videoCountThreshold < 100) return 5;
+    if (videoCountThreshold < 500) return 25;
+    if (videoCountThreshold < 1000) return 50;
+    return 100;
+  };
+
+  // Total channel views step function
+  const getTotalChannelViewsStep = (): number => {
+    if (totalChannelViewsThreshold < 1000000) return 100000;
+    if (totalChannelViewsThreshold < 10000000) return 500000;
+    if (totalChannelViewsThreshold < 100000000) return 5000000;
+    return 10000000;
+  };
+
+  // Handler functions for advanced filters
+  const handleChannelAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value)) {
+      setChannelAgeThreshold(value);
+    }
+  };
+
+  const handleVideoCommentsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value)) {
+      setVideoCommentsThreshold(value);
+    }
+  };
+
+  const handleVideoLikesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value)) {
+      setVideoLikesThreshold(value);
+    }
+  };
+
+  const handleVideoCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value)) {
+      setVideoCountThreshold(value);
+    }
+  };
+
+  const handleTotalChannelViewsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value)) {
+      setTotalChannelViewsThreshold(value);
     }
   };
 
@@ -484,7 +579,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
       {/* New Filter Popup */}
       {isFilterOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-4xl p-6 relative">
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-4xl p-6 relative overflow-y-auto max-h-[90vh]">
             <button 
               onClick={() => setIsFilterOpen(false)} 
               className="absolute top-4 right-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
@@ -768,6 +863,180 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                 </div>
               </div>
             </div>
+            
+            {/* Advanced Filters Toggle */}
+            <div className="mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <button 
+                onClick={() => setIsAdvancedFiltersOpen(!isAdvancedFiltersOpen)}
+                className="flex items-center justify-between w-full text-left px-4 py-3 text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-650 rounded-lg transition-colors"
+              >
+                <div className="flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                  </svg>
+                  <span className="font-medium">Advanced Filters</span>
+                </div>
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  className={`h-5 w-5 transition-transform ${isAdvancedFiltersOpen ? 'transform rotate-180' : ''}`} 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Advanced Filters Section */}
+            {isAdvancedFiltersOpen && (
+              <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-6 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg animate-fadeIn">
+                {/* Channel Age */}
+                <div>
+                  <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
+                    Channel Age: {channelAgeThreshold < 12 ? `${channelAgeThreshold} months` : `${Math.floor(channelAgeThreshold/12)} years ${channelAgeThreshold%12 ? `${channelAgeThreshold%12} months` : ''}`}
+                  </label>
+                  <div className="flex flex-col">
+                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
+                      <span>0</span>
+                      <span>5+ years</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="120" 
+                      step={getChannelAgeStep()}
+                      value={channelAgeThreshold}
+                      onChange={handleChannelAgeChange}
+                      className="slider-track mb-2"
+                    />
+                  </div>
+                </div>
+
+                {/* Video Comments */}
+                <div>
+                  <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
+                    Video Comments: {formatNumber(videoCommentsThreshold)}
+                  </label>
+                  <div className="flex flex-col">
+                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
+                      <span>0</span>
+                      <span>100K+</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="200000" 
+                      step={getVideoCommentsStep()}
+                      value={videoCommentsThreshold}
+                      onChange={handleVideoCommentsChange}
+                      className="slider-track mb-2"
+                    />
+                  </div>
+                </div>
+
+                {/* Video Likes */}
+                <div>
+                  <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
+                    Video Likes: {formatNumber(videoLikesThreshold)}
+                  </label>
+                  <div className="flex flex-col">
+                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
+                      <span>0</span>
+                      <span>1M+</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="1000000" 
+                      step={getVideoLikesStep()}
+                      value={videoLikesThreshold}
+                      onChange={handleVideoLikesChange}
+                      className="slider-track mb-2"
+                    />
+                  </div>
+                </div>
+
+                {/* Video Count */}
+                <div>
+                  <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
+                    Video Count: {videoCountThreshold}
+                  </label>
+                  <div className="flex flex-col">
+                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
+                      <span>0</span>
+                      <span>1000+</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="1000" 
+                      step={getVideoCountStep()}
+                      value={videoCountThreshold}
+                      onChange={handleVideoCountChange}
+                      className="slider-track mb-2"
+                    />
+                  </div>
+                </div>
+
+                {/* Total Channel Views */}
+                <div>
+                  <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
+                    Total Channel Views: {formatNumber(totalChannelViewsThreshold)}
+                  </label>
+                  <div className="flex flex-col">
+                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
+                      <span>0</span>
+                      <span>1B+</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="1000000000" 
+                      step={getTotalChannelViewsStep()}
+                      value={totalChannelViewsThreshold}
+                      onChange={handleTotalChannelViewsChange}
+                      className="slider-track mb-2"
+                    />
+                  </div>
+                </div>
+
+                {/* Keywords section - spans both columns */}
+                <div className="col-span-1 lg:col-span-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Include Keywords */}
+                    <div>
+                      <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
+                        Include Keywords
+                      </label>
+                      <input 
+                        type="text" 
+                        placeholder="gaming, tutorial, review"
+                        value={includeKeywords}
+                        onChange={(e) => setIncludeKeywords(e.target.value)}
+                        className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Separate keywords with commas</p>
+                    </div>
+                    
+                    {/* Exclude Keywords */}
+                    <div>
+                      <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
+                        Exclude Keywords
+                      </label>
+                      <input 
+                        type="text" 
+                        placeholder="unboxing, shorts, live"
+                        value={excludeKeywords}
+                        onChange={(e) => setExcludeKeywords(e.target.value)}
+                        className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Separate keywords with commas</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
             
             {/* Filter Actions */}
             <div className="flex justify-end items-center gap-4 mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
