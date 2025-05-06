@@ -2,10 +2,10 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { FaArrowLeft, FaPlus, FaTimes, FaYoutube, FaEllipsisV, FaChartBar, FaDownload, FaFilter, FaChevronDown, FaStar, FaRocket, FaTrophy, FaCheck, FaCalendarAlt } from 'react-icons/fa';
+import { FaArrowLeft, FaPlus, FaTimes, FaYoutube, FaEllipsisV, FaChartBar, FaDownload, FaFilter, FaChevronDown, FaStar, FaRocket, FaTrophy, FaCheck, FaCalendarAlt, FaEye, FaEyeSlash, FaThLarge, FaSearch, FaExternalLinkAlt, FaPlay } from 'react-icons/fa';
 import Link from 'next/link';
-import { Competitor } from '@/types';
-import { competitorsApi } from '@/services/api';
+import { Competitor, Video } from '@/types';
+import { competitorsApi, videosApi } from '@/services/api';
 import { getUseRealApi } from '@/services/api/config';
 
 // Mock suggested competitors for demo
@@ -14,6 +14,170 @@ const suggestedCompetitors = [
   { id: 'sugg2', name: 'GamingDaily', thumbnailUrl: 'https://via.placeholder.com/150?text=GD', subscriberCount: 620000, videoCount: 527, viewCount: 48000000, youtubeId: 'UCGD987654321' },
   { id: 'sugg3', name: 'FoodChannel', thumbnailUrl: 'https://via.placeholder.com/150?text=FC', subscriberCount: 779000, videoCount: 623, viewCount: 53000000, youtubeId: 'UCFC456789123' },
   { id: 'sugg4', name: 'TravelVlog', thumbnailUrl: 'https://via.placeholder.com/150?text=TV', subscriberCount: 318000, videoCount: 287, viewCount: 22000000, youtubeId: 'UCTV789123456' },
+];
+
+// Mock similar videos for demo that would come from competitor channels
+const mockCompetitorVideos: Video[] = [
+  {
+    id: 'video1',
+    youtubeId: 'dQw4w9WgXcQ',
+    channelId: 'UCTR123456789',
+    title: 'How to Grow Your YouTube Channel in 2023',
+    description: 'Learn the latest strategies for growing your YouTube channel',
+    thumbnailUrl: 'https://via.placeholder.com/320x180?text=YouTube+Growth',
+    publishedAt: new Date('2023-06-15'),
+    viewCount: 125000,
+    likeCount: 8500,
+    commentCount: 650,
+    vph: 180,
+  },
+  {
+    id: 'video2',
+    youtubeId: 'oHg5SJYRHA0',
+    channelId: 'UCGD987654321',
+    title: 'Top 10 Video Editing Mistakes to Avoid',
+    description: 'Avoiding these common mistakes will drastically improve your videos',
+    thumbnailUrl: 'https://via.placeholder.com/320x180?text=Editing+Tips',
+    publishedAt: new Date('2023-05-20'),
+    viewCount: 98000,
+    likeCount: 7200,
+    commentCount: 520,
+    vph: 150,
+  },
+  {
+    id: 'video3',
+    youtubeId: 'y8Yv4pnO7qc',
+    channelId: 'UCFC456789123',
+    title: 'Best Camera Settings for YouTube',
+    description: 'Optimize your camera settings for professional-looking YouTube videos',
+    thumbnailUrl: 'https://via.placeholder.com/320x180?text=Camera+Settings',
+    publishedAt: new Date('2023-07-01'),
+    viewCount: 72000,
+    likeCount: 5100,
+    commentCount: 380,
+    vph: 130,
+  },
+  {
+    id: 'video4',
+    youtubeId: 'z9bZufPHFLU',
+    channelId: 'UCTV789123456',
+    title: 'YouTube Algorithm: What Changed in 2023',
+    description: 'Understanding the latest YouTube algorithm changes',
+    thumbnailUrl: 'https://via.placeholder.com/320x180?text=Algorithm+Updates',
+    publishedAt: new Date('2023-06-25'),
+    viewCount: 85000,
+    likeCount: 6300,
+    commentCount: 470,
+    vph: 140,
+  },
+  {
+    id: 'video5',
+    youtubeId: 'lGEmnVX9TNc',
+    channelId: 'UCTR123456789',
+    title: 'How to Research Video Topics that Get Views',
+    description: 'Find winning video topics that will bring in views and subscribers',
+    thumbnailUrl: 'https://via.placeholder.com/320x180?text=Topic+Research',
+    publishedAt: new Date('2023-07-10'),
+    viewCount: 62000,
+    likeCount: 4800,
+    commentCount: 350,
+    vph: 120,
+  },
+  {
+    id: 'video6',
+    youtubeId: 'k1BneeJTDcU',
+    channelId: 'UCGD987654321',
+    title: 'Thumbnail Design That Gets Clicks',
+    description: 'Create thumbnails that attract viewers and increase CTR',
+    thumbnailUrl: 'https://via.placeholder.com/320x180?text=Thumbnail+Design',
+    publishedAt: new Date('2023-06-05'),
+    viewCount: 105000,
+    likeCount: 7800,
+    commentCount: 590,
+    vph: 160,
+  },
+];
+
+// Mock similar videos based on keywords
+const mockSimilarVideos: Video[] = [
+  {
+    id: 'video7',
+    youtubeId: 'dQw4w9WgXcQ',
+    channelId: 'UCnew123456',
+    title: '5 Ways to Improve Video Retention',
+    description: 'Techniques to keep viewers watching your videos longer',
+    thumbnailUrl: 'https://via.placeholder.com/320x180?text=Video+Retention',
+    publishedAt: new Date('2023-05-10'),
+    viewCount: 88000,
+    likeCount: 6500,
+    commentCount: 480,
+    vph: 145,
+  },
+  {
+    id: 'video8',
+    youtubeId: 'oHg5SJYRHA0',
+    channelId: 'UCnew789123',
+    title: 'Best Time to Upload on YouTube',
+    description: 'Find the optimal upload schedule for maximum views',
+    thumbnailUrl: 'https://via.placeholder.com/320x180?text=Upload+Timing',
+    publishedAt: new Date('2023-07-05'),
+    viewCount: 75000,
+    likeCount: 5500,
+    commentCount: 410,
+    vph: 135,
+  },
+  {
+    id: 'video9',
+    youtubeId: 'abCD123456',
+    channelId: 'UCnew456789',
+    title: 'How to Optimize YouTube SEO',
+    description: 'Improve your video rankings with these SEO tips',
+    thumbnailUrl: 'https://via.placeholder.com/320x180?text=YouTube+SEO',
+    publishedAt: new Date('2023-04-15'),
+    viewCount: 112000,
+    likeCount: 8200,
+    commentCount: 570,
+    vph: 155,
+  },
+  {
+    id: 'video10',
+    youtubeId: 'efGH789012',
+    channelId: 'UCnew234567',
+    title: 'The Perfect YouTube Studio Setup',
+    description: 'Create a professional studio on any budget',
+    thumbnailUrl: 'https://via.placeholder.com/320x180?text=Studio+Setup',
+    publishedAt: new Date('2023-06-20'),
+    viewCount: 95000,
+    likeCount: 7100,
+    commentCount: 490,
+    vph: 148,
+  },
+  {
+    id: 'video11',
+    youtubeId: 'ijKL345678',
+    channelId: 'UCnew567890',
+    title: 'YouTube Analytics Explained',
+    description: 'Understanding your channel metrics for growth',
+    thumbnailUrl: 'https://via.placeholder.com/320x180?text=Analytics',
+    publishedAt: new Date('2023-05-05'),
+    viewCount: 82000,
+    likeCount: 6000,
+    commentCount: 420,
+    vph: 138,
+  },
+  {
+    id: 'video12',
+    youtubeId: 'mnoP901234',
+    channelId: 'UCnew345678',
+    title: 'Creating Better YouTube Titles',
+    description: 'Write titles that attract viewers and boost CTR',
+    thumbnailUrl: 'https://via.placeholder.com/320x180?text=Better+Titles',
+    publishedAt: new Date('2023-07-15'),
+    viewCount: 68000,
+    likeCount: 5000,
+    commentCount: 360,
+    vph: 125,
+  },
 ];
 
 // Format number to compact form
@@ -62,6 +226,18 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   const [totalChannelViewsThreshold, setTotalChannelViewsThreshold] = useState<number>(1000000);
   const [includeKeywords, setIncludeKeywords] = useState<string>("");
   const [excludeKeywords, setExcludeKeywords] = useState<string>("");
+
+  // Add new state variables for similar videos section
+  const [competitorVideos, setCompetitorVideos] = useState<Video[]>(mockCompetitorVideos);
+  const [similarVideos, setSimilarVideos] = useState<Video[]>(mockSimilarVideos);
+  const [videoGridColumns, setVideoGridColumns] = useState<number>(3);
+  const [showVideoInfo, setShowVideoInfo] = useState<boolean>(true);
+  const [videoSearchQuery, setVideoSearchQuery] = useState<string>('');
+  const [isAddChannelModalOpen, setIsAddChannelModalOpen] = useState<boolean>(false);
+  const [newChannelId, setNewChannelId] = useState<string>('');
+  const [activeVideoTab, setActiveVideoTab] = useState<'competitors' | 'similar'>('competitors');
+  const [addChannelError, setAddChannelError] = useState<string | null>(null);
+  const [isAddingChannel, setIsAddingChannel] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchCompetitors = async () => {
@@ -389,6 +565,80 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
       setTotalChannelViewsThreshold(value);
     }
   };
+
+  // Function to handle changing the video grid layout
+  const handleVideoGridColumnsChange = (columns: number) => {
+    setVideoGridColumns(columns);
+  };
+
+  // Function to toggle video info display
+  const toggleVideoInfo = () => {
+    setShowVideoInfo(!showVideoInfo);
+  };
+
+  // Function to open video on YouTube
+  const openVideoOnYouTube = (videoId: string) => {
+    window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
+  };
+
+  // Function to handle adding a new channel for videos
+  const handleAddChannel = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newChannelId) {
+      setAddChannelError('Please enter a YouTube channel ID');
+      return;
+    }
+
+    setAddChannelError(null);
+    setIsAddingChannel(true);
+    
+    try {
+      // In a real implementation, you would fetch videos from this channel
+      // Here we're just simulating success
+      setTimeout(() => {
+        // Create a mock video from this channel
+        const newVideo: Video = {
+          id: `new-video-${Date.now()}`,
+          youtubeId: `new-${Date.now()}`,
+          channelId: newChannelId,
+          title: `New Video from ${newChannelId}`,
+          description: 'This is a new video from the added channel',
+          thumbnailUrl: 'https://via.placeholder.com/320x180?text=New+Channel',
+          publishedAt: new Date(),
+          viewCount: 1000,
+          likeCount: 100,
+          commentCount: 20,
+          vph: 50,
+        };
+        
+        if (activeVideoTab === 'competitors') {
+          setCompetitorVideos(prev => [newVideo, ...prev]);
+        } else {
+          setSimilarVideos(prev => [newVideo, ...prev]);
+        }
+        
+        setNewChannelId('');
+        setIsAddChannelModalOpen(false);
+        setIsAddingChannel(false);
+      }, 1000);
+    } catch (error) {
+      console.error('Error adding channel:', error);
+      setAddChannelError('Could not add this channel. Please check the ID and try again.');
+      setIsAddingChannel(false);
+    }
+  };
+
+  // Filter videos based on search query
+  const filteredVideos = activeVideoTab === 'competitors' 
+    ? competitorVideos.filter(video => 
+        video.title.toLowerCase().includes(videoSearchQuery.toLowerCase()) || 
+        video.description.toLowerCase().includes(videoSearchQuery.toLowerCase())
+      )
+    : similarVideos.filter(video => 
+        video.title.toLowerCase().includes(videoSearchQuery.toLowerCase()) || 
+        video.description.toLowerCase().includes(videoSearchQuery.toLowerCase())
+      );
 
   if (isLoading) {
     return (
@@ -1136,6 +1386,226 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
           </div>
         )}
       </div>
+
+      {/* Similar Videos Section */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center gap-2">
+            <FaYoutube className="text-red-500" />
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white">Related Videos</h2>
+            <div className="text-gray-400 dark:text-gray-500 cursor-help" title="Videos from competitive channels and similar content">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+          
+          {/* Add Channel Button */}
+          <button 
+            className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-sm transition-colors"
+            onClick={() => setIsAddChannelModalOpen(true)}
+          >
+            <FaPlus size={14} />
+            <span>Add Channel</span>
+          </button>
+        </div>
+        
+        {/* Video Selection Tabs */}
+        <div className="flex mb-4 border-b border-gray-200 dark:border-gray-700">
+          <button
+            className={`px-4 py-2 text-sm font-medium ${
+              activeVideoTab === 'competitors' 
+                ? 'text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400' 
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+            onClick={() => setActiveVideoTab('competitors')}
+          >
+            Competitor Videos
+          </button>
+          <button
+            className={`px-4 py-2 text-sm font-medium ${
+              activeVideoTab === 'similar' 
+                ? 'text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400' 
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+            onClick={() => setActiveVideoTab('similar')}
+          >
+            Similar Content
+          </button>
+        </div>
+        
+        {/* Search and Grid Controls */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          {/* Search */}
+          <div className="w-full sm:w-auto">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search videos"
+                value={videoSearchQuery}
+                onChange={(e) => setVideoSearchQuery(e.target.value)}
+                className="w-full sm:w-64 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600"
+              />
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500">
+                <FaSearch size={14} />
+              </div>
+            </div>
+          </div>
+          
+          {/* Grid Controls */}
+          <div className="flex items-center gap-3 self-end sm:self-auto">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500 dark:text-gray-400">Videos per row:</span>
+              <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-md">
+                {[1, 2, 3, 4, 5, 6].map((columns) => (
+                  <button 
+                    key={columns}
+                    className={`px-2 py-1 text-sm ${videoGridColumns === columns ? 'bg-indigo-600 text-white' : 'text-gray-500 dark:text-gray-400'}`}
+                    onClick={() => handleVideoGridColumnsChange(columns)}
+                  >
+                    {columns}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            <button 
+              className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-lg text-sm"
+              onClick={toggleVideoInfo}
+              title={showVideoInfo ? "Hide video info" : "Show video info"}
+            >
+              {showVideoInfo ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
+              <span className="hidden sm:inline">{showVideoInfo ? "Hide info" : "Show info"}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Video Grid */}
+        {filteredVideos.length > 0 ? (
+          <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${videoGridColumns}, minmax(0, 1fr))` }}>
+            {filteredVideos.map((video) => (
+              <div 
+                key={video.id} 
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow duration-200 cursor-pointer group"
+                onClick={() => openVideoOnYouTube(video.youtubeId)}
+              >
+                <div className="relative pt-[56.25%]"> {/* 16:9 aspect ratio */}
+                  <img 
+                    src={video.thumbnailUrl} 
+                    alt={video.title} 
+                    className="absolute top-0 left-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-40 transition-opacity duration-300"></div>
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <FaPlay className="text-white text-4xl" />
+                  </div>
+                  <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
+                    {new Date(video.publishedAt).toLocaleDateString()}
+                  </div>
+                </div>
+                
+                {showVideoInfo && (
+                  <div className="p-3">
+                    <div className="flex justify-between items-start">
+                      <h3 className="font-medium text-gray-900 dark:text-white line-clamp-2 mb-1 flex-1">{video.title}</h3>
+                      <FaExternalLinkAlt size={12} className="text-gray-400 dark:text-gray-500 mt-1 ml-2 flex-shrink-0" />
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full px-2 py-1">
+                        {formatNumber(video.viewCount)} views
+                      </span>
+                      <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full px-2 py-1">
+                        {formatNumber(video.likeCount)} likes
+                      </span>
+                      <span className="text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 rounded-full px-2 py-1 font-medium">
+                        {video.vph} VPH
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-gray-500 dark:text-gray-400 mb-4">No videos found matching your search.</p>
+            {videoSearchQuery && (
+              <button
+                onClick={() => setVideoSearchQuery('')}
+                className="text-indigo-600 dark:text-indigo-400 underline"
+              >
+                Clear search
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Add Channel Modal */}
+      {isAddChannelModalOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md p-6 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button 
+              onClick={() => setIsAddChannelModalOpen(false)} 
+              className="absolute top-4 right-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              <FaTimes size={20} />
+            </button>
+            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">
+              Add Channel for Videos
+            </h3>
+            <form onSubmit={handleAddChannel}>
+              <div className="mb-4">
+                <label htmlFor="channelId" className="block text-gray-600 dark:text-gray-300 text-sm mb-2">
+                  YouTube Channel ID
+                </label>
+                <input 
+                  type="text"
+                  id="channelId"
+                  value={newChannelId}
+                  onChange={(e) => setNewChannelId(e.target.value)}
+                  className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="e.g. UC_x5XG1OV2P6uZZ5FSM9Ttw"
+                  autoFocus
+                />
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Enter a YouTube channel ID to show videos from this channel.
+                </p>
+              </div>
+
+              {addChannelError && (
+                <div className="bg-red-100 dark:bg-red-900/30 border-l-4 border-red-500 p-4 mb-4">
+                  <p className="text-red-700 dark:text-red-300">{addChannelError}</p>
+                </div>
+              )}
+
+              <div className="flex justify-end">
+                <button 
+                  type="button"
+                  onClick={() => setIsAddChannelModalOpen(false)}
+                  className="bg-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 px-4 py-2 rounded-lg mr-2"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  disabled={isAddingChannel || !newChannelId.trim()}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg disabled:opacity-50"
+                >
+                  {isAddingChannel ? 'Adding...' : 'Add Channel'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Add Competitor Modal */}
       {isModalOpen && (
