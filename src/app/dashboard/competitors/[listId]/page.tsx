@@ -106,7 +106,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
     return (
       <div className="w-full flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-        <p className="ml-4 text-gray-600">Loading competitors...</p>
+        <p className="ml-4 text-gray-600 dark:text-gray-400">Loading competitors...</p>
       </div>
     );
   }
@@ -115,16 +115,16 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
     <div className="w-full max-w-[1200px] mx-auto">
       {/* Header */}
       <div className="flex items-center mb-8">
-        <Link href="/dashboard/competitors" className="text-indigo-600 hover:text-indigo-800 mr-3">
+        <Link href="/dashboard/competitors" className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3">
           <FaArrowLeft size={18} />
         </Link>
-        <h1 className="text-2xl font-bold">{listName}</h1>
+        <h1 className="text-2xl font-bold dark:text-white">{listName}</h1>
       </div>
 
       {/* Performance Section */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-gray-800">Performance</h2>
+          <h2 className="text-xl font-bold text-gray-800 dark:text-white">Performance</h2>
           <div className="flex items-center gap-4">
             <div className="flex items-center">
               <label className="flex items-center cursor-pointer">
@@ -135,17 +135,17 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                     checked={subscribersOnly} 
                     onChange={() => setSubscribersOnly(!subscribersOnly)} 
                   />
-                  <div className={`block w-10 h-6 rounded-full ${subscribersOnly ? 'bg-indigo-600' : 'bg-gray-300'}`}></div>
+                  <div className={`block w-10 h-6 rounded-full ${subscribersOnly ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
                   <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${subscribersOnly ? 'transform translate-x-4' : ''}`}></div>
                 </div>
-                <span className="ml-2 text-gray-700 text-sm">Subscribers</span>
+                <span className="ml-2 text-gray-700 dark:text-gray-300 text-sm">Subscribers</span>
               </label>
             </div>
             <div className="flex items-center gap-2">
-              <button className="text-indigo-600 bg-transparent p-1 rounded hover:bg-gray-100">
+              <button className="text-indigo-600 dark:text-indigo-400 bg-transparent p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
                 <FaChartBar size={20} />
               </button>
-              <button className="text-gray-400 bg-transparent p-1 rounded hover:bg-gray-100">
+              <button className="text-gray-400 dark:text-gray-500 bg-transparent p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
                 <FaDownload size={20} />
               </button>
             </div>
@@ -155,7 +155,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
         {/* Chart dropdown */}
         <div className="mb-4">
           <div className="relative inline-block">
-            <button className="flex items-center gap-2 bg-gray-100 text-gray-800 px-3 py-1.5 rounded text-sm">
+            <button className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-3 py-1.5 rounded text-sm">
               <span>{chartMetric}</span>
               <FaChevronDown size={14} />
             </button>
@@ -195,11 +195,11 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
       </div>
 
       {/* Suggested competitors */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold text-gray-800">Suggested competitors</h2>
-            <div className="text-gray-400 cursor-help" title="Channels similar to your current competitors">
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white">Suggested competitors</h2>
+            <div className="text-gray-400 dark:text-gray-500 cursor-help" title="Channels similar to your current competitors">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -211,19 +211,19 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
         <div className="relative mb-4 overflow-hidden">
           <div className="flex gap-4 pb-4 overflow-x-auto">
             {suggestedCompetitors.map((competitor) => (
-              <div key={competitor.id} className="flex-shrink-0 w-[220px] bg-gray-50 rounded-lg overflow-hidden">
+              <div key={competitor.id} className="flex-shrink-0 w-[220px] bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden">
                 <div className="p-4 flex flex-col items-center text-center">
-                  <div className="w-16 h-16 rounded-full overflow-hidden mb-3 bg-gray-200">
+                  <div className="w-16 h-16 rounded-full overflow-hidden mb-3 bg-gray-200 dark:bg-gray-600">
                     <img 
                       src={competitor.thumbnailUrl}
                       alt={competitor.name}
                       className="w-16 h-16 object-cover"
                     />
                   </div>
-                  <h3 className="text-gray-800 font-medium text-base mb-1">{competitor.name}</h3>
-                  <p className="text-gray-500 text-sm mb-3">{formatNumber(competitor.subscriberCount)} subscribers</p>
+                  <h3 className="text-gray-800 dark:text-white font-medium text-base mb-1">{competitor.name}</h3>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm mb-3">{formatNumber(competitor.subscriberCount)} subscribers</p>
                   <button 
-                    className="w-full flex items-center justify-center gap-1 bg-transparent border border-indigo-600 text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded-md text-sm transition-colors"
+                    className="w-full flex items-center justify-center gap-1 bg-transparent border border-indigo-600 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 px-3 py-1.5 rounded-md text-sm transition-colors"
                     onClick={() => {
                       // In a real implementation, we would add this competitor
                       alert(`Would add ${competitor.name} to your tracked competitors`);
@@ -243,7 +243,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center">
           <button 
-            className="bg-gray-100 hover:bg-gray-200 p-2 rounded-lg text-gray-700 mr-2"
+            className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 p-2 rounded-lg text-gray-700 dark:text-gray-300 mr-2"
             onClick={() => setIsFilterOpen(!isFilterOpen)}
           >
             <FaFilter size={18} />
@@ -254,9 +254,9 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
               placeholder="Search competitors"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-60 bg-gray-100 text-gray-800 rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-60 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600"
             />
-            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
@@ -266,7 +266,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
 
         <div className="flex items-center gap-3">
           <div className="flex items-center">
-            <button className="flex items-center gap-2 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm">
+            <button className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-lg text-sm">
               <span>Sort by: {sortBy}</span>
               <FaChevronDown size={14} />
             </button>
@@ -286,12 +286,12 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
 
       {/* Filter Panel */}
       {isFilterOpen && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6 shadow-md">
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6 shadow-md">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-medium text-gray-800">Filter competitors</h3>
+            <h3 className="text-xl font-medium text-gray-800 dark:text-white">Filter competitors</h3>
             <button 
               onClick={() => setIsFilterOpen(false)}
-              className="text-gray-400 hover:text-gray-700"
+              className="text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
             >
               <FaTimes size={18} />
             </button>
@@ -299,9 +299,9 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
           
           <div className="grid grid-cols-3 gap-6 mb-6">
             <div>
-              <label className="block text-sm text-gray-600 mb-2">Competitor type</label>
+              <label className="block text-sm text-gray-600 dark:text-gray-300 mb-2">Competitor type</label>
               <select 
-                className="w-full bg-white text-gray-800 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="all">All competitors</option>
                 <option value="tracked">Currently tracked</option>
@@ -310,9 +310,9 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
             </div>
             
             <div>
-              <label className="block text-sm text-gray-600 mb-2">Content focus</label>
+              <label className="block text-sm text-gray-600 dark:text-gray-300 mb-2">Content focus</label>
               <select 
-                className="w-full bg-white text-gray-800 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="any">Any content</option>
                 <option value="tech">Technology</option>
@@ -322,9 +322,9 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
             </div>
             
             <div>
-              <label className="block text-sm text-gray-600 mb-2">Sort by</label>
+              <label className="block text-sm text-gray-600 dark:text-gray-300 mb-2">Sort by</label>
               <select 
-                className="w-full bg-white text-gray-800 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
               >
@@ -338,8 +338,8 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
           </div>
           
           {/* Filter Actions */}
-          <div className="flex justify-end items-center gap-4 mt-4 pt-4 border-t border-gray-200">
-            <button className="px-4 py-2 text-gray-700 bg-transparent hover:bg-gray-100 rounded-lg transition-colors">
+          <div className="flex justify-end items-center gap-4 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
               Reset
             </button>
             <button className="px-4 py-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors">
@@ -350,11 +350,11 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
       )}
 
       {/* Competitors Grid */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
         {competitors.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500 mb-4">No competitors added to this list yet.</p>
-            <p className="text-gray-700 mb-6">Add your first competitor to start tracking their channel performance.</p>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">No competitors added to this list yet.</p>
+            <p className="text-gray-700 dark:text-gray-300 mb-6">Add your first competitor to start tracking their channel performance.</p>
             <button
               onClick={() => setIsModalOpen(true)}
               className="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg transition-colors"
@@ -376,7 +376,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                 }
               })
               .map(competitor => (
-                <div key={competitor.id} className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
+                <div key={competitor.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow">
                   <div className="p-6">
                     <div className="flex items-center mb-4">
                       <img 
@@ -385,22 +385,22 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                         className="w-12 h-12 rounded-full mr-4"
                       />
                       <div>
-                        <h3 className="font-semibold text-lg">{competitor.name}</h3>
-                        <p className="text-gray-500 text-sm truncate">{competitor.youtubeId}</p>
+                        <h3 className="font-semibold text-lg dark:text-white">{competitor.name}</h3>
+                        <p className="text-gray-500 dark:text-gray-400 text-sm truncate">{competitor.youtubeId}</p>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4 mb-4">
-                      <div className="bg-gray-50 p-3 rounded-md">
-                        <p className="text-gray-500 text-xs">Subscribers</p>
-                        <p className="font-semibold">{competitor.subscriberCount.toLocaleString()}</p>
+                      <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
+                        <p className="text-gray-500 dark:text-gray-400 text-xs">Subscribers</p>
+                        <p className="font-semibold dark:text-white">{competitor.subscriberCount.toLocaleString()}</p>
                       </div>
-                      <div className="bg-gray-50 p-3 rounded-md">
-                        <p className="text-gray-500 text-xs">Videos</p>
-                        <p className="font-semibold">{competitor.videoCount.toLocaleString()}</p>
+                      <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
+                        <p className="text-gray-500 dark:text-gray-400 text-xs">Videos</p>
+                        <p className="font-semibold dark:text-white">{competitor.videoCount.toLocaleString()}</p>
                       </div>
-                      <div className="bg-gray-50 p-3 rounded-md col-span-2">
-                        <p className="text-gray-500 text-xs">Total Views</p>
-                        <p className="font-semibold">{competitor.viewCount.toLocaleString()}</p>
+                      <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-md col-span-2">
+                        <p className="text-gray-500 dark:text-gray-400 text-xs">Total Views</p>
+                        <p className="font-semibold dark:text-white">{competitor.viewCount.toLocaleString()}</p>
                       </div>
                     </div>
                     <div className="flex justify-between">
@@ -408,13 +408,13 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                         href={`https://youtube.com/channel/${competitor.youtubeId}`}
                         target="_blank"
                         rel="noopener noreferrer" 
-                        className="flex items-center text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                        className="flex items-center text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 text-sm font-medium"
                       >
                         <FaYoutube className="mr-1" /> View Channel
                       </a>
                       <button 
                         onClick={() => handleRemoveCompetitor(competitor.id)}
-                        className="text-red-600 hover:text-red-800 text-sm font-medium"
+                        className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-sm font-medium"
                       >
                         Remove
                       </button>
@@ -433,21 +433,21 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
           onClick={(e) => e.stopPropagation()}
         >
           <div 
-            className="bg-white rounded-lg w-full max-w-md p-6 relative"
+            className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md p-6 relative"
             onClick={(e) => e.stopPropagation()}
           >
             <button 
               onClick={() => setIsModalOpen(false)} 
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              className="absolute top-4 right-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
             >
               <FaTimes size={20} />
             </button>
-            <h3 className="text-xl font-bold text-gray-800 mb-4">
+            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">
               Add New Competitor
             </h3>
             <form onSubmit={handleAddCompetitor}>
               <div className="mb-4">
-                <label htmlFor="youtubeId" className="block text-gray-600 text-sm mb-2">
+                <label htmlFor="youtubeId" className="block text-gray-600 dark:text-gray-300 text-sm mb-2">
                   YouTube Channel ID
                 </label>
                 <input 
@@ -455,19 +455,19 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                   id="youtubeId"
                   value={newCompetitorId}
                   onChange={(e) => setNewCompetitorId(e.target.value)}
-                  className="w-full bg-white border border-gray-300 text-gray-800 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="e.g. UC_x5XG1OV2P6uZZ5FSM9Ttw"
                   autoFocus
                 />
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                   Find a channel ID by going to the channel's page and looking at the URL. 
                   It's usually in the format 'UC_x5XG1OV2P6uZZ5FSM9Ttw'.
                 </p>
               </div>
 
               {error && (
-                <div className="bg-red-100 border-l-4 border-red-500 p-4 mb-4">
-                  <p className="text-red-700">{error}</p>
+                <div className="bg-red-100 dark:bg-red-900/30 border-l-4 border-red-500 p-4 mb-4">
+                  <p className="text-red-700 dark:text-red-300">{error}</p>
                 </div>
               )}
 
@@ -475,7 +475,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                 <button 
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="bg-transparent text-gray-600 hover:text-gray-800 px-4 py-2 rounded-lg mr-2"
+                  className="bg-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 px-4 py-2 rounded-lg mr-2"
                 >
                   Cancel
                 </button>

@@ -171,7 +171,7 @@ export default function CompetitorsPage() {
     return (
       <div className="w-full flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-        <p className="ml-4 text-gray-600">Loading competitors...</p>
+        <p className="ml-4 text-gray-600 dark:text-gray-400">Loading competitors...</p>
       </div>
     );
   }
@@ -179,14 +179,14 @@ export default function CompetitorsPage() {
   return (
     <div className="w-full max-w-[1200px] mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Tracked Competitors</h1>
+        <h1 className="text-2xl font-bold dark:text-white">Tracked Competitors</h1>
       </div>
       
       {competitorLists.length === 0 ? (
         // Empty state container
         <div className="flex items-center justify-center py-24">
-          <div className="w-full max-w-lg h-64 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center p-8 text-center">
-            <p className="text-gray-500 mb-6">You haven't created any competitor lists yet.</p>
+          <div className="w-full max-w-lg h-64 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg flex flex-col items-center justify-center p-8 text-center">
+            <p className="text-gray-500 dark:text-gray-400 mb-6">You haven't created any competitor lists yet.</p>
             <button 
               onClick={() => openModal()}
               className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors"
@@ -201,36 +201,36 @@ export default function CompetitorsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Create new competitor list button - Always first */}
           <div 
-            className="border border-dashed border-gray-300 rounded-lg p-5 cursor-pointer hover:bg-gray-50 transition-colors"
+            className="border border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             onClick={(e) => {
               e.stopPropagation();
               openModal();
             }}
           >
             <div className="flex justify-between items-start">
-              <div className="flex items-center gap-2 text-indigo-600">
+              <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
                 <FaPlus size={18} />
                 <span className="font-medium">Create new competitor list</span>
               </div>
             </div>
-            <p className="text-gray-500 text-sm mt-1">Add a new collection</p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Add a new collection</p>
           </div>
           
           {/* Competitor lists */}
           {sortedLists.map((list) => (
             <div key={list.id} className="relative">
               <Link href={`/dashboard/competitors/${list.id}?name=${encodeURIComponent(list.name)}`}>
-                <div className="bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-5 transition-colors cursor-pointer group shadow-sm">
+                <div className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg p-5 transition-colors cursor-pointer group shadow-sm">
                   <div className="flex justify-between items-start">
-                    <h3 className="text-gray-800 font-medium text-lg">{list.name}</h3>
+                    <h3 className="text-gray-800 dark:text-white font-medium text-lg">{list.name}</h3>
                     <button 
                       onClick={(e) => toggleMenu(list.id, e)}
-                      className="text-gray-500 hover:text-gray-700 p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                      className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
                     >
                       <FaEllipsisV size={16} />
                     </button>
                   </div>
-                  <p className="text-gray-500 text-sm mt-1">{list.competitors.length} competitors</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{list.competitors.length} competitors</p>
                 </div>
               </Link>
 
@@ -238,22 +238,22 @@ export default function CompetitorsPage() {
               {openMenuId === list.id && (
                 <div 
                   ref={menuRef}
-                  className="absolute top-12 right-3 bg-white border border-gray-200 rounded-md shadow-lg py-2 z-50"
+                  className="absolute top-12 right-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg py-2 z-50"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <button 
-                    className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left"
+                    className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
                       pinList(list.id);
                     }}
                   >
-                    <FaThumbtack size={16} className={list.isPinned ? 'text-indigo-600' : ''} />
+                    <FaThumbtack size={16} className={list.isPinned ? 'text-indigo-600 dark:text-indigo-400' : ''} />
                     {list.isPinned ? 'Unpin' : 'Pin'}
                   </button>
                   <button 
-                    className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left"
+                    className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -264,7 +264,7 @@ export default function CompetitorsPage() {
                     Rename
                   </button>
                   <button 
-                    className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left"
+                    className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -275,8 +275,8 @@ export default function CompetitorsPage() {
                     Duplicate
                   </button>
                   <button 
-                    className={`flex items-center gap-3 w-full px-4 py-2 text-sm hover:bg-gray-100 transition-colors text-left ${
-                      list.id === "default" ? "text-gray-400 cursor-not-allowed" : "text-red-500 hover:text-red-600"
+                    className={`flex items-center gap-3 w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left ${
+                      list.id === "default" ? "text-gray-400 dark:text-gray-500 cursor-not-allowed" : "text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300"
                     }`}
                     onClick={(e) => {
                       e.preventDefault();
@@ -304,25 +304,25 @@ export default function CompetitorsPage() {
           onClick={(e) => e.stopPropagation()}
         >
           <div 
-            className="bg-white rounded-lg w-full max-w-md p-6 relative"
+            className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md p-6 relative"
             onClick={(e) => e.stopPropagation()}
           >
             <button 
               onClick={closeModal} 
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              className="absolute top-4 right-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
             >
               <FaTimes size={20} />
             </button>
-            <h3 className="text-xl font-bold text-gray-800 mb-4">
+            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">
               {editingListId !== null ? 'Rename competitor list' : 'Create competitor list'}
             </h3>
             <div className="mb-4">
-              <label className="block text-gray-600 text-sm mb-2">Name</label>
+              <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2">Name</label>
               <input 
                 type="text" 
                 value={listName}
                 onChange={(e) => setListName(e.target.value)}
-                className="w-full bg-white border border-gray-300 text-gray-800 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 placeholder="Enter list name"
                 autoFocus
               />
@@ -330,7 +330,7 @@ export default function CompetitorsPage() {
             <div className="flex justify-end">
               <button 
                 onClick={closeModal}
-                className="bg-transparent text-gray-600 hover:text-gray-800 px-4 py-2 rounded-lg mr-2"
+                className="bg-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 px-4 py-2 rounded-lg mr-2"
               >
                 Cancel
               </button>
