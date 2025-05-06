@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { FaArrowLeft, FaPlus, FaTimes, FaYoutube, FaEllipsisV, FaChartBar, FaDownload, FaFilter, FaChevronDown, FaStar, FaRocket, FaTrophy, FaCheck } from 'react-icons/fa';
+import { FaArrowLeft, FaPlus, FaTimes, FaYoutube, FaEllipsisV, FaChartBar, FaDownload, FaFilter, FaChevronDown, FaStar, FaRocket, FaTrophy, FaCheck, FaCalendarAlt } from 'react-icons/fa';
 import Link from 'next/link';
 import { Competitor } from '@/types';
 import { competitorsApi } from '@/services/api';
@@ -40,6 +40,15 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   const [sortBy, setSortBy] = useState('date');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // New filter states
+  const [viewsRange, setViewsRange] = useState<[number, number]>([0, 50000000]);
+  const [subscribersRange, setSubscribersRange] = useState<[number, number]>([0, 1000000]);
+  const [videoDurationRange, setVideoDurationRange] = useState<[number, number]>([0, 60]); // in minutes
+  const [dateRange, setDateRange] = useState<[string, string]>([
+    new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days ago
+    new Date().toISOString().split('T')[0] // today
+  ]);
 
   useEffect(() => {
     const fetchCompetitors = async () => {
@@ -124,6 +133,24 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
     // Default
     return <FaCheck size={16} className="text-green-500" />;
   };
+
+  // Function to handle filter apply
+  const applyFilter = () => {
+    // In a real app, this would filter based on the selected criteria
+    // For now, we'll just close the filter menu
+    setIsFilterOpen(false);
+  }
+
+  // Function to reset filters
+  const resetFilter = () => {
+    setViewsRange([0, 50000000]);
+    setSubscribersRange([0, 1000000]);
+    setVideoDurationRange([0, 60]);
+    setDateRange([
+      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      new Date().toISOString().split('T')[0]
+    ]);
+  }
 
   if (isLoading) {
     return (
@@ -311,67 +338,204 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
         </div>
       </div>
 
-      {/* Filter Panel */}
+      {/* New Filter Popup */}
       {isFilterOpen && (
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6 shadow-md">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-medium text-gray-800 dark:text-white">Filter competitors</h3>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-4xl p-6 relative">
             <button 
-              onClick={() => setIsFilterOpen(false)}
-              className="text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+              onClick={() => setIsFilterOpen(false)} 
+              className="absolute top-4 right-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
             >
-              <FaTimes size={18} />
+              <FaTimes size={20} />
             </button>
-          </div>
-          
-          <div className="grid grid-cols-3 gap-6 mb-6">
-            <div>
-              <label className="block text-sm text-gray-600 dark:text-gray-300 mb-2">Competitor type</label>
-              <select 
-                className="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="all">All competitors</option>
-                <option value="tracked">Currently tracked</option>
-                <option value="suggested">Suggested only</option>
-              </select>
+            
+            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-6">
+              Filter Competitors
+            </h3>
+            
+            <div className="grid grid-cols-3 gap-8">
+              {/* Left column with sliders */}
+              <div className="col-span-2 space-y-8">
+                {/* Views slider */}
+                <div>
+                  <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
+                    Views
+                  </label>
+                  <div className="flex flex-col">
+                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
+                      <span>{formatNumber(viewsRange[0])}</span>
+                      <span>{formatNumber(viewsRange[1])}</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="50000000" 
+                      step="100000"
+                      value={viewsRange[0]}
+                      onChange={(e) => setViewsRange([parseInt(e.target.value), viewsRange[1]])}
+                      className="slider-track mb-1"
+                    />
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="50000000" 
+                      step="100000"
+                      value={viewsRange[1]}
+                      onChange={(e) => setViewsRange([viewsRange[0], parseInt(e.target.value)])}
+                      className="slider-track"
+                    />
+                  </div>
+                </div>
+                
+                {/* Subscribers slider */}
+                <div>
+                  <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
+                    Subscribers
+                  </label>
+                  <div className="flex flex-col">
+                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
+                      <span>{formatNumber(subscribersRange[0])}</span>
+                      <span>{formatNumber(subscribersRange[1])}</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="1000000" 
+                      step="1000"
+                      value={subscribersRange[0]}
+                      onChange={(e) => setSubscribersRange([parseInt(e.target.value), subscribersRange[1]])}
+                      className="slider-track mb-1"
+                    />
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="1000000" 
+                      step="1000"
+                      value={subscribersRange[1]}
+                      onChange={(e) => setSubscribersRange([subscribersRange[0], parseInt(e.target.value)])}
+                      className="slider-track"
+                    />
+                  </div>
+                </div>
+                
+                {/* Video Duration slider */}
+                <div>
+                  <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
+                    Video Duration (minutes)
+                  </label>
+                  <div className="flex flex-col">
+                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
+                      <span>{videoDurationRange[0]} min</span>
+                      <span>{videoDurationRange[1]} min</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="60" 
+                      step="1"
+                      value={videoDurationRange[0]}
+                      onChange={(e) => setVideoDurationRange([parseInt(e.target.value), videoDurationRange[1]])}
+                      className="slider-track mb-1"
+                    />
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="60" 
+                      step="1"
+                      value={videoDurationRange[1]}
+                      onChange={(e) => setVideoDurationRange([videoDurationRange[0], parseInt(e.target.value)])}
+                      className="slider-track"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Right column with calendar */}
+              <div className="col-span-1">
+                <div>
+                  <label className="block text-gray-600 dark:text-gray-300 text-sm mb-4 font-medium flex items-center">
+                    <FaCalendarAlt className="mr-2" /> Time Range
+                  </label>
+                  
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <div className="mb-4">
+                      <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                        Start Date
+                      </label>
+                      <input 
+                        type="date" 
+                        value={dateRange[0]}
+                        onChange={(e) => setDateRange([e.target.value, dateRange[1]])}
+                        className="w-full bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md px-3 py-2 text-sm"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                        End Date
+                      </label>
+                      <input 
+                        type="date" 
+                        value={dateRange[1]}
+                        onChange={(e) => setDateRange([dateRange[0], e.target.value])}
+                        className="w-full bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md px-3 py-2 text-sm"
+                      />
+                    </div>
+                    
+                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+                      <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
+                        <span className="mr-auto">Quick select:</span>
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <button 
+                          onClick={() => setDateRange([
+                            new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                            new Date().toISOString().split('T')[0]
+                          ])}
+                          className="bg-white dark:bg-gray-600 text-xs text-gray-700 dark:text-gray-300 px-2 py-1 rounded border border-gray-300 dark:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-500"
+                        >
+                          Last 7 days
+                        </button>
+                        <button 
+                          onClick={() => setDateRange([
+                            new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                            new Date().toISOString().split('T')[0]
+                          ])}
+                          className="bg-white dark:bg-gray-600 text-xs text-gray-700 dark:text-gray-300 px-2 py-1 rounded border border-gray-300 dark:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-500"
+                        >
+                          Last 30 days
+                        </button>
+                        <button 
+                          onClick={() => setDateRange([
+                            new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                            new Date().toISOString().split('T')[0]
+                          ])}
+                          className="bg-white dark:bg-gray-600 text-xs text-gray-700 dark:text-gray-300 px-2 py-1 rounded border border-gray-300 dark:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-500"
+                        >
+                          Last 90 days
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
             
-            <div>
-              <label className="block text-sm text-gray-600 dark:text-gray-300 mb-2">Content focus</label>
-              <select 
-                className="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            {/* Filter Actions */}
+            <div className="flex justify-end items-center gap-4 mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <button 
+                onClick={resetFilter}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               >
-                <option value="any">Any content</option>
-                <option value="tech">Technology</option>
-                <option value="gaming">Gaming</option>
-                <option value="entertainment">Entertainment</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm text-gray-600 dark:text-gray-300 mb-2">Sort by</label>
-              <select 
-                className="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
+                Reset
+              </button>
+              <button 
+                onClick={applyFilter}
+                className="px-4 py-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
               >
-                <option value="date">Date added (newest)</option>
-                <option value="subscribers">Subscribers (high to low)</option>
-                <option value="views">Views (high to low)</option>
-                <option value="videos">Videos (high to low)</option>
-                <option value="name">Name (A-Z)</option>
-              </select>
+                Apply Filters
+              </button>
             </div>
-          </div>
-          
-          {/* Filter Actions */}
-          <div className="flex justify-end items-center gap-4 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <button className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-              Reset
-            </button>
-            <button className="px-4 py-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors">
-              Apply
-            </button>
           </div>
         </div>
       )}
