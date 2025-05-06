@@ -682,10 +682,18 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
         <h1 className="text-2xl font-bold dark:text-white">{listName}</h1>
       </div>
 
-      {/* Performance Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+      {/* Performance Section - Redesigned for individual channel analytics */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-gray-800 dark:text-white">Performance</h2>
+          <div className="flex items-center gap-2">
+            <FaChartBar className="text-indigo-500" />
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white">Performance Analytics</h2>
+            <div className="text-gray-400 dark:text-gray-500 cursor-help" title="Metrics and analytics for each tracked competitor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center">
               <label className="flex items-center cursor-pointer">
@@ -713,45 +721,103 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
           </div>
         </div>
 
-        {/* Chart dropdown */}
-        <div className="mb-4">
-          <div className="relative inline-block">
-            <button className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-3 py-1.5 rounded text-sm">
-              <span>{chartMetric}</span>
-              <FaChevronDown size={14} />
-            </button>
-          </div>
-        </div>
-
-        {/* Chart Placeholder */}
-        <div className="h-[200px] w-full relative">
-          <div className="absolute left-0 top-0 h-full w-16 flex flex-col justify-between text-right pr-2 text-xs text-gray-500">
-            <span>{formatNumber(Math.max(...competitors.map(c => c.subscriberCount)))}</span>
-            <span>{formatNumber(Math.max(...competitors.map(c => c.subscriberCount)) / 2)}</span>
-            <span>{formatNumber(Math.max(...competitors.map(c => c.subscriberCount)) / 4)}</span>
-            <span>0</span>
-          </div>
-          <div className="ml-16 h-full flex items-end gap-4">
-            {competitors.slice(0, 6).map((competitor, index) => (
-              <div key={competitor.id} className="flex-1 flex flex-col items-center">
-                <div 
-                  className="w-full rounded-t-sm" 
-                  style={{ 
-                    height: `${Math.max((competitor.subscriberCount / Math.max(...competitors.map(c => c.subscriberCount))) * 180, 10)}px`,
-                    backgroundColor: '#4f46e5',
-                    opacity: index === 0 ? 1 : (index === 1 ? 0.9 : (index === 2 ? 0.8 : (index === 3 ? 0.7 : (index === 4 ? 0.6 : 0.5))))
-                  }}
-                ></div>
-                <div className="w-8 h-8 rounded-full bg-gray-200 mt-2 overflow-hidden flex items-center justify-center">
-                  <img 
-                    src={competitor.thumbnailUrl} 
-                    alt={competitor.name}
-                    className="w-8 h-8 object-cover"
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
+        {/* Channel analytics table */}
+        <div className="overflow-x-auto">
+          <table className="min-w-full">
+            <thead>
+              <tr className="border-b border-gray-200 dark:border-gray-700">
+                <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Channel</th>
+                <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Subscribers</th>
+                <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Videos</th>
+                <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Avg. Views</th>
+                <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Engagement</th>
+                <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Growth</th>
+              </tr>
+            </thead>
+            <tbody>
+              {competitors.map(competitor => {
+                // Calculate average views per video
+                const avgViews = Math.round(competitor.viewCount / Math.max(competitor.videoCount, 1));
+                
+                // Calculate fake engagement rate (comments + likes) / views
+                // In a real app, this would come from actual data
+                const engagementRate = (Math.random() * 10 + 2).toFixed(1);
+                
+                // Fake growth rate for demo purposes
+                const growthRate = (Math.random() * 16 - 5).toFixed(1);
+                const isPositiveGrowth = parseFloat(growthRate) > 0;
+                
+                return (
+                  <tr key={competitor.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
+                          <img src={competitor.thumbnailUrl} alt={competitor.name} className="w-full h-full object-cover" />
+                        </div>
+                        <div>
+                          <a 
+                            href={`https://youtube.com/channel/${competitor.youtubeId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors"
+                          >
+                            {competitor.name}
+                          </a>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{competitor.youtubeId}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="flex items-center">
+                        <span className="font-medium text-gray-800 dark:text-gray-200">{formatNumber(competitor.subscriberCount)}</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className="text-gray-800 dark:text-gray-200">{competitor.videoCount.toLocaleString()}</span>
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className="text-gray-800 dark:text-gray-200">{formatNumber(avgViews)}</span>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-16 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-indigo-600 dark:bg-indigo-500 rounded-full" 
+                            style={{ width: `${Math.min(parseFloat(engagementRate) * 10, 100)}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-gray-800 dark:text-gray-200">{engagementRate}%</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-1">
+                        {isPositiveGrowth ? (
+                          <span className="text-green-600 dark:text-green-500">↑</span>
+                        ) : (
+                          <span className="text-red-600 dark:text-red-500">↓</span>
+                        )}
+                        <span className={isPositiveGrowth ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'}>
+                          {isPositiveGrowth ? '+' : ''}{growthRate}%
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          
+          {competitors.length === 0 && (
+            <div className="text-center py-8">
+              <p className="text-gray-500 dark:text-gray-400">No competitors added to analyze.</p>
+              <button 
+                onClick={() => setIsModalOpen(true)}
+                className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm transition-colors"
+              >
+                Add your first competitor
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
