@@ -143,6 +143,38 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
     ]);
   }
 
+  // Helper function to safely parse input values
+  const safeParseInt = (value: string, fallback = 0): number => {
+    const parsed = parseInt(value);
+    return isNaN(parsed) ? fallback : parsed;
+  };
+
+  // Handler for views input
+  const handleViewsInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = safeParseInt(e.target.value, 0);
+    setViewsThreshold(Math.min(value, 500000000)); // Cap at 500M
+  };
+
+  // Handler for subscribers input
+  const handleSubscribersInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = safeParseInt(e.target.value, 0);
+    setSubscribersThreshold(Math.min(value, 500000000)); // Cap at 500M
+  };
+
+  // Handler for hours input
+  const handleHoursInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const hours = safeParseInt(e.target.value, 0);
+    const minutes = videoDurationThreshold % 60;
+    setVideoDurationThreshold(Math.min(hours, 24) * 60 + minutes); // Cap at 24h
+  };
+
+  // Handler for minutes input
+  const handleMinutesInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const hours = Math.floor(videoDurationThreshold / 60);
+    const minutes = safeParseInt(e.target.value, 0);
+    setVideoDurationThreshold(hours * 60 + Math.min(minutes, 59)); // Cap at 59m
+  };
+
   if (isLoading) {
     return (
       <div className="w-full flex items-center justify-center h-64">
@@ -359,9 +391,21 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                       max="500000000" 
                       step="1000000"
                       value={viewsThreshold}
-                      onChange={(e) => setViewsThreshold(parseInt(e.target.value))}
-                      className="slider-track"
+                      onChange={handleViewsInput}
+                      className="slider-track mb-2"
                     />
+                    {/* Added input field for direct value entry */}
+                    <div className="flex items-center mt-2">
+                      <label className="text-xs text-gray-500 dark:text-gray-400 mr-2">Custom value:</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="500000000"
+                        value={viewsThreshold}
+                        onChange={handleViewsInput}
+                        className="w-32 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-white"
+                      />
+                    </div>
                   </div>
                 </div>
                 
@@ -381,9 +425,21 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                       max="500000000" 
                       step="100000"
                       value={subscribersThreshold}
-                      onChange={(e) => setSubscribersThreshold(parseInt(e.target.value))}
-                      className="slider-track"
+                      onChange={handleSubscribersInput}
+                      className="slider-track mb-2"
                     />
+                    {/* Added input field for direct value entry */}
+                    <div className="flex items-center mt-2">
+                      <label className="text-xs text-gray-500 dark:text-gray-400 mr-2">Custom value:</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="500000000"
+                        value={subscribersThreshold}
+                        onChange={handleSubscribersInput}
+                        className="w-32 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-white"
+                      />
+                    </div>
                   </div>
                 </div>
                 
@@ -403,9 +459,37 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                       max="1440" 
                       step="10"
                       value={videoDurationThreshold}
-                      onChange={(e) => setVideoDurationThreshold(parseInt(e.target.value))}
-                      className="slider-track"
+                      onChange={handleHoursInput}
+                      className="slider-track mb-2"
                     />
+                    {/* Added input field for direct value entry with hours and minutes */}
+                    <div className="flex items-center mt-2">
+                      <label className="text-xs text-gray-500 dark:text-gray-400 mr-2">Custom value:</label>
+                      <div className="flex">
+                        <div className="flex items-center mr-2">
+                          <input
+                            type="number"
+                            min="0"
+                            max="24"
+                            value={Math.floor(videoDurationThreshold / 60)}
+                            onChange={handleHoursInput}
+                            className="w-16 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-white"
+                          />
+                          <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">h</span>
+                        </div>
+                        <div className="flex items-center">
+                          <input
+                            type="number"
+                            min="0"
+                            max="59"
+                            value={videoDurationThreshold % 60}
+                            onChange={handleMinutesInput}
+                            className="w-16 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-white"
+                          />
+                          <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">m</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
