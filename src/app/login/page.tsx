@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { FaYoutube } from 'react-icons/fa';
 import Link from 'next/link';
 import { signIn, isAuthenticated } from '@/lib/supabase';
+import { useTheme } from '@/contexts/ThemeContext';
 
 // Define interface for the extended sign-in result
 interface SignInResult {
@@ -20,6 +21,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
+  const { theme } = useTheme();
 
   // Check if user is already logged in
   useEffect(() => {
@@ -117,25 +119,27 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center bg-gray-50 px-4">
+    <div className="min-h-screen flex flex-col justify-center items-center bg-gray-50 dark:bg-gray-900 px-4">
       <div className="w-full max-w-md">
         {/* Logo and Title */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-2">
             <FaYoutube className="text-red-500 text-4xl mr-2" />
-            <h1 className="text-3xl font-bold">TubeIntel Pro</h1>
+            <h1 className="text-3xl font-bold dark:text-white">TubeIntel Pro</h1>
           </div>
-          <p className="text-gray-600">Your YouTube Analytics Dashboard</p>
+          <p className="text-gray-600 dark:text-gray-400">Your YouTube Analytics Dashboard</p>
         </div>
         
         {/* Login Card */}
-        <div className="bg-white rounded-lg shadow-md p-8">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-center">Sign In</h2>
+            <h2 className="text-2xl font-bold text-center dark:text-white">Sign In</h2>
             <button 
               onClick={toggleDemoMode}
               className={`text-sm px-3 py-1 rounded ${
-                isDemo ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
+                isDemo 
+                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' 
+                : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
               }`}
             >
               {isDemo ? 'Demo Mode' : 'Real Auth'}
@@ -143,14 +147,14 @@ export default function LoginPage() {
           </div>
           
           {error && (
-            <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4">
+            <div className="bg-red-100 dark:bg-red-900/30 border-l-4 border-red-500 text-red-700 dark:text-red-300 p-4 mb-4">
               <p>{error}</p>
             </div>
           )}
           
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="email" className="block text-gray-700 mb-2">
+              <label htmlFor="email" className="block text-gray-700 dark:text-gray-300 mb-2">
                 Email
               </label>
               <input
@@ -158,14 +162,14 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Enter your email"
                 required
               />
             </div>
             
             <div>
-              <label htmlFor="password" className="block text-gray-700 mb-2">
+              <label htmlFor="password" className="block text-gray-700 dark:text-gray-300 mb-2">
                 Password
               </label>
               <input
@@ -173,7 +177,7 @@ export default function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Enter your password"
                 required
               />
@@ -189,12 +193,12 @@ export default function LoginPage() {
           </form>
           
           <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600 mb-2">
-              Don't have an account? <Link href="/signup" className="text-indigo-600 hover:text-indigo-800">Sign up</Link>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+              Don't have an account? <Link href="/signup" className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">Sign up</Link>
             </p>
             
             {isDemo && (
-              <p className="text-sm text-blue-600 bg-blue-50 p-2 rounded">
+              <p className="text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 p-2 rounded">
                 Demo mode: You can use any email and password.
               </p>
             )}
@@ -202,8 +206,8 @@ export default function LoginPage() {
         </div>
         
         {/* Info Box */}
-        <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mt-6">
-          <p className="text-sm text-blue-800">
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-4 mt-6">
+          <p className="text-sm text-blue-800 dark:text-blue-300">
             <span className="font-semibold">Note:</span> {isDemo 
               ? "You're using demo mode. For a real implementation, create a Supabase account and update the configuration."
               : "You need a valid Supabase account to log in. Toggle to demo mode to try the app without authentication."
