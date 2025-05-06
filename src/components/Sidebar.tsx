@@ -61,7 +61,8 @@ export default function Sidebar({ collapsed, toggleSidebar }: SidebarProps): JSX
     <div 
       className={`${
         collapsed ? 'w-[70px]' : 'w-[240px]'
-      } h-screen ${bgColor} border-r ${borderColor} py-6 flex flex-col transition-all duration-300 ease-in-out`}
+      } h-screen flex-shrink-0 ${bgColor} border-r ${borderColor} py-6 flex flex-col transition-all duration-300 ease-in-out`}
+      style={{ boxShadow: theme === 'dark' ? '0 0 10px 5px rgba(0,0,0,0.3)' : 'none' }}
     >
       {collapsed ? (
         <>

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { FaArrowLeft, FaPlus, FaTimes, FaYoutube, FaEllipsisV, FaChartBar, FaDownload, FaFilter, FaChevronDown } from 'react-icons/fa';
+import { FaArrowLeft, FaPlus, FaTimes, FaYoutube, FaEllipsisV, FaChartBar, FaDownload, FaFilter, FaChevronDown, FaStar, FaRocket, FaTrophy, FaCheck } from 'react-icons/fa';
 import Link from 'next/link';
 import { Competitor } from '@/types';
 import { competitorsApi } from '@/services/api';
@@ -10,10 +10,10 @@ import { getUseRealApi } from '@/services/api/config';
 
 // Mock suggested competitors for demo
 const suggestedCompetitors = [
-  { id: 'sugg1', name: 'TechReviewer', thumbnailUrl: 'https://via.placeholder.com/150?text=TR', subscriberCount: 208000, videoCount: 342, viewCount: 15600000 },
-  { id: 'sugg2', name: 'GamingDaily', thumbnailUrl: 'https://via.placeholder.com/150?text=GD', subscriberCount: 620000, videoCount: 527, viewCount: 48000000 },
-  { id: 'sugg3', name: 'FoodChannel', thumbnailUrl: 'https://via.placeholder.com/150?text=FC', subscriberCount: 779000, videoCount: 623, viewCount: 53000000 },
-  { id: 'sugg4', name: 'TravelVlog', thumbnailUrl: 'https://via.placeholder.com/150?text=TV', subscriberCount: 318000, videoCount: 287, viewCount: 22000000 },
+  { id: 'sugg1', name: 'TechReviewer', thumbnailUrl: 'https://via.placeholder.com/150?text=TR', subscriberCount: 208000, videoCount: 342, viewCount: 15600000, youtubeId: 'UCTR123456789' },
+  { id: 'sugg2', name: 'GamingDaily', thumbnailUrl: 'https://via.placeholder.com/150?text=GD', subscriberCount: 620000, videoCount: 527, viewCount: 48000000, youtubeId: 'UCGD987654321' },
+  { id: 'sugg3', name: 'FoodChannel', thumbnailUrl: 'https://via.placeholder.com/150?text=FC', subscriberCount: 779000, videoCount: 623, viewCount: 53000000, youtubeId: 'UCFC456789123' },
+  { id: 'sugg4', name: 'TravelVlog', thumbnailUrl: 'https://via.placeholder.com/150?text=TV', subscriberCount: 318000, videoCount: 287, viewCount: 22000000, youtubeId: 'UCTV789123456' },
 ];
 
 // Format number to compact form
@@ -100,6 +100,29 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
     } catch (error) {
       console.error('Error removing competitor:', error);
     }
+  };
+
+  // Function to determine icon based on subscriber count or other metrics
+  const getCompetitorIcon = (competitor: Competitor) => {
+    const { subscriberCount, viewCount } = competitor;
+    
+    // Top tier - over 1M subscribers
+    if (subscriberCount >= 1000000) {
+      return <FaStar size={16} className="text-yellow-500" />;
+    }
+    
+    // High growth - high view to subscriber ratio
+    if (viewCount / subscriberCount > 100) {
+      return <FaRocket size={16} className="text-red-500" />;
+    }
+    
+    // Good performer - over 100K subscribers
+    if (subscriberCount >= 100000) {
+      return <FaTrophy size={16} className="text-indigo-500" />;
+    }
+    
+    // Default
+    return <FaCheck size={16} className="text-green-500" />;
   };
 
   if (isLoading) {
@@ -198,6 +221,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2">
+            <FaChartBar className="text-indigo-500" />
             <h2 className="text-xl font-bold text-gray-800 dark:text-white">Suggested competitors</h2>
             <div className="text-gray-400 dark:text-gray-500 cursor-help" title="Channels similar to your current competitors">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -208,17 +232,20 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
         </div>
 
         {/* Competitor Carousel */}
-        <div className="relative mb-4 overflow-hidden">
+        <div className="overflow-x-auto">
           <div className="flex gap-4 pb-4 overflow-x-auto">
             {suggestedCompetitors.map((competitor) => (
               <div key={competitor.id} className="flex-shrink-0 w-[220px] bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden">
                 <div className="p-4 flex flex-col items-center text-center">
-                  <div className="w-16 h-16 rounded-full overflow-hidden mb-3 bg-gray-200 dark:bg-gray-600">
+                  <div className="w-16 h-16 rounded-full overflow-hidden mb-3 bg-gray-200 dark:bg-gray-600 relative">
                     <img 
                       src={competitor.thumbnailUrl}
                       alt={competitor.name}
                       className="w-16 h-16 object-cover"
                     />
+                    <div className="absolute -bottom-1 -right-1 bg-white dark:bg-gray-800 rounded-full p-1 shadow-sm">
+                      {getCompetitorIcon(competitor)}
+                    </div>
                   </div>
                   <h3 className="text-gray-800 dark:text-white font-medium text-base mb-1">{competitor.name}</h3>
                   <p className="text-gray-500 dark:text-gray-400 text-sm mb-3">{formatNumber(competitor.subscriberCount)} subscribers</p>
@@ -384,8 +411,11 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                         alt={competitor.name} 
                         className="w-12 h-12 rounded-full mr-4"
                       />
-                      <div>
-                        <h3 className="font-semibold text-lg dark:text-white">{competitor.name}</h3>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          {getCompetitorIcon(competitor)}
+                          <h3 className="font-semibold text-lg dark:text-white">{competitor.name}</h3>
+                        </div>
                         <p className="text-gray-500 dark:text-gray-400 text-sm truncate">{competitor.youtubeId}</p>
                       </div>
                     </div>
