@@ -54,7 +54,7 @@ export default function TestAPIPage() {
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold dark:text-white">YouTube API Integration Test</h1>
+        <h1 className="text-2xl font-bold">YouTube API Integration Test</h1>
         <div className="flex items-center">
           <ApiToggle onToggle={handleApiToggle} />
           <Link href="/dashboard" className="ml-4 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded">
@@ -63,15 +63,15 @@ export default function TestAPIPage() {
         </div>
       </div>
       
-      <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-4 mb-6">
-        <p className="text-blue-700 dark:text-blue-300">
+      <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+        <p className="text-blue-700">
           This page demonstrates the integration with the YouTube API. 
           Toggle between mock data and real YouTube API data.
           <br />
           {isClientInitialized ? (
             <strong>Current Mode: {useRealApi ? 'Real YouTube API' : 'Mock Data'}</strong>
           ) : (
-            <strong className="bg-gray-200 dark:bg-gray-700 animate-pulse inline-block h-5 w-28 rounded"></strong>
+            <strong className="bg-gray-200 animate-pulse inline-block h-5 w-28 rounded"></strong>
           )}
         </p>
       </div>
@@ -79,7 +79,7 @@ export default function TestAPIPage() {
       {isLoading && (
         <div className="flex justify-center items-center h-40">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-          <p className="ml-4 text-gray-500 dark:text-gray-400">
+          <p className="ml-4 text-gray-500">
             {isClientInitialized 
               ? `Loading data from ${useRealApi ? 'YouTube API' : 'mock data'}...`
               : 'Initializing...'}
@@ -88,7 +88,7 @@ export default function TestAPIPage() {
       )}
       
       {error && (
-        <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded mb-4">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           <p className="font-bold">Error:</p>
           <p>{error}</p>
           {isClientInitialized && (
@@ -102,8 +102,8 @@ export default function TestAPIPage() {
       )}
       
       {channel && (
-        <div className="mb-6 bg-white dark:bg-gray-800 p-4 rounded shadow">
-          <h2 className="text-xl font-semibold mb-2 dark:text-white">Channel Data</h2>
+        <div className="mb-6 bg-white p-4 rounded shadow">
+          <h2 className="text-xl font-semibold mb-2">Channel Data</h2>
           <div className="flex items-center">
             {channel.thumbnailUrl && (
               <img 
@@ -113,9 +113,9 @@ export default function TestAPIPage() {
               />
             )}
             <div>
-              <p className="font-bold dark:text-white">{channel.name}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{channel.description?.substring(0, 100)}...</p>
-              <div className="flex mt-2 text-sm text-gray-500 dark:text-gray-400">
+              <p className="font-bold">{channel.name}</p>
+              <p className="text-sm text-gray-600">{channel.description?.substring(0, 100)}...</p>
+              <div className="flex mt-2 text-sm text-gray-500">
                 <p className="mr-4">{channel.subscriberCount.toLocaleString()} subscribers</p>
                 <p>{channel.videoCount.toLocaleString()} videos</p>
               </div>
@@ -126,10 +126,10 @@ export default function TestAPIPage() {
       
       {videos.length > 0 && (
         <div>
-          <h2 className="text-xl font-semibold mb-4 dark:text-white">Recent Videos</h2>
+          <h2 className="text-xl font-semibold mb-4">Recent Videos</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {videos.map(video => (
-              <div key={video.id} className="bg-white dark:bg-gray-800 p-4 rounded shadow">
+              <div key={video.id} className="bg-white p-4 rounded shadow">
                 {video.thumbnailUrl && (
                   <img 
                     src={video.thumbnailUrl} 
@@ -137,11 +137,11 @@ export default function TestAPIPage() {
                     className="w-full h-40 object-cover mb-2 rounded"
                   />
                 )}
-                <h3 className="font-bold truncate dark:text-white">{video.title}</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 h-12 overflow-hidden">
+                <h3 className="font-bold truncate">{video.title}</h3>
+                <p className="text-sm text-gray-600 h-12 overflow-hidden">
                   {video.description?.substring(0, 100)}...
                 </p>
-                <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                <div className="mt-2 text-sm text-gray-500">
                   <p>{video.viewCount.toLocaleString()} views</p>
                   <p>Published: {video.publishedAt.toLocaleDateString()}</p>
                   <p>VPH: {video.vph}</p>
