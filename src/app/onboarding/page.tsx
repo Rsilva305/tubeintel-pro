@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaYoutube } from 'react-icons/fa';
-import { getCurrentUser, isAuthenticated, supabase } from '@/lib/supabase';
+import { supabase, isAuthenticated, getCurrentUser } from '@/lib/supabase';
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -12,7 +12,6 @@ export default function OnboardingPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -28,11 +27,6 @@ export default function OnboardingPage() {
         const currentUser = await getCurrentUser();
         if (currentUser) {
           setUser(currentUser);
-          
-          // Check if we're in demo mode
-          if (currentUser.id === '1') {
-            setIsDemo(true);
-          }
           
           // Check if user has already completed onboarding
           const storedChannelId = localStorage.getItem('youtubeChannelId');
@@ -118,17 +112,15 @@ export default function OnboardingPage() {
       const updatedUser = { ...user, hasCompletedOnboarding: true };
       localStorage.setItem('user', JSON.stringify(updatedUser));
       
-      // If we're not in demo mode, update the profile in Supabase
-      if (!isDemo && user && user.id !== '1') {
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ youtube_channel_id: finalChannelId })
-          .eq('id', user.id);
-          
-        if (updateError) {
-          console.error('Error updating profile:', updateError);
-          // Continue anyway since we stored in localStorage
-        }
+      // Update the profile in Supabase
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ youtube_channel_id: finalChannelId })
+        .eq('id', user.id);
+        
+      if (updateError) {
+        console.error('Error updating profile:', updateError);
+        // Continue anyway since we stored in localStorage
       }
       
       // Redirect to dashboard
@@ -207,7 +199,7 @@ export default function OnboardingPage() {
                 placeholder="UC..."
               />
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Enter your YouTube channel ID directly if you know it
+                Enter your YouTube channel ID directly (starts with "UC")
               </p>
             </div>
             
@@ -219,15 +211,13 @@ export default function OnboardingPage() {
               {isLoading ? 'Saving...' : 'Continue to Dashboard'}
             </button>
           </form>
-          
-          <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-4">
-            <p className="text-sm text-blue-800 dark:text-blue-300">
-              <span className="font-semibold">Note:</span> {isDemo 
-                ? "You're in demo mode. Your channel ID will only be stored locally." 
-                : "Your YouTube channel ID will be stored in your profile and used to fetch analytics."
-              }
-            </p>
-          </div>
+        </div>
+        
+        {/* Info Box */}
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-4 mt-6">
+          <p className="text-sm text-blue-800 dark:text-blue-300">
+            <span className="font-semibold">Note:</span> Your channel ID will be securely stored and used to fetch analytics data about your channel only.
+          </p>
         </div>
       </div>
     </div>

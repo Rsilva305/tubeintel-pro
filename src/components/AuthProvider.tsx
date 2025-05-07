@@ -14,40 +14,35 @@ type User = {
 type AuthContextType = {
   user: User;
   isLoading: boolean;
-  isDemo: boolean;
 };
 
 // Create context
 const AuthContext = createContext<AuthContextType>({
   user: null,
   isLoading: true,
-  isDemo: false,
 });
 
 // Auth Provider component
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isDemo, setIsDemo] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     // Function to get the current user
     async function getUser() {
       try {
-        // First check for demo user in localStorage
+        // Check for user in localStorage (for persistence across page refreshes)
         const localUser = localStorage.getItem('user');
         if (localUser) {
           setUser(JSON.parse(localUser));
-          setIsDemo(true);
           setIsLoading(false);
           return;
         }
 
-        // Otherwise check for real auth
+        // Otherwise check with Supabase
         const currentUser = await getCurrentUser();
         setUser(currentUser || null);
-        setIsDemo(false);
       } catch (error) {
         console.error('Error getting user:', error);
         setUser(null);
@@ -64,7 +59,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       (event, session) => {
         if (session?.user) {
           setUser(session.user);
-          setIsDemo(false);
         } else if (!localStorage.getItem('user')) {
           setUser(null);
         }
@@ -78,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, isDemo }}>
+    <AuthContext.Provider value={{ user, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
