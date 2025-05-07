@@ -20,13 +20,27 @@ export default function CompetitorsPage() {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [listName, setListName] = useState('');
-  const [competitorLists, setCompetitorLists] = useState<CompetitorList[]>([]);
+  const [competitorLists, setCompetitorLists] = useState<CompetitorList[]>(() => {
+    // Initialize from localStorage if available
+    if (typeof window !== 'undefined') {
+      const savedLists = localStorage.getItem('competitorLists');
+      return savedLists ? JSON.parse(savedLists) : [];
+    }
+    return [];
+  });
   const [editingListId, setEditingListId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [useRealApi] = useState(getUseRealApi());
   const [listCategory, setListCategory] = useState('default');
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Save to localStorage whenever competitorLists changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('competitorLists', JSON.stringify(competitorLists));
+    }
+  }, [competitorLists]);
 
   // Close menu when clicking outside
   useEffect(() => {

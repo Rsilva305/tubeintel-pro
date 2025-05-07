@@ -8,6 +8,14 @@ import { Competitor, Video } from '@/types';
 import { competitorsApi, videosApi } from '@/services/api';
 import { getUseRealApi } from '@/services/api/config';
 
+// Import CompetitorList interface
+interface CompetitorList {
+  id: string;
+  name: string;
+  isPinned: boolean;
+  competitors: Competitor[];
+}
+
 // Mock suggested competitors for demo - Expanded to 10+ competitors
 const suggestedCompetitors = [
   { id: 'sugg1', name: 'TechReviewer', thumbnailUrl: 'https://via.placeholder.com/150?text=TR', subscriberCount: 208000, videoCount: 342, viewCount: 15600000, youtubeId: 'UCTR123456789' },
@@ -247,21 +255,28 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   const [showSuggestedCompetitors, setShowSuggestedCompetitors] = useState<boolean>(true);
   const competitorCarouselRef = useRef<HTMLDivElement>(null);
 
+  // Load competitors from localStorage
   useEffect(() => {
-    const fetchCompetitors = async () => {
+    const loadCompetitors = async () => {
       try {
-        // For the demo we just load all competitors in every list
-        // In a real app, this would filter based on the list ID
-        const data = await competitorsApi.getAllCompetitors();
-        setCompetitors(data);
+        if (typeof window !== 'undefined') {
+          const savedLists = localStorage.getItem('competitorLists');
+          if (savedLists) {
+            const lists = JSON.parse(savedLists);
+            const currentList = lists.find((list: CompetitorList) => list.id === params.listId);
+            if (currentList) {
+              setCompetitors(currentList.competitors);
+            }
+          }
+        }
       } catch (error) {
-        console.error('Error fetching competitors:', error);
+        console.error('Error loading competitors:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchCompetitors();
+    loadCompetitors();
   }, [params.listId]);
 
   const handleAddCompetitor = async (e: React.FormEvent) => {
@@ -288,7 +303,28 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
       };
       
       const competitor = await competitorsApi.addCompetitor(competitorData);
-      setCompetitors(prev => [...prev, competitor]);
+      
+      // Update both local state and localStorage
+      setCompetitors(prev => {
+        const newCompetitors = [...prev, competitor];
+        
+        // Update localStorage
+        if (typeof window !== 'undefined') {
+          const savedLists = localStorage.getItem('competitorLists');
+          if (savedLists) {
+            const lists = JSON.parse(savedLists);
+            const updatedLists = lists.map((list: CompetitorList) => 
+              list.id === params.listId 
+                ? { ...list, competitors: newCompetitors }
+                : list
+            );
+            localStorage.setItem('competitorLists', JSON.stringify(updatedLists));
+          }
+        }
+        
+        return newCompetitors;
+      });
+      
       setNewCompetitorId('');
       setIsModalOpen(false);
     } catch (error) {
@@ -302,7 +338,27 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   const handleRemoveCompetitor = async (id: string) => {
     try {
       await competitorsApi.removeCompetitor(id);
-      setCompetitors(prev => prev.filter(competitor => competitor.id !== id));
+      
+      // Update both local state and localStorage
+      setCompetitors(prev => {
+        const newCompetitors = prev.filter(competitor => competitor.id !== id);
+        
+        // Update localStorage
+        if (typeof window !== 'undefined') {
+          const savedLists = localStorage.getItem('competitorLists');
+          if (savedLists) {
+            const lists = JSON.parse(savedLists);
+            const updatedLists = lists.map((list: CompetitorList) => 
+              list.id === params.listId 
+                ? { ...list, competitors: newCompetitors }
+                : list
+            );
+            localStorage.setItem('competitorLists', JSON.stringify(updatedLists));
+          }
+        }
+        
+        return newCompetitors;
+      });
     } catch (error) {
       console.error('Error removing competitor:', error);
     }
