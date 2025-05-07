@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { competitorsApi } from '@/services/api';
+import { competitorsApi, competitorListsApi } from '@/services/api';
 import { Competitor } from '@/types';
-import { getUseRealApi } from '@/services/api/config';
 import { FaPlus, FaTimes, FaEllipsisV, FaThumbtack, FaPencilAlt, FaCopy, FaTrash, FaYoutube, FaChartLine, FaUsers, FaGlobe, FaGamepad, FaLaptop, FaFilm, FaMusic, FaRegStar } from 'react-icons/fa';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
-// New interface for competitor lists
+// Interface for competitor lists
 interface CompetitorList {
   id: string;
   name: string;
@@ -24,9 +24,10 @@ export default function CompetitorsPage() {
   const [editingListId, setEditingListId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [useRealApi] = useState(getUseRealApi());
   const [listCategory, setListCategory] = useState('default');
   const menuRef = useRef<HTMLDivElement>(null);
+  const [authStatus, setAuthStatus] = useState<string>('Checking...');
+  const [lastError, setLastError] = useState<string | null>(null);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -41,23 +42,164 @@ export default function CompetitorsPage() {
     }
   }, []);
 
+  // Function to refresh competitor lists from Supabase
+  const refreshData = async () => {
+    try {
+      setIsLoading(true);
+      
+      console.log("Refreshing competitor lists from Supabase...");
+      
+      // Get lists from Supabase
+      const lists = await competitorListsApi.getUserLists();
+      console.log("Retrieved lists for refresh:", lists);
+      
+      if (lists.length === 0) {
+        console.log("No lists found during refresh");
+        setCompetitorLists([]);
+        return;
+      }
+      
+      // We need to fetch competitors for each list
+      console.log("Fetching current competitors for each list during refresh");
+      const listsWithCompetitors = await Promise.all(
+        lists.map(async (list) => {
+          console.log(`Refreshing competitors for list ${list.id} (${list.name})...`);
+          // Get competitors for this list from Supabase - this ensures we get what's actually in the database
+          const competitors = await competitorListsApi.getCompetitorsInList(list.id);
+          console.log(`Found ${competitors.length} competitors in list ${list.id} during refresh`);
+          
+          // Convert from DB format to our app format
+          const formattedCompetitors = competitors.map(c => ({
+            id: c.id,
+            youtubeId: c.youtubeId,
+            name: c.name,
+            thumbnailUrl: c.thumbnailUrl || '',
+            subscriberCount: c.subscriberCount || 0,
+            videoCount: c.videoCount || 0,
+            viewCount: c.viewCount || 0
+          }));
+          
+          // Get isPinned status from localStorage if available
+          const savedLists = localStorage.getItem('competitorLists');
+          let isPinned = false;
+          
+          if (savedLists) {
+            const parsedLists = JSON.parse(savedLists) as CompetitorList[];
+            const savedList = parsedLists.find(l => l.id === list.id);
+            if (savedList) {
+              isPinned = savedList.isPinned;
+            }
+          }
+          
+          return {
+            id: list.id,
+            name: list.name,
+            isPinned: isPinned,
+            competitors: formattedCompetitors // These come directly from Supabase (empty for new lists)
+          };
+        })
+      );
+      
+      console.log("Setting updated competitor lists:", listsWithCompetitors);
+      setCompetitorLists(listsWithCompetitors);
+      
+      // Also update localStorage for pinned status
+      const currentSavedLists = localStorage.getItem('competitorLists');
+      if (currentSavedLists) {
+        const parsedSavedLists = JSON.parse(currentSavedLists) as CompetitorList[];
+        
+        // Merge the pinned status from existing saved lists with the new data
+        const mergedLists = listsWithCompetitors.map(newList => {
+          const savedList = parsedSavedLists.find(l => l.id === newList.id);
+          return {
+            ...newList,
+            isPinned: savedList ? savedList.isPinned : newList.isPinned
+          };
+        });
+        
+        localStorage.setItem('competitorLists', JSON.stringify(mergedLists));
+      } else {
+        localStorage.setItem('competitorLists', JSON.stringify(listsWithCompetitors));
+      }
+    } catch (error) {
+      console.error('Error refreshing competitor lists:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Load competitor data
   useEffect(() => {
     const fetchCompetitors = async () => {
       try {
-        // For demonstration, we'll create a single default list with all competitors
-        const competitors = await competitorsApi.getAllCompetitors();
+        setIsLoading(true);
         
-        // Only create the default list if we don't have any lists yet
-        if (competitorLists.length === 0) {
-          setCompetitorLists([
-            {
-              id: "default",
-              name: "All Competitors",
-              isPinned: true,
-              competitors: competitors
-            }
-          ]);
+        // Get lists from Supabase
+        console.log("Fetching competitor lists from Supabase...");
+        const lists = await competitorListsApi.getUserLists();
+        console.log("Retrieved lists:", lists);
+        
+        if (lists.length === 0) {
+          // Create a default list if none exists (completely empty)
+          console.log("No lists found, creating empty default list");
+          const defaultList = await competitorListsApi.createList({
+            name: "All Competitors",
+            description: "Default list for all tracked competitors",
+            userId: 'current'
+          });
+          
+          // No competitors by default - initialize with empty competitors array
+          console.log("Setting empty default list");
+          setCompetitorLists([{
+            id: defaultList.id,
+            name: defaultList.name,
+            isPinned: true,
+            competitors: [] // EMPTY - No pre-populated competitors
+          }]);
+        } else {
+          // We need to fetch competitors for each list
+          console.log("Lists found, fetching competitors for each list");
+          const listsWithCompetitors = await Promise.all(
+            lists.map(async (list) => {
+              console.log(`Fetching competitors for list ${list.id} (${list.name})...`);
+              const competitors = await competitorListsApi.getCompetitorsInList(list.id);
+              console.log(`Found ${competitors.length} competitors in list ${list.id}`);
+              
+              // Convert from DB format to our app format
+              const formattedCompetitors = competitors.map(c => ({
+                id: c.id,
+                youtubeId: c.youtubeId,
+                name: c.name,
+                thumbnailUrl: c.thumbnailUrl || '',
+                subscriberCount: c.subscriberCount || 0,
+                videoCount: c.videoCount || 0,
+                viewCount: c.viewCount || 0
+              }));
+              
+              // Get isPinned status from localStorage if available
+              const savedLists = localStorage.getItem('competitorLists');
+              let isPinned = false;
+              
+              if (savedLists) {
+                const parsedLists = JSON.parse(savedLists) as CompetitorList[];
+                const savedList = parsedLists.find(l => l.id === list.id);
+                if (savedList) {
+                  isPinned = savedList.isPinned;
+                }
+              }
+              
+              console.log(`Built list object for ${list.name} with ${formattedCompetitors.length} competitors`);
+              return {
+                id: list.id,
+                name: list.name,
+                isPinned: isPinned,
+                competitors: formattedCompetitors
+              };
+            })
+          );
+          
+          console.log("Setting competitor lists with data:", listsWithCompetitors);
+          setCompetitorLists(listsWithCompetitors);
         }
       } catch (error) {
         console.error('Error fetching competitors:', error);
@@ -114,27 +256,77 @@ export default function CompetitorsPage() {
     return <FaUsers size={18} className="text-indigo-500" />;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!listName.trim()) return;
     
-    if (editingListId !== null) {
-      // Edit existing list
-      setCompetitorLists(
-        competitorLists.map(list => 
-          list.id === editingListId 
-            ? { ...list, name: listName } 
-            : list
-        )
-      );
-    } else {
-      // Create new list
-      const newList: CompetitorList = {
-        id: Date.now().toString(),
-        name: listName,
-        isPinned: false,
-        competitors: []
-      };
-      setCompetitorLists([...competitorLists, newList]);
+    try {
+      if (editingListId !== null) {
+        // Edit existing list
+        console.log(`Updating list ${editingListId} with name: ${listName}`);
+        await competitorListsApi.updateList(editingListId, {
+          name: listName,
+          description: `Updated list: ${listName}`,
+          userId: 'current'
+        });
+        
+        // Refresh the lists from Supabase after updating
+        await refreshData();
+      } else {
+        // Create new list - always with empty competitors array
+        try {
+          console.log("Creating new list with name:", listName);
+          
+          // Add more detailed logging for debugging
+          try {
+            // First check if user is authenticated
+            const user = localStorage.getItem('user');
+            console.log("Current user from localStorage:", user);
+            
+            const newListData = await competitorListsApi.createList({
+              name: listName,
+              description: `List for ${listName}`,
+              userId: 'current'
+            });
+            
+            console.log("List created successfully:", newListData);
+            
+            // Add the new list to state with empty competitors array
+            const newList = {
+              id: newListData.id,
+              name: newListData.name,
+              isPinned: false,
+              competitors: [] // EMPTY - No pre-populated competitors
+            };
+            
+            console.log("Adding new empty list to UI:", newList);
+            
+            // Update state immediately with the new list
+            setCompetitorLists(prev => [...prev, newList]);
+            
+            // Save to localStorage for pinned status
+            const savedLists = localStorage.getItem('competitorLists');
+            if (savedLists) {
+              const parsedLists = JSON.parse(savedLists) as CompetitorList[];
+              localStorage.setItem('competitorLists', JSON.stringify([...parsedLists, newList]));
+            } else {
+              localStorage.setItem('competitorLists', JSON.stringify([newList]));
+            }
+          } catch (innerError) {
+            console.error("Detailed error creating list:", innerError);
+            // Store error in state for UI display
+            setLastError(innerError instanceof Error ? innerError.message : 'Unknown error creating list');
+            // Show error message to user
+            alert(`Error creating list: ${innerError instanceof Error ? innerError.message : 'Unknown error'}`);
+          }
+        } catch (error) {
+          console.error('Error creating list:', error);
+          setLastError(error instanceof Error ? error.message : 'Unknown error in outer catch');
+          alert(`Failed to create list. Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error saving competitor list:', error);
+      alert("An error occurred while saving. Please try again.");
     }
     
     closeModal();
@@ -150,35 +342,84 @@ export default function CompetitorsPage() {
     setOpenMenuId(null);
   }
 
-  const pinList = (id: string) => {
-    setCompetitorLists(
-      competitorLists.map(list => 
+  const pinList = async (id: string) => {
+    const list = competitorLists.find(list => list.id === id);
+    if (!list) return;
+    
+    const newPinnedStatus = !list.isPinned;
+    
+    try {
+      // We only update isPinned in local state since Supabase schema doesn't have isPinned field
+      const updatedLists = competitorLists.map(list => 
         list.id === id 
-          ? { ...list, isPinned: !list.isPinned } 
+          ? { ...list, isPinned: newPinnedStatus } 
           : list
-      )
-    );
-    closeAllMenus();
-  }
-
-  const duplicateList = (id: string) => {
-    const listToDuplicate = competitorLists.find(list => list.id === id);
-    if (listToDuplicate) {
-      const duplicatedList = {
-        ...listToDuplicate,
-        id: Date.now().toString(),
-        name: `${listToDuplicate.name} (copy)`,
-      };
-      setCompetitorLists([...competitorLists, duplicatedList]);
+      );
+      
+      // Update state
+      setCompetitorLists(updatedLists);
+      
+      // Save pinned status to localStorage
+      localStorage.setItem('competitorLists', JSON.stringify(updatedLists));
+    } catch (error) {
+      console.error('Error pinning list:', error);
     }
+    
     closeAllMenus();
   }
 
-  const deleteList = (id: string) => {
+  const duplicateList = async (id: string) => {
+    const listToDuplicate = competitorLists.find(list => list.id === id);
+    if (!listToDuplicate) return;
+    
+    try {
+      // Create duplicated list in Supabase
+      const createdList = await competitorListsApi.createList({
+        name: `${listToDuplicate.name} (copy)`,
+        description: `Copy of ${listToDuplicate.name}`,
+        userId: 'current'
+      });
+      
+      const duplicatedList = {
+        id: createdList.id,
+        name: `${listToDuplicate.name} (copy)`,
+        isPinned: false,
+        competitors: []
+      };
+      
+      // In a real app, we would also copy all competitors to the new list
+      // For now, we'll just create an empty duplicate list
+      
+      // Update state to include the new list
+      const updatedLists = [...competitorLists, duplicatedList];
+      setCompetitorLists(updatedLists);
+      
+      // Save pinned status to localStorage
+      localStorage.setItem('competitorLists', JSON.stringify(updatedLists));
+      
+      // Refresh data from Supabase
+      await refreshData();
+    } catch (error) {
+      console.error('Error duplicating list:', error);
+    }
+    
+    closeAllMenus();
+  }
+
+  const deleteList = async (id: string) => {
     // Don't delete the default list
     if (id === "default") return;
     
-    setCompetitorLists(competitorLists.filter(list => list.id !== id));
+    try {
+      // Delete from Supabase
+      await competitorListsApi.deleteList(id);
+      
+      // Refresh the lists from Supabase after deleting
+      await refreshData();
+    } catch (error) {
+      console.error('Error deleting list:', error);
+    }
+    
     closeAllMenus();
   }
 
@@ -188,6 +429,38 @@ export default function CompetitorsPage() {
     if (!a.isPinned && b.isPinned) return 1;
     return 0;
   });
+
+  // Add a function to check auth status
+  const checkAuthStatus = async () => {
+    try {
+      // Check localStorage first
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        setAuthStatus(`Authenticated as: ${user.email || user.username || user.id}`);
+        return;
+      }
+      
+      // Check Supabase
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          setAuthStatus(`Supabase session found for: ${data.session.user.email}`);
+        } else {
+          setAuthStatus('No authenticated user found');
+        }
+      } catch (err) {
+        setAuthStatus(`Error checking Supabase: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      }
+    } catch (error) {
+      setAuthStatus(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+  
+  // Call the check on mount
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
 
   if (isLoading) {
     return (
@@ -202,6 +475,20 @@ export default function CompetitorsPage() {
     <div className="w-full max-w-[1200px] mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-bold dark:text-white">Tracked Competitors</h1>
+        
+        {/* Debug info */}
+        <div className="mt-2 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
+          <p className="text-sm font-medium">Auth Status: {authStatus}</p>
+          {lastError && (
+            <p className="text-sm text-red-500 mt-1">Last Error: {lastError}</p>
+          )}
+          <button 
+            onClick={checkAuthStatus}
+            className="mt-2 text-xs bg-blue-500 text-white px-2 py-1 rounded"
+          >
+            Refresh Auth Status
+          </button>
+        </div>
       </div>
       
       {competitorLists.length === 0 ? (
