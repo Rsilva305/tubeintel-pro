@@ -1458,10 +1458,33 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
           </button>
         </div>
         
-        {/* Search and Grid Controls for Related Videos - Moved inside component */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        {/* Combined Search and Grid Controls */}
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center">
+            <button 
+              className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 p-2 rounded-xl text-gray-700 dark:text-gray-300 mr-2"
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
+            >
+              <FaFilter size={18} />
+            </button>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search related videos"
+                value={videoSearchQuery}
+                onChange={(e) => setVideoSearchQuery(e.target.value)}
+                className="w-60 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600"
+              />
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          
           {/* Grid Controls */}
-          <div className="flex items-center gap-3 self-end sm:self-auto">
+          <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500 dark:text-gray-400">Videos per row:</span>
               <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-xl">
