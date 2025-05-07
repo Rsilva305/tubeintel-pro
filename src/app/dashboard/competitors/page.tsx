@@ -140,22 +140,9 @@ export default function CompetitorsPage() {
         console.log("Retrieved lists:", lists);
         
         if (lists.length === 0) {
-          // Create a default list if none exists (completely empty)
-          console.log("No lists found, creating empty default list");
-          const defaultList = await competitorListsApi.createList({
-            name: "All Competitors",
-            description: "Default list for all tracked competitors",
-            userId: 'current'
-          });
-          
-          // No competitors by default - initialize with empty competitors array
-          console.log("Setting empty default list");
-          setCompetitorLists([{
-            id: defaultList.id,
-            name: defaultList.name,
-            isPinned: true,
-            competitors: [] // EMPTY - No pre-populated competitors
-          }]);
+          // No lists - just set an empty array
+          console.log("No lists found");
+          setCompetitorLists([]);
         } else {
           // We need to fetch competitors for each list
           console.log("Lists found, fetching competitors for each list");
