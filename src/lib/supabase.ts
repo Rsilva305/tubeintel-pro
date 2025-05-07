@@ -12,12 +12,13 @@ try {
   console.log("- Key:", SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.substring(0, 5) + '...' : 'Missing');
   
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    console.warn('Supabase URL or anon key is missing. Auth will not work properly.');
+    console.warn('Supabase URL or anon key is missing. Authentication will not work properly.');
+    throw new Error('Missing Supabase credentials. Please check your environment variables.');
   }
   
   supabase = createClient(
-    SUPABASE_URL || 'https://placeholder.supabase.co', 
-    SUPABASE_ANON_KEY || 'placeholder'
+    SUPABASE_URL, 
+    SUPABASE_ANON_KEY
   );
   
   // Verify the client was created
@@ -26,10 +27,7 @@ try {
   
 } catch (error) {
   console.error('Failed to initialize Supabase client:', error);
-  // Create a mock client to prevent app from crashing
-  // This will still throw errors when methods are called
-  // but prevents immediate crash on import
-  supabase = {} as ReturnType<typeof createClient>;
+  throw error;
 }
 
 export { supabase };
@@ -44,12 +42,6 @@ interface SignInResult {
 // Helper functions for authentication
 export const signUp = async (email: string, password: string) => {
   try {
-    if (!supabase.auth) {
-      console.error("Supabase auth is not available. Using demo mode instead.");
-      // Return mock data for demo mode
-      return { user: { id: '1', email }, session: null };
-    }
-    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -65,16 +57,6 @@ export const signUp = async (email: string, password: string) => {
 
 export const signIn = async (email: string, password: string): Promise<SignInResult> => {
   try {
-    if (!supabase.auth) {
-      console.error("Supabase auth is not available. Using demo mode instead.");
-      // Return mock data for demo mode
-      return { 
-        user: { id: '1', email }, 
-        session: null,
-        hasCompletedOnboarding: false 
-      };
-    }
-    
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -132,11 +114,6 @@ export const signOut = async () => {
     localStorage.removeItem('user');
     localStorage.removeItem('youtubeChannelId');
     
-    if (!supabase.auth) {
-      console.error("Supabase auth is not available. Using demo mode instead.");
-      return;
-    }
-    
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   } catch (error) {
@@ -151,11 +128,6 @@ export const getCurrentUser = async () => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       return JSON.parse(storedUser);
-    }
-    
-    if (!supabase.auth) {
-      console.error("Supabase auth is not available. Using demo mode instead.");
-      return null;
     }
     
     const { data: { user } } = await supabase.auth.getUser();
@@ -208,11 +180,6 @@ export const getSession = async () => {
     if (storedUser) {
       // We have a user, so we're "authenticated" for our app purposes
       return { user: JSON.parse(storedUser) };
-    }
-    
-    if (!supabase.auth) {
-      console.error("Supabase auth is not available. Using demo mode instead.");
-      return null;
     }
     
     const { data: { session } } = await supabase.auth.getSession();

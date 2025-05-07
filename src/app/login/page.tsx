@@ -20,7 +20,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isDemo, setIsDemo] = useState(false);
   const { theme } = useTheme();
 
   // Check if user is already logged in
@@ -65,45 +64,20 @@ export default function LoginPage() {
     setError('');
 
     try {
-      if (isDemo) {
-        // Demo login - store mock user data in localStorage
-        const user = { 
-          email, 
-          username: email.split('@')[0], 
-          id: '1', 
-          createdAt: new Date().toISOString(),
-          hasCompletedOnboarding: false 
-        };
-        localStorage.setItem('user', JSON.stringify(user));
-        
-        // Check if user has completed onboarding
-        const hasCompletedOnboarding = localStorage.getItem('youtubeChannelId');
-        
-        // Redirect to dashboard or onboarding
-        if (hasCompletedOnboarding) {
-          // Update user object to mark onboarding as completed
-          user.hasCompletedOnboarding = true;
-          localStorage.setItem('user', JSON.stringify(user));
-          router.push('/dashboard');
-        } else {
-          router.push('/onboarding');
-        }
+      // Real Supabase authentication
+      const result = await signIn(email, password) as SignInResult;
+      
+      if (!result.user) {
+        throw new Error('Authentication failed. No user returned.');
+      }
+      
+      console.log('Login successful:', result.user, 'Onboarding completed:', result.hasCompletedOnboarding);
+      
+      // Check if user has completed onboarding based on return value or localStorage
+      if (result.hasCompletedOnboarding || localStorage.getItem('youtubeChannelId')) {
+        router.push('/dashboard');
       } else {
-        // Real Supabase authentication
-        const result = await signIn(email, password) as SignInResult;
-        
-        if (!result.user) {
-          throw new Error('Authentication failed. No user returned.');
-        }
-        
-        console.log('Login successful:', result.user, 'Onboarding completed:', result.hasCompletedOnboarding);
-        
-        // Check if user has completed onboarding based on return value or localStorage
-        if (result.hasCompletedOnboarding || localStorage.getItem('youtubeChannelId')) {
-          router.push('/dashboard');
-        } else {
-          router.push('/onboarding');
-        }
+        router.push('/onboarding');
       }
     } catch (err: any) {
       console.error('Login error:', err);
@@ -111,11 +85,6 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const toggleDemoMode = () => {
-    setIsDemo(!isDemo);
-    setError('');
   };
 
   return (
@@ -134,16 +103,6 @@ export default function LoginPage() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-center dark:text-white">Sign In</h2>
-            <button 
-              onClick={toggleDemoMode}
-              className={`text-sm px-3 py-1 rounded ${
-                isDemo 
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' 
-                : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-              }`}
-            >
-              {isDemo ? 'Demo Mode' : 'Real Auth'}
-            </button>
           </div>
           
           {error && (
@@ -196,22 +155,13 @@ export default function LoginPage() {
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
               Don't have an account? <Link href="/signup" className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">Sign up</Link>
             </p>
-            
-            {isDemo && (
-              <p className="text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 p-2 rounded">
-                Demo mode: You can use any email and password.
-              </p>
-            )}
           </div>
         </div>
         
         {/* Info Box */}
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-4 mt-6">
           <p className="text-sm text-blue-800 dark:text-blue-300">
-            <span className="font-semibold">Note:</span> {isDemo 
-              ? "You're using demo mode. For a real implementation, create a Supabase account and update the configuration."
-              : "You need a valid Supabase account to log in. Toggle to demo mode to try the app without authentication."
-            }
+            <span className="font-semibold">Note:</span> You need a valid Supabase account to log in. Please contact your administrator if you need access.
           </p>
         </div>
       </div>
