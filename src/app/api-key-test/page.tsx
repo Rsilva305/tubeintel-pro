@@ -106,12 +106,6 @@ export default function ApiKeyTestPage() {
         <h1 className="text-2xl font-bold">YouTube API Key Test</h1>
         <div>
           <Link 
-            href="/test-api" 
-            className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded mr-2"
-          >
-            Back to API Test
-          </Link>
-          <Link 
             href="/dashboard" 
             className="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded"
           >

@@ -7,6 +7,7 @@ import { FaYoutube, FaUser, FaCog, FaSun, FaMoon } from 'react-icons/fa';
 import { Zap } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { signOut } from '@/lib/supabase';
+import YouTubeApiToggle from './YouTubeApiToggle';
 
 interface TopNavProps {
   username?: string;
@@ -34,11 +35,20 @@ export default function TopNav({ username = 'User' }: TopNavProps): JSX.Element 
 
   const handleLogout = async () => {
     try {
+      // First remove localStorage data
+      localStorage.removeItem('user');
+      localStorage.removeItem('youtubeChannelId');
+      localStorage.removeItem('competitorLists');
+      
+      // Then try Supabase signout
       await signOut();
+      
       // Redirect to landing page after logout
-      router.push('/');
+      window.location.href = '/';
     } catch (error) {
       console.error('Logout error:', error);
+      // Even if there's an error, redirect to the landing page
+      window.location.href = '/';
     }
   };
 
@@ -60,11 +70,8 @@ export default function TopNav({ username = 'User' }: TopNavProps): JSX.Element 
 
       {/* User Controls */}
       <div className="flex items-center gap-4">
-        {/* Test API Link */}
-        <Link href="/test-api" className="mr-2 flex items-center text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
-          <FaYoutube className="mr-1" />
-          <span>Test API</span>
-        </Link>
+        {/* YouTube API Toggle */}
+        <YouTubeApiToggle />
         
         {/* Extension Button */}
         <button 

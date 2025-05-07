@@ -6,6 +6,11 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from './env';
 let supabase: ReturnType<typeof createClient>;
 
 try {
+  // Log environment variables for debugging (without exposing the full key)
+  console.log("Supabase initialization:");
+  console.log("- URL:", SUPABASE_URL ? SUPABASE_URL.substring(0, 15) + '...' : 'Missing');
+  console.log("- Key:", SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.substring(0, 5) + '...' : 'Missing');
+  
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     console.warn('Supabase URL or anon key is missing. Auth will not work properly.');
   }
@@ -14,6 +19,11 @@ try {
     SUPABASE_URL || 'https://placeholder.supabase.co', 
     SUPABASE_ANON_KEY || 'placeholder'
   );
+  
+  // Verify the client was created
+  console.log("- Client initialized:", !!supabase);
+  console.log("- Auth available:", !!supabase.auth);
+  
 } catch (error) {
   console.error('Failed to initialize Supabase client:', error);
   // Create a mock client to prevent app from crashing

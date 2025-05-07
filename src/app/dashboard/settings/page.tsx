@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { channelsApi } from '@/services/api';
 import { Channel } from '@/types';
-import ApiToggle from '@/components/ApiToggle';
 
 export default function SettingsPage() {
   const [channelId, setChannelId] = useState('');
@@ -75,17 +74,6 @@ export default function SettingsPage() {
       
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-6">
         <h2 className="text-xl font-semibold mb-4 dark:text-white">YouTube Channel Connection</h2>
-        
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-gray-700 dark:text-gray-300 font-medium">API Mode:</span>
-            <ApiToggle />
-          </div>
-          <p className="text-sm text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded border border-blue-100 dark:border-blue-800">
-            Toggle between using real YouTube data or mock data.
-            For production use, keep the real YouTube API enabled.
-          </p>
-        </div>
         
         {connectedChannel && (
           <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
