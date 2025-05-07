@@ -696,31 +696,14 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
               </svg>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center">
-              <label className="flex items-center cursor-pointer">
-                <div className="relative">
-                  <input 
-                    type="checkbox" 
-                    className="sr-only" 
-                    checked={subscribersOnly} 
-                    onChange={() => setSubscribersOnly(!subscribersOnly)} 
-                  />
-                  <div className={`block w-10 h-6 rounded-full ${subscribersOnly ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
-                  <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${subscribersOnly ? 'transform translate-x-4' : ''}`}></div>
-                </div>
-                <span className="ml-2 text-gray-700 dark:text-gray-300 text-sm">Subscribers</span>
-              </label>
-            </div>
-            <div className="flex items-center gap-2">
-              <button 
-                className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-xl text-sm transition-colors"
-                onClick={() => setIsModalOpen(true)}
-              >
-                <FaPlus size={14} />
-                <span className="text-xs sm:text-sm">Add channel</span>
-              </button>
-            </div>
+          <div className="flex items-center gap-2">
+            <button 
+              className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-xl text-sm transition-colors"
+              onClick={() => setIsModalOpen(true)}
+            >
+              <FaPlus size={14} />
+              <span className="text-xs sm:text-sm">Add channel</span>
+            </button>
           </div>
         </div>
 
@@ -930,7 +913,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
         </button>
       )}
 
-      {/* Search and Controls */}
+      {/* Search and Controls - Modified to keep only search box and filter */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center">
           <button 
@@ -942,9 +925,9 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
           <div className="relative">
             <input
               type="text"
-              placeholder="Search competitors"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search related videos"
+              value={videoSearchQuery}
+              onChange={(e) => setVideoSearchQuery(e.target.value)}
               className="w-60 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600"
             />
             <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500">
@@ -952,25 +935,6 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="flex items-center">
-            <button className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-xl text-sm">
-              <span>Sort by: {sortBy}</span>
-              <FaChevronDown size={14} />
-            </button>
-          </div>
-          
-          <div className="flex items-center">
-            <button 
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-sm transition-colors"
-              onClick={() => setIsModalOpen(true)}
-            >
-              <FaPlus size={14} />
-              <span>Add competitor</span>
-            </button>
           </div>
         </div>
       </div>
@@ -1458,82 +1422,6 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
 
       {/* Competitors Grid */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
-        {competitors.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500 dark:text-gray-400 mb-4">No competitors added to this list yet.</p>
-            <p className="text-gray-700 dark:text-gray-300 mb-6">Add your first competitor to start tracking their channel performance.</p>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg transition-colors"
-            >
-              Add Competitor
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {competitors
-              .filter(comp => comp.name.toLowerCase().includes(searchQuery.toLowerCase()))
-              .sort((a, b) => {
-                switch (sortBy) {
-                  case 'subscribers': return b.subscriberCount - a.subscriberCount;
-                  case 'views': return b.viewCount - a.viewCount;
-                  case 'videos': return b.videoCount - a.videoCount;
-                  case 'name': return a.name.localeCompare(b.name);
-                  default: return 0; // date added would use timestamps in a real app
-                }
-              })
-              .map(competitor => (
-                <div key={competitor.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow">
-                  <div className="p-6">
-                    <div className="flex items-center mb-4">
-                      <img 
-                        src={competitor.thumbnailUrl} 
-                        alt={competitor.name} 
-                        className="w-12 h-12 rounded-xl mr-4"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          {getCompetitorIcon(competitor)}
-                          <h3 className="font-semibold text-lg dark:text-white">{competitor.name}</h3>
-                        </div>
-                        <p className="text-gray-500 dark:text-gray-400 text-sm truncate">{competitor.youtubeId}</p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                      <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
-                        <p className="text-gray-500 dark:text-gray-400 text-xs">Subscribers</p>
-                        <p className="font-semibold dark:text-white">{competitor.subscriberCount.toLocaleString()}</p>
-                      </div>
-                      <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
-                        <p className="text-gray-500 dark:text-gray-400 text-xs">Videos</p>
-                        <p className="font-semibold dark:text-white">{competitor.videoCount.toLocaleString()}</p>
-                      </div>
-                      <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-md col-span-2">
-                        <p className="text-gray-500 dark:text-gray-400 text-xs">Total Views</p>
-                        <p className="font-semibold dark:text-white">{competitor.viewCount.toLocaleString()}</p>
-                      </div>
-                    </div>
-                    <div className="flex justify-between">
-                      <a 
-                        href={`https://youtube.com/channel/${competitor.youtubeId}`}
-                        target="_blank"
-                        rel="noopener noreferrer" 
-                        className="flex items-center text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 text-sm font-medium"
-                      >
-                        <FaYoutube className="mr-1" /> View Channel
-                      </a>
-                      <button 
-                        onClick={() => handleRemoveCompetitor(competitor.id)}
-                        className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-sm font-medium"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-          </div>
-        )}
       </div>
 
       {/* Similar Videos Section */}
@@ -1583,24 +1471,8 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
           </button>
         </div>
         
-        {/* Search and Grid Controls */}
+        {/* Search and Grid Controls for Related Videos - Moved inside component */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          {/* Search */}
-          <div className="w-full sm:w-auto">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search videos"
-                value={videoSearchQuery}
-                onChange={(e) => setVideoSearchQuery(e.target.value)}
-                className="w-full sm:w-64 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600"
-              />
-              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500">
-                <FaSearch size={14} />
-              </div>
-            </div>
-          </div>
-          
           {/* Grid Controls */}
           <div className="flex items-center gap-3 self-end sm:self-auto">
             <div className="flex items-center gap-2">
