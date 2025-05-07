@@ -331,8 +331,22 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
 
   const handleRemoveCompetitor = async (id: string) => {
     try {
+      // Find the competitor being removed to get its youtubeId
+      const competitorToRemove = competitors.find(comp => comp.id === id);
+      
+      // Remove the competitor from the database/API
       await competitorsApi.removeCompetitor(id);
+      
+      // Update the competitors list in UI
       setCompetitors(prev => prev.filter(competitor => competitor.id !== id));
+      
+      // If we found the competitor, also remove its videos from the Related Videos section
+      if (competitorToRemove) {
+        // Filter out any videos that belong to this competitor's channel
+        setCompetitorVideos(prev => 
+          prev.filter(video => video.channelId !== competitorToRemove.youtubeId)
+        );
+      }
     } catch (error) {
       console.error('Error removing competitor:', error);
     }
