@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Competitor, Video } from '@/types';
 import { competitorsApi, videosApi } from '@/services/api';
 import { getUseRealApi } from '@/services/api/config';
+import { competitorListsApi } from '@/services/api/competitorLists';
 
 // Mock suggested competitors for demo - Expanded to 10+ competitors
 const suggestedCompetitors = [
@@ -234,26 +235,36 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   const [excludeKeywords, setExcludeKeywords] = useState<string>("");
 
   // Add new state variables for similar videos section
-  const [competitorVideos, setCompetitorVideos] = useState<Video[]>(mockCompetitorVideos);
-  const [similarVideos, setSimilarVideos] = useState<Video[]>(mockSimilarVideos);
+  const [competitorVideos, setCompetitorVideos] = useState<Video[]>([]);
+  const [similarVideos, setSimilarVideos] = useState<Video[]>([]);
   const [videoGridColumns, setVideoGridColumns] = useState<number>(3);
   const [showVideoInfo, setShowVideoInfo] = useState<boolean>(true);
   const [videoSearchQuery, setVideoSearchQuery] = useState<string>('');
-  const [isAddChannelModalOpen, setIsAddChannelModalOpen] = useState<boolean>(false);
-  const [newChannelId, setNewChannelId] = useState<string>('');
   const [activeVideoTab, setActiveVideoTab] = useState<'competitors' | 'similar'>('competitors');
-  const [addChannelError, setAddChannelError] = useState<string | null>(null);
-  const [isAddingChannel, setIsAddingChannel] = useState<boolean>(false);
-  const [showSuggestedCompetitors, setShowSuggestedCompetitors] = useState<boolean>(true);
+  const [showSuggestedCompetitors, setShowSuggestedCompetitors] = useState<boolean>(false);
   const competitorCarouselRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchCompetitors = async () => {
       try {
-        // For the demo we just load all competitors in every list
-        // In a real app, this would filter based on the list ID
-        const data = await competitorsApi.getAllCompetitors();
-        setCompetitors(data);
+        // Properly fetch competitors for this specific list
+        setIsLoading(true);
+        
+        // Use the listId from params to get the specific competitors
+        const data = await competitorListsApi.getCompetitorsInList(params.listId);
+        
+        // Format the competitors for display
+        const formattedCompetitors = data.map(c => ({
+          id: c.id,
+          youtubeId: c.youtubeId,
+          name: c.name,
+          thumbnailUrl: c.thumbnailUrl || '',
+          subscriberCount: c.subscriberCount || 0,
+          videoCount: c.videoCount || 0,
+          viewCount: c.viewCount || 0
+        }));
+        
+        setCompetitors(formattedCompetitors);
       } catch (error) {
         console.error('Error fetching competitors:', error);
       } finally {
@@ -289,6 +300,25 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
       
       const competitor = await competitorsApi.addCompetitor(competitorData);
       setCompetitors(prev => [...prev, competitor]);
+      
+      // Create a sample video for this competitor to show in the Related Videos section
+      const newVideo: Video = {
+        id: `video-${Date.now()}`,
+        youtubeId: `v-${Date.now()}`,
+        channelId: competitor.youtubeId,
+        title: `Latest video from ${competitor.name}`,
+        description: 'This channel was just added to your tracked competitors',
+        thumbnailUrl: 'https://via.placeholder.com/320x180?text=New+Channel+Video',
+        publishedAt: new Date(),
+        viewCount: Math.floor(Math.random() * 50000) + 5000,
+        likeCount: Math.floor(Math.random() * 5000) + 500,
+        commentCount: Math.floor(Math.random() * 300) + 50,
+        vph: Math.floor(Math.random() * 100) + 20
+      };
+      
+      // Add this video to the competitor videos array
+      setCompetitorVideos(prev => [newVideo, ...prev]);
+      
       setNewCompetitorId('');
       setIsModalOpen(false);
     } catch (error) {
@@ -587,54 +617,6 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   // Function to open video on YouTube
   const openVideoOnYouTube = (videoId: string) => {
     window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
-  };
-
-  // Function to handle adding a new channel for videos
-  const handleAddChannel = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!newChannelId) {
-      setAddChannelError('Please enter a YouTube channel ID');
-      return;
-    }
-
-    setAddChannelError(null);
-    setIsAddingChannel(true);
-    
-    try {
-      // In a real implementation, you would fetch videos from this channel
-      // Here we're just simulating success
-      setTimeout(() => {
-        // Create a mock video from this channel
-        const newVideo: Video = {
-          id: `new-video-${Date.now()}`,
-          youtubeId: `new-${Date.now()}`,
-          channelId: newChannelId,
-          title: `New Video from ${newChannelId}`,
-          description: 'This is a new video from the added channel',
-          thumbnailUrl: 'https://via.placeholder.com/320x180?text=New+Channel',
-          publishedAt: new Date(),
-          viewCount: 1000,
-          likeCount: 100,
-          commentCount: 20,
-          vph: 50,
-        };
-        
-        if (activeVideoTab === 'competitors') {
-          setCompetitorVideos(prev => [newVideo, ...prev]);
-        } else {
-          setSimilarVideos(prev => [newVideo, ...prev]);
-        }
-        
-        setNewChannelId('');
-        setIsAddChannelModalOpen(false);
-        setIsAddingChannel(false);
-      }, 1000);
-    } catch (error) {
-      console.error('Error adding channel:', error);
-      setAddChannelError('Could not add this channel. Please check the ID and try again.');
-      setIsAddingChannel(false);
-    }
   };
 
   // Filter videos based on search query
@@ -1436,15 +1418,6 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
               </svg>
             </div>
           </div>
-          
-          {/* Add Channel Button */}
-          <button 
-            className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-sm transition-colors"
-            onClick={() => setIsAddChannelModalOpen(true)}
-          >
-            <FaPlus size={14} />
-            <span>Add Channel</span>
-          </button>
         </div>
         
         {/* Video Selection Tabs */}
@@ -1550,7 +1523,11 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
           </div>
         ) : (
           <div className="text-center py-12">
-            <p className="text-gray-500 dark:text-gray-400 mb-4">No videos found matching your search.</p>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">
+              {videoSearchQuery 
+                ? "No videos found matching your search." 
+                : "Videos from your tracked competitors will appear here. Add competitors to the Tracked Channels section above."}
+            </p>
             {videoSearchQuery && (
               <button
                 onClick={() => setVideoSearchQuery('')}
@@ -1562,71 +1539,6 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
           </div>
         )}
       </div>
-
-      {/* Add Channel Modal */}
-      {isAddChannelModalOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div 
-            className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md p-6 relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button 
-              onClick={() => setIsAddChannelModalOpen(false)} 
-              className="absolute top-4 right-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
-            >
-              <FaTimes size={20} />
-            </button>
-            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">
-              Add Channel for Videos
-            </h3>
-            <form onSubmit={handleAddChannel}>
-              <div className="mb-4">
-                <label htmlFor="channelId" className="block text-gray-600 dark:text-gray-300 text-sm mb-2">
-                  YouTube Channel ID
-                </label>
-                <input 
-                  type="text"
-                  id="channelId"
-                  value={newChannelId}
-                  onChange={(e) => setNewChannelId(e.target.value)}
-                  className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="e.g. UC_x5XG1OV2P6uZZ5FSM9Ttw"
-                  autoFocus
-                />
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  Enter a YouTube channel ID to show videos from this channel.
-                </p>
-              </div>
-
-              {addChannelError && (
-                <div className="bg-red-100 dark:bg-red-900/30 border-l-4 border-red-500 p-4 mb-4 rounded-r-xl">
-                  <p className="text-red-700 dark:text-red-300">{addChannelError}</p>
-                </div>
-              )}
-
-              <div className="flex justify-end">
-                <button 
-                  type="button"
-                  onClick={() => setIsAddChannelModalOpen(false)}
-                  className="bg-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 px-4 py-2 rounded-xl mr-2"
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit"
-                  disabled={isAddingChannel || !newChannelId.trim()}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl disabled:opacity-50"
-                >
-                  {isAddingChannel ? 'Adding...' : 'Add Channel'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Add Competitor Modal */}
       {isModalOpen && (
