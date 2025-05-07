@@ -5,50 +5,57 @@
 export const YOUTUBE_API_KEY = 'AIzaSyBTNCNWyklQlWyDOYKGgJxfiaspBv4W-CM';
 
 // Application settings
-let USE_REAL_API = false;
+let USE_YOUTUBE_API = true; // Default to using YouTube API
 let API_SETTINGS = {
-  simulateDelay: true,
-  delayMs: 500
+  simulateDelay: false,
+  delayMs: 0
 };
 
 // Safely detect if we're in a browser environment
 const isBrowser = typeof window !== 'undefined';
 
 // Functions to get and set the API mode
-export const getUseRealApi = () => {
-  // When this is called during server-side rendering, always return false
-  // This ensures consistent rendering between server and client
+export const getUseYoutubeApi = () => {
+  // When in server-side rendering, default to false to avoid API calls
   if (!isBrowser) {
     return false;
   }
   
   // On client-side, check localStorage
-  const savedSetting = localStorage.getItem('useRealApi');
+  const savedSetting = localStorage.getItem('useYoutubeApi');
   if (savedSetting !== null) {
-    USE_REAL_API = savedSetting === 'true';
+    USE_YOUTUBE_API = savedSetting === 'true';
   }
   
-  return USE_REAL_API;
+  return USE_YOUTUBE_API;
 };
 
-export const setUseRealApi = (value: boolean) => {
-  USE_REAL_API = value;
+export const setUseYoutubeApi = (value: boolean) => {
+  USE_YOUTUBE_API = value;
+  
   // Save to localStorage for persistence across page refreshes
   if (isBrowser) {
-    localStorage.setItem('useRealApi', value ? 'true' : 'false');
+    localStorage.setItem('useYoutubeApi', value ? 'true' : 'false');
   }
-  return USE_REAL_API;
+  
+  return USE_YOUTUBE_API;
 };
 
-// DO NOT initialize during server-side rendering
-// This was causing the hydration mismatch
+// Initialize during client-side only
 if (isBrowser) {
   // This will run only on the client side after hydration
-  const savedSetting = localStorage.getItem('useRealApi');
+  const savedSetting = localStorage.getItem('useYoutubeApi');
   if (savedSetting !== null) {
-    USE_REAL_API = savedSetting === 'true';
+    USE_YOUTUBE_API = savedSetting === 'true';
+  } else {
+    // If no setting exists, default to true and save it
+    localStorage.setItem('useYoutubeApi', 'true');
   }
 }
+
+// For backward compatibility
+export const getUseRealApi = getUseYoutubeApi;
+export const setUseRealApi = setUseYoutubeApi;
 
 // Get API settings
 export const getApiSettings = () => API_SETTINGS;
@@ -60,7 +67,4 @@ export const setApiSettings = (settings: Partial<typeof API_SETTINGS>) => {
 };
 
 // Simulate API delay
-export const simulateDelay = () => 
-  API_SETTINGS.simulateDelay 
-    ? new Promise((resolve) => setTimeout(resolve, API_SETTINGS.delayMs)) 
-    : Promise.resolve(); 
+export const simulateDelay = () => Promise.resolve(); 
