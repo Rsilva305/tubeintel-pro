@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { channelsApi } from '@/services/api';
-import { Channel } from '@/types';
+import { Channel, Profile } from '@/types';
+import { supabase } from '@/lib/supabase';
+import { getCurrentUser } from '@/lib/supabase';
 
 export default function SettingsPage() {
   const [channelId, setChannelId] = useState('');
@@ -14,15 +16,34 @@ export default function SettingsPage() {
   useEffect(() => {
     const loadChannel = async () => {
       try {
-        const savedChannelId = localStorage.getItem('youtubeChannelId');
-        if (savedChannelId) {
-          setChannelId(savedChannelId);
+        const user = await getCurrentUser();
+        if (!user) {
+          throw new Error('User not authenticated');
+        }
+
+        // Get channel ID from Supabase
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('youtube_channel_id')
+          .eq('id', user.id)
+          .single<Pick<Profile, 'youtube_channel_id'>>();
+
+        if (error) {
+          throw new Error('Failed to load profile: ' + error.message);
+        }
+
+        if (profile?.youtube_channel_id) {
+          setChannelId(profile.youtube_channel_id);
           setIsLoading(true);
           const channel = await channelsApi.getMyChannel();
           setConnectedChannel(channel);
         }
       } catch (error) {
         console.error('Error loading channel:', error);
+        setMessage({
+          type: 'error',
+          text: 'Error loading channel. Please reconnect your channel.'
+        });
       } finally {
         setIsLoading(false);
       }
@@ -31,12 +52,83 @@ export default function SettingsPage() {
     loadChannel();
   }, []);
 
+  const extractChannelId = async (input: string) => {
+    try {
+      // If it's a direct channel ID (starts with UC and is 24 characters)
+      if (input.startsWith('UC') && input.length === 24) {
+        return input;
+      }
+
+      // If it's a URL, try to parse it
+      try {
+        const urlObj = new URL(input);
+        
+        // Handle different YouTube URL formats
+        if (urlObj.hostname.includes('youtube.com')) {
+          // Format: youtube.com/channel/UC...
+          if (urlObj.pathname.includes('/channel/')) {
+            const parts = urlObj.pathname.split('/');
+            const index = parts.indexOf('channel');
+            if (index !== -1 && index + 1 < parts.length) {
+              const channelId = parts[index + 1];
+              if (channelId.startsWith('UC') && channelId.length === 24) {
+                return channelId;
+              }
+            }
+          }
+          
+          // Format: youtube.com/@username
+          if (urlObj.pathname.startsWith('/@')) {
+            const username = urlObj.pathname.substring(2); // Remove the @ symbol
+            if (username) {
+              const response = await fetch(`/api/youtube/channel?username=${encodeURIComponent(username)}`);
+              if (!response.ok) {
+                throw new Error('Failed to fetch channel ID');
+              }
+              const data = await response.json();
+              return data.channelId;
+            }
+          }
+
+          // Format: youtube.com/c/ChannelName
+          if (urlObj.pathname.startsWith('/c/')) {
+            const customUrl = urlObj.pathname.substring(3); // Remove the c/ prefix
+            if (customUrl) {
+              const response = await fetch(`/api/youtube/channel?customUrl=${encodeURIComponent(customUrl)}`);
+              if (!response.ok) {
+                throw new Error('Failed to fetch channel ID');
+              }
+              const data = await response.json();
+              return data.channelId;
+            }
+          }
+        }
+      } catch (e) {
+        // If it's not a URL, it might be a username
+        if (input.startsWith('@')) {
+          const username = input.substring(1); // Remove the @ symbol
+          const response = await fetch(`/api/youtube/channel?username=${encodeURIComponent(username)}`);
+          if (!response.ok) {
+            throw new Error('Failed to fetch channel ID');
+          }
+          const data = await response.json();
+          return data.channelId;
+        }
+      }
+      
+      throw new Error('Invalid YouTube channel URL or ID');
+    } catch (error) {
+      console.error('Error extracting channel ID:', error);
+      throw error;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!channelId) {
       setMessage({
         type: 'error',
-        text: 'Please enter a YouTube channel ID'
+        text: 'Please enter a YouTube channel URL or ID'
       });
       return;
     }
@@ -45,24 +137,43 @@ export default function SettingsPage() {
     setMessage(null);
 
     try {
-      // Store channel ID in localStorage
-      localStorage.setItem('youtubeChannelId', channelId);
+      // Extract the channel ID from the input
+      const extractedChannelId = await extractChannelId(channelId);
       
-      // Fetch channel info to verify it's valid
+      // Get current user
+      const user = await getCurrentUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      // Update the profile in Supabase
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ 
+          youtube_channel_id: extractedChannelId
+        })
+        .eq('id', user.id);
+        
+      if (updateError) {
+        throw new Error('Failed to update profile: ' + updateError.message);
+      }
+
+      // Fetch channel info to verify and display
       const channel = await channelsApi.getMyChannel();
       setConnectedChannel(channel);
+      setChannelId(extractedChannelId); // Update input with the actual channel ID
       
       setMessage({
         type: 'success',
         text: `Successfully connected to channel: ${channel.name}`
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error connecting channel:', error);
       setMessage({
         type: 'error',
-        text: 'Error connecting to channel. Please check the ID and try again.'
+        text: error.message || 'Error connecting to channel. Please check the URL/ID and try again.'
       });
-      localStorage.removeItem('youtubeChannelId');
+      setConnectedChannel(null);
     } finally {
       setIsLoading(false);
     }
@@ -100,7 +211,7 @@ export default function SettingsPage() {
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label htmlFor="channelId" className="block text-gray-700 dark:text-gray-300 mb-2">
-              YouTube Channel ID:
+              YouTube Channel URL or ID:
             </label>
             <input
               type="text"
@@ -108,10 +219,10 @@ export default function SettingsPage() {
               value={channelId}
               onChange={(e) => setChannelId(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-              placeholder="e.g. UC_x5XG1OV2P6uZZ5FSM9Ttw"
+              placeholder="e.g. https://youtube.com/@username or UC_x5XG1OV2P6uZZ5FSM9Ttw"
             />
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Find your channel ID by going to your YouTube channel page and looking at the URL. It's usually in the format 'UC_x5XG1OV2P6uZZ5FSM9Ttw'.
+              Enter your YouTube channel URL (e.g., https://youtube.com/@username) or channel ID.
             </p>
           </div>
           

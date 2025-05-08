@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { Video, Channel, VideoMetadata } from '@/types';
 import { YOUTUBE_API_KEY } from '@/lib/env';
+import { IYouTubeService } from './interfaces';
 
 // The YouTube API key is now imported from environment variables
 const API_KEY = YOUTUBE_API_KEY;
@@ -19,14 +20,73 @@ const youtubeApi = axios.create({
   }
 });
 
+// Simple cache implementation
+const cache = {
+  channels: new Map<string, { data: any, timestamp: number }>(),
+  videos: new Map<string, { data: any, timestamp: number }>(),
+  // Cache duration set to 4 hours (14400000 ms) to conserve API credits during development
+  // This can be adjusted based on needs and API quota availability
+  CACHE_DURATION: 4 * 60 * 60 * 1000, // 4 hours in milliseconds
+
+  set(key: string, data: any, type: 'channels' | 'videos') {
+    this[type].set(key, {
+      data,
+      timestamp: Date.now()
+    });
+  },
+
+  get(key: string, type: 'channels' | 'videos') {
+    const item = this[type].get(key);
+    if (!item) return null;
+    
+    if (Date.now() - item.timestamp > this.CACHE_DURATION) {
+      this[type].delete(key);
+      return null;
+    }
+    
+    return item.data;
+  },
+
+  clear() {
+    this.channels.clear();
+    this.videos.clear();
+  }
+};
+
+// Log API key status
+console.log('YouTube API Key Status:', {
+  isSet: !!API_KEY,
+  length: API_KEY?.length,
+  prefix: API_KEY?.substring(0, 5),
+  suffix: API_KEY?.substring(API_KEY.length - 4)
+});
+
 // Add response interceptor to better handle API errors
 youtubeApi.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('YouTube API Response:', {
+      url: response.config.url,
+      method: response.config.method,
+      status: response.status,
+      statusText: response.statusText,
+      data: response.data
+    });
+    return response;
+  },
   (error) => {
     if (error.response) {
       // The request was made and the server responded with a status code
       // that falls out of the range of 2xx
       const { status, data } = error.response;
+      
+      console.error('YouTube API Error:', {
+        url: error.config?.url,
+        method: error.config?.method,
+        status,
+        statusText: error.response.statusText,
+        data: data?.error || data,
+        fullResponse: error.response
+      });
       
       if (status === 403) {
         console.error('YouTube API access denied (403). Possible reasons:');
@@ -106,8 +166,8 @@ const formatChannel = (item: any): Channel => {
   };
 };
 
-// YouTube API service with functions that match our mock API structure
-export const youtubeService = {
+// YouTube API service implementing the interface
+export const youtubeService: IYouTubeService = {
   // Test API key to make sure it's working
   testApiKey: async (): Promise<boolean> => {
     try {
@@ -129,6 +189,13 @@ export const youtubeService = {
   // Channel functions
   getChannelById: async (channelId: string): Promise<Channel> => {
     try {
+      // Check cache first
+      const cachedChannel = cache.get(channelId, 'channels');
+      if (cachedChannel) {
+        console.log('Using cached channel data for:', channelId);
+        return cachedChannel;
+      }
+
       const response = await youtubeApi.get('/channels', {
         params: {
           part: 'snippet,statistics',
@@ -137,7 +204,10 @@ export const youtubeService = {
       });
       
       if (response.data.items && response.data.items.length > 0) {
-        return formatChannel(response.data.items[0]);
+        const channel = formatChannel(response.data.items[0]);
+        // Cache the result
+        cache.set(channelId, channel, 'channels');
+        return channel;
       }
       throw new Error('Channel not found');
     } catch (error) {
@@ -146,9 +216,130 @@ export const youtubeService = {
     }
   },
   
+  // New method to get channel ID from username
+  getChannelIdByUsername: async (username: string): Promise<string> => {
+    try {
+      // Check cache first
+      const cacheKey = `username:${username}`;
+      const cachedId = cache.get(cacheKey, 'channels');
+      if (cachedId) {
+        console.log('Using cached channel ID for username:', username);
+        return cachedId;
+      }
+
+      console.log('Getting channel ID for username:', username);
+      // Remove @ if present
+      const cleanUsername = username.startsWith('@') ? username.substring(1) : username;
+      
+      // First try with forUsername parameter
+      const response = await youtubeApi.get('/channels', {
+        params: {
+          part: 'id',
+          forUsername: cleanUsername
+        }
+      });
+
+      console.log('Channel lookup response:', response.data);
+
+      if (response.data.items && response.data.items.length > 0) {
+        const channelId = response.data.items[0].id;
+        console.log('Found channel ID:', channelId);
+        // Cache the result
+        cache.set(cacheKey, channelId, 'channels');
+        return channelId;
+      }
+
+      // If no results, try searching
+      console.log('No direct match, trying search...');
+      const channels = await youtubeService.searchChannels(`@${cleanUsername}`);
+      
+      if (channels && channels.length > 0) {
+        const channelId = channels[0].youtubeId;
+        console.log('Found channel ID from search:', channelId);
+        // Cache the result
+        cache.set(cacheKey, channelId, 'channels');
+        return channelId;
+      }
+
+      throw new Error('Channel not found');
+    } catch (error) {
+      console.error('Error getting channel ID:', error);
+      throw error;
+    }
+  },
+  
+  searchChannels: async (query: string): Promise<Channel[]> => {
+    try {
+      // Check cache first
+      const cacheKey = `search:${query}`;
+      const cachedResults = cache.get(cacheKey, 'channels');
+      if (cachedResults) {
+        console.log('Using cached search results for:', query);
+        return cachedResults;
+      }
+
+      console.log('Searching channels with query:', query);
+      
+      // First try to search by channel name
+      const response = await youtubeApi.get('/search', {
+        params: {
+          part: 'snippet',
+          q: query,
+          type: 'channel',
+          maxResults: 5
+        }
+      });
+
+      console.log('Search response:', response.data);
+
+      if (!response.data.items || response.data.items.length === 0) {
+        console.log('No search results found');
+        return [];
+      }
+
+      // Get detailed channel information for each result
+      const channelIds = response.data.items.map((item: any) => item.id.channelId).join(',');
+      console.log('Fetching details for channel IDs:', channelIds);
+      
+      const channelsResponse = await youtubeApi.get('/channels', {
+        params: {
+          part: 'snippet,statistics',
+          id: channelIds
+        }
+      });
+
+      console.log('Channel details response:', channelsResponse.data);
+
+      if (channelsResponse.data.items && channelsResponse.data.items.length > 0) {
+        const channels = channelsResponse.data.items.map(formatChannel);
+        console.log('Formatted channels:', channels);
+        // Cache the results
+        cache.set(cacheKey, channels, 'channels');
+        return channels;
+      }
+
+      console.log('No channel details found');
+      return [];
+    } catch (error: any) {
+      console.error('Error searching channels:', error);
+      if (error.response) {
+        console.error('YouTube API Response:', error.response.data);
+        console.error('Status:', error.response.status);
+      }
+      throw error;
+    }
+  },
+  
   // Video functions
   getVideoById: async (videoId: string): Promise<Video> => {
     try {
+      // Check cache first
+      const cachedVideo = cache.get(videoId, 'videos');
+      if (cachedVideo) {
+        console.log('Using cached video data for:', videoId);
+        return cachedVideo;
+      }
+
       const response = await youtubeApi.get('/videos', {
         params: {
           part: 'snippet,statistics',
@@ -157,7 +348,10 @@ export const youtubeService = {
       });
       
       if (response.data.items && response.data.items.length > 0) {
-        return formatVideo(response.data.items[0]);
+        const video = formatVideo(response.data.items[0]);
+        // Cache the result
+        cache.set(videoId, video, 'videos');
+        return video;
       }
       throw new Error('Video not found');
     } catch (error) {
@@ -168,6 +362,14 @@ export const youtubeService = {
   
   getVideosByChannelId: async (channelId: string, maxResults = 10): Promise<Video[]> => {
     try {
+      // Check cache first
+      const cacheKey = `channel:${channelId}:videos:${maxResults}`;
+      const cachedVideos = cache.get(cacheKey, 'videos');
+      if (cachedVideos) {
+        console.log('Using cached videos for channel:', channelId);
+        return cachedVideos;
+      }
+
       // First get the video IDs from the channel
       const playlistResponse = await youtubeApi.get('/search', {
         params: {
@@ -195,7 +397,10 @@ export const youtubeService = {
       });
       
       if (videosResponse.data.items && videosResponse.data.items.length > 0) {
-        return videosResponse.data.items.map(formatVideo);
+        const videos = videosResponse.data.items.map(formatVideo);
+        // Cache the results
+        cache.set(cacheKey, videos, 'videos');
+        return videos;
       }
       
       return [];
@@ -207,6 +412,14 @@ export const youtubeService = {
   
   getTopVideos: async (maxResults = 10): Promise<Video[]> => {
     try {
+      // Check cache first
+      const cacheKey = `top:${maxResults}`;
+      const cachedVideos = cache.get(cacheKey, 'videos');
+      if (cachedVideos) {
+        console.log('Using cached top videos');
+        return cachedVideos;
+      }
+
       // Get popular videos from YouTube
       const response = await youtubeApi.get('/videos', {
         params: {
@@ -218,7 +431,10 @@ export const youtubeService = {
       });
       
       if (response.data.items && response.data.items.length > 0) {
-        return response.data.items.map(formatVideo);
+        const videos = response.data.items.map(formatVideo);
+        // Cache the results
+        cache.set(cacheKey, videos, 'videos');
+        return videos;
       }
       
       return [];
@@ -230,6 +446,14 @@ export const youtubeService = {
   
   searchVideos: async (query: string, maxResults = 10): Promise<Video[]> => {
     try {
+      // Check cache first
+      const cacheKey = `search:${query}:${maxResults}`;
+      const cachedVideos = cache.get(cacheKey, 'videos');
+      if (cachedVideos) {
+        console.log('Using cached search results for:', query);
+        return cachedVideos;
+      }
+
       // Search for videos
       const searchResponse = await youtubeApi.get('/search', {
         params: {
@@ -256,7 +480,10 @@ export const youtubeService = {
       });
       
       if (videosResponse.data.items && videosResponse.data.items.length > 0) {
-        return videosResponse.data.items.map(formatVideo);
+        const videos = videosResponse.data.items.map(formatVideo);
+        // Cache the results
+        cache.set(cacheKey, videos, 'videos');
+        return videos;
       }
       
       return [];
@@ -266,7 +493,7 @@ export const youtubeService = {
     }
   },
   
-  // Additional functions for other features
+  // Metadata functions
   getVideoMetadata: async (videoId: string): Promise<VideoMetadata> => {
     try {
       const response = await youtubeApi.get('/videos', {
@@ -298,37 +525,6 @@ export const youtubeService = {
       throw new Error('Video metadata not found');
     } catch (error) {
       console.error('Error fetching video metadata:', error);
-      throw error;
-    }
-  },
-  
-  getVideoComments: async (videoId: string, maxResults = 20) => {
-    try {
-      const response = await youtubeApi.get('/commentThreads', {
-        params: {
-          part: 'snippet',
-          videoId: videoId,
-          maxResults: maxResults
-        }
-      });
-      
-      if (response.data.items && response.data.items.length > 0) {
-        return response.data.items.map((item: any) => {
-          const comment = item.snippet.topLevelComment.snippet;
-          return {
-            id: item.id,
-            authorDisplayName: comment.authorDisplayName,
-            authorProfileImageUrl: comment.authorProfileImageUrl,
-            textDisplay: comment.textDisplay,
-            likeCount: comment.likeCount,
-            publishedAt: comment.publishedAt
-          };
-        });
-      }
-      
-      return [];
-    } catch (error) {
-      console.error('Error fetching video comments:', error);
       throw error;
     }
   }
