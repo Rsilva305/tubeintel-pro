@@ -17,6 +17,15 @@ const formatNumber = (num: number): string => {
   return num.toString();
 };
 
+// Define the search result type
+interface ChannelSearchResult {
+  id: string;
+  title: string;
+  description: string;
+  thumbnailUrl: string;
+  subscriberCount?: string;
+}
+
 export default function CompetitorListDetail({ params }: { params: { listId: string } }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -26,6 +35,9 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCompetitorId, setNewCompetitorId] = useState('');
+  const [channelSearchQuery, setChannelSearchQuery] = useState('');
+  const [channelSearchResults, setChannelSearchResults] = useState<ChannelSearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [useRealApi] = useState(getUseRealApi());
@@ -628,6 +640,67 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
         const nameB = b.channel?.name || '';
         return nameA.localeCompare(nameB);
       });
+  };
+
+  // Add a new search function for channels
+  const searchChannels = async (query: string) => {
+    if (!query || query.length < 3) {
+      setChannelSearchResults([]);
+      return;
+    }
+    
+    setIsSearching(true);
+    try {
+      const response = await fetch(`/api/youtube/search?q=${encodeURIComponent(query)}&type=channel&maxResults=5`);
+      if (!response.ok) {
+        throw new Error('Search failed');
+      }
+      
+      const data = await response.json();
+      
+      // Format results
+      const formattedResults: ChannelSearchResult[] = data.items.map((item: any) => ({
+        id: item.id.channelId,
+        title: item.snippet.title,
+        description: item.snippet.description,
+        thumbnailUrl: item.snippet.thumbnails.default.url
+      }));
+      
+      setChannelSearchResults(formattedResults);
+    } catch (error) {
+      console.error('Error searching channels:', error);
+      setError('Failed to search channels. Please try again.');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Debounce search function
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (channelSearchQuery) {
+        searchChannels(channelSearchQuery);
+      }
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [channelSearchQuery]);
+
+  // Select a channel from search results
+  const selectChannel = (channel: ChannelSearchResult) => {
+    setNewCompetitorId(channel.id);
+    setChannelSearchQuery(channel.title);
+    setChannelSearchResults([]);
+  };
+
+  // Handle direct channel ID input changes
+  const handleChannelIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewCompetitorId(e.target.value);
+    // Clear the search query if user is manually entering a channel ID
+    if (e.target.value) {
+      setChannelSearchQuery('');
+      setChannelSearchResults([]);
+    }
   };
 
   if (isLoading) {
@@ -1548,21 +1621,71 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
             </h3>
             <form onSubmit={handleAddCompetitor}>
               <div className="mb-4">
+                <label htmlFor="channelSearch" className="block text-gray-600 dark:text-gray-300 text-sm mb-2">
+                  Search for a YouTube Channel:
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    id="channelSearch"
+                    value={channelSearchQuery}
+                    onChange={(e) => setChannelSearchQuery(e.target.value)}
+                    className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Enter channel name..."
+                    autoFocus
+                  />
+                  {isSearching && (
+                    <div className="absolute right-3 top-2">
+                      <svg className="animate-spin h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    </div>
+                  )}
+                  
+                  {channelSearchResults.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg">
+                      <ul className="max-h-60 overflow-y-auto">
+                        {channelSearchResults.map((channel) => (
+                          <li 
+                            key={channel.id}
+                            onClick={() => selectChannel(channel)}
+                            className="flex items-center p-3 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer"
+                          >
+                            <img 
+                              src={channel.thumbnailUrl} 
+                              alt={channel.title} 
+                              className="w-10 h-10 rounded-full mr-3"
+                            />
+                            <div>
+                              <p className="font-medium dark:text-white">{channel.title}</p>
+                              <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{channel.description}</p>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Search for a YouTube channel by name to find and track competitors
+                </p>
+              </div>
+              
+              <div className="mb-4">
                 <label htmlFor="youtubeId" className="block text-gray-600 dark:text-gray-300 text-sm mb-2">
-                  YouTube Channel ID
+                  Or enter YouTube Channel ID directly:
                 </label>
                 <input 
                   type="text"
                   id="youtubeId"
                   value={newCompetitorId}
-                  onChange={(e) => setNewCompetitorId(e.target.value)}
+                  onChange={handleChannelIdChange}
                   className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="e.g. UC_x5XG1OV2P6uZZ5FSM9Ttw"
-                  autoFocus
                 />
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  Find a channel ID by going to the channel's page and looking at the URL. 
-                  It's usually in the format 'UC_x5XG1OV2P6uZZ5FSM9Ttw'.
+                  Channel ID is in the format 'UC_x5XG1OV2P6uZZ5FSM9Ttw'.
                 </p>
               </div>
 
@@ -1582,7 +1705,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                 </button>
                 <button 
                   type="submit"
-                  disabled={isAdding || !newCompetitorId.trim()}
+                  disabled={isAdding || (!newCompetitorId.trim() && !channelSearchQuery.trim())}
                   className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl disabled:opacity-50"
                 >
                   {isAdding ? 'Adding...' : 'Add Competitor'}
