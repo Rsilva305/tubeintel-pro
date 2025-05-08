@@ -47,25 +47,25 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Modified filter states (changed from range arrays to single values)
-  const [viewsThreshold, setViewsThreshold] = useState<number>(10000000); // Default to 10M
-  const [subscribersThreshold, setSubscribersThreshold] = useState<number>(100000); // Default to 100K
-  const [videoDurationThreshold, setVideoDurationThreshold] = useState<number>(60); // Default to 60 minutes (1 hour)
+  // Modified filter states to use ranges (min and max values)
+  const [viewsRange, setViewsRange] = useState<[number, number]>([0, 500000000]); // Min and max views
+  const [subscribersRange, setSubscribersRange] = useState<[number, number]>([0, 500000000]); // Min and max subscribers
+  const [videoDurationRange, setVideoDurationRange] = useState<[number, number]>([0, 1440]); // Min and max duration (in minutes)
   const [dateRange, setDateRange] = useState<[string, string]>([
     new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days ago
     new Date().toISOString().split('T')[0] // today
   ]);
 
-  // Add new state for view multiplier
-  const [viewMultiplierThreshold, setViewMultiplierThreshold] = useState<number>(1.5); // Default to 1.5x
+  // Add new state for view multiplier as a range
+  const [viewMultiplierRange, setViewMultiplierRange] = useState<[number, number]>([0, 500]); // Min and max multiplier
 
-  // State for advanced filters
+  // State for advanced filters - also using ranges
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState<boolean>(false);
-  const [channelAgeThreshold, setChannelAgeThreshold] = useState<number>(12); // Default to 12 months
-  const [videoCommentsThreshold, setVideoCommentsThreshold] = useState<number>(1000);
-  const [videoLikesThreshold, setVideoLikesThreshold] = useState<number>(5000);
-  const [videoCountThreshold, setVideoCountThreshold] = useState<number>(50);
-  const [totalChannelViewsThreshold, setTotalChannelViewsThreshold] = useState<number>(1000000);
+  const [channelAgeRange, setChannelAgeRange] = useState<[number, number]>([0, 120]); // Min and max age (in months)
+  const [videoCommentsRange, setVideoCommentsRange] = useState<[number, number]>([0, 200000]); // Min and max comments
+  const [videoLikesRange, setVideoLikesRange] = useState<[number, number]>([0, 1000000]); // Min and max likes
+  const [videoCountRange, setVideoCountRange] = useState<[number, number]>([0, 1000]); // Min and max video count
+  const [totalChannelViewsRange, setTotalChannelViewsRange] = useState<[number, number]>([0, 1000000000]); // Min and max channel views
   const [includeKeywords, setIncludeKeywords] = useState<string>("");
   const [excludeKeywords, setExcludeKeywords] = useState<string>("");
 
@@ -88,6 +88,10 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   
   // State for loading videos
   const [isVideoLoading, setIsVideoLoading] = useState<boolean>(false);
+
+  // Add new state for filtered competitors and videos
+  const [filteredCompetitorIds, setFilteredCompetitorIds] = useState<string[]>([]);
+  const [isFilterActive, setIsFilterActive] = useState(false);
 
   // Call the check on mount
   useEffect(() => {
@@ -336,51 +340,72 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
     return <FaCheck size={16} className="text-green-500" />;
   };
 
-  // Function to handle filter apply
+  // Function to handle filter apply - updated for ranges
   const applyFilter = () => {
-    // In a real app, this would filter based on the selected criteria
-    // Here's how we might filter the competitors based on the thresholds:
-    const filteredCompetitors = competitors.filter(competitor => {
-      const meetsViewsThreshold = competitor.viewCount >= viewsThreshold;
-      const meetsSubscribersThreshold = competitor.subscriberCount >= subscribersThreshold;
-      
-      // For view multiplier we'd need data on median views per channel
-      // const hasHighMultiplier = competitor.viewMultiplier >= viewMultiplierThreshold;
-      
-      // For video duration we would need actual data about average video length
-      
-      // Check if within date range - would need actual data on when added
-      // const addedDate = new Date(competitor.addedAt);
-      // const isWithinDateRange = addedDate >= new Date(dateRange[0]) && addedDate <= new Date(dateRange[1]);
-      
-      return meetsViewsThreshold && meetsSubscribersThreshold; // && hasHighMultiplier;
-    });
+    // Check if any filters are actually set
+    const hasActiveFilters = 
+      viewsRange[0] > 0 || viewsRange[1] < 500000000 || 
+      subscribersRange[0] > 0 || subscribersRange[1] < 500000000 || 
+      videoDurationRange[0] > 0 || videoDurationRange[1] < 1440 || 
+      viewMultiplierRange[0] > 0 || viewMultiplierRange[1] < 500 || 
+      includeKeywords.trim() !== '' || excludeKeywords.trim() !== '';
     
-    console.log(`Filter applied: Competitors matching criteria: ${filteredCompetitors.length}`);
-    // For demo purposes, we're not actually changing the displayed list
+    if (!hasActiveFilters) {
+      // If no active filters, just reset the filter state
+      setFilteredCompetitorIds([]);
+      setIsFilterActive(false);
+      setIsFilterOpen(false);
+      return;
+    }
+    
+    // Filter the competitors based on the selected criteria
+    const filteredIds = competitors
+      .filter(competitor => {
+        // Filter competitors based on range values
+        const meetsViewsRange = 
+          competitor.viewCount >= viewsRange[0] && 
+          competitor.viewCount <= viewsRange[1];
+          
+        const meetsSubscribersRange = 
+          competitor.subscriberCount >= subscribersRange[0] && 
+          competitor.subscriberCount <= subscribersRange[1];
+        
+        // We could add more filters here as needed
+        
+        return meetsViewsRange && meetsSubscribersRange;
+      })
+      .map(competitor => competitor.youtubeId);
+    
+    setFilteredCompetitorIds(filteredIds);
+    setIsFilterActive(true);
+    console.log(`Filter applied: ${filteredIds.length} competitors matching criteria`);
     setIsFilterOpen(false);
-  }
+  };
 
-  // Function to reset filters (updated for single values)
+  // Function to reset filters - updated for ranges
   const resetFilter = () => {
-    setViewsThreshold(10000000);
-    setSubscribersThreshold(100000);
-    setVideoDurationThreshold(60);
-    setViewMultiplierThreshold(1.5);
+    setViewsRange([0, 500000000]);
+    setSubscribersRange([0, 500000000]);
+    setVideoDurationRange([0, 1440]);
+    setViewMultiplierRange([0, 500]);
     setDateRange([
       new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       new Date().toISOString().split('T')[0]
     ]);
     
     // Reset advanced filters
-    setChannelAgeThreshold(12);
-    setVideoCommentsThreshold(1000);
-    setVideoLikesThreshold(5000);
-    setVideoCountThreshold(50);
-    setTotalChannelViewsThreshold(1000000);
+    setChannelAgeRange([0, 120]);
+    setVideoCommentsRange([0, 200000]);
+    setVideoLikesRange([0, 1000000]);
+    setVideoCountRange([0, 1000]);
+    setTotalChannelViewsRange([0, 1000000000]);
     setIncludeKeywords("");
     setExcludeKeywords("");
-  }
+    
+    // Clear the filter state
+    setFilteredCompetitorIds([]);
+    setIsFilterActive(false);
+  };
 
   // Helper function to safely parse input values
   const safeParseInt = (value: string, fallback = 0): number => {
@@ -399,183 +424,150 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
     return baseStep * 10;                       // Coarse control in high range
   };
 
-  // Views slider step function - dynamic based on position
-  const getViewsStep = (): number => {
-    const maxViews = 500000000;
-    if (viewsThreshold < 1000000) return 50000;       // 0-1M: steps of 50K
-    if (viewsThreshold < 10000000) return 500000;     // 1M-10M: steps of 500K
-    if (viewsThreshold < 50000000) return 1000000;    // 10M-50M: steps of 1M
-    if (viewsThreshold < 100000000) return 5000000;   // 50M-100M: steps of 5M
-    return 10000000;                                  // 100M+: steps of 10M
+  // Views range slider step functions - update for min/max
+  const getViewsStep = (value: number): number => {
+    if (value < 1000000) return 50000;       // 0-1M: steps of 50K
+    if (value < 10000000) return 500000;     // 1M-10M: steps of 500K
+    if (value < 50000000) return 1000000;    // 10M-50M: steps of 1M
+    if (value < 100000000) return 5000000;   // 50M-100M: steps of 5M
+    return 10000000;                         // 100M+: steps of 10M
   };
 
-  // Subscribers slider step function
-  const getSubscribersStep = (): number => {
-    const maxSubs = 500000000;
-    if (subscribersThreshold < 100000) return 5000;       // 0-100K: steps of 5K
-    if (subscribersThreshold < 1000000) return 50000;     // 100K-1M: steps of 50K
-    if (subscribersThreshold < 10000000) return 500000;   // 1M-10M: steps of 500K
-    if (subscribersThreshold < 100000000) return 5000000; // 10M-100M: steps of 5M
-    return 10000000;                                      // 100M+: steps of 10M
+  // Subscribers range slider step functions
+  const getSubscribersStep = (value: number): number => {
+    if (value < 100000) return 5000;       // 0-100K: steps of 5K
+    if (value < 1000000) return 50000;     // 100K-1M: steps of 50K
+    if (value < 10000000) return 500000;   // 1M-10M: steps of 500K
+    if (value < 100000000) return 5000000; // 10M-100M: steps of 5M
+    return 10000000;                       // 100M+: steps of 10M
   };
 
-  // Video duration step function
-  const getVideoDurationStep = (): number => {
-    if (videoDurationThreshold < 60) return 1;         // 0-1hr: steps of 1 minute
-    if (videoDurationThreshold < 180) return 5;        // 1-3hrs: steps of 5 minutes
-    if (videoDurationThreshold < 360) return 10;       // 3-6hrs: steps of 10 minutes
-    if (videoDurationThreshold < 720) return 30;       // 6-12hrs: steps of 30 minutes
-    return 60;                                         // 12hr+: steps of 60 minutes (1 hour)
+  // Video duration range slider step functions
+  const getVideoDurationStep = (value: number): number => {
+    if (value < 60) return 1;         // 0-1hr: steps of 1 minute
+    if (value < 180) return 5;        // 1-3hrs: steps of 5 minutes
+    if (value < 360) return 10;       // 3-6hrs: steps of 10 minutes
+    if (value < 720) return 30;       // 6-12hrs: steps of 30 minutes
+    return 60;                        // 12hr+: steps of 60 minutes (1 hour)
   };
 
-  // View multiplier step function
-  const getViewMultiplierStep = (): number => {
-    if (viewMultiplierThreshold < 5) return 0.1;       // 0-5x: steps of 0.1
-    if (viewMultiplierThreshold < 20) return 0.5;      // 5-20x: steps of 0.5
-    if (viewMultiplierThreshold < 100) return 1;       // 20-100x: steps of 1
-    if (viewMultiplierThreshold < 200) return 5;       // 100-200x: steps of 5
-    return 10;                                         // 200x+: steps of 10
+  // View multiplier range slider step functions
+  const getViewMultiplierStep = (value: number): number => {
+    if (value < 5) return 0.1;       // 0-5x: steps of 0.1
+    if (value < 20) return 0.5;      // 5-20x: steps of 0.5
+    if (value < 100) return 1;       // 20-100x: steps of 1
+    if (value < 200) return 5;       // 100-200x: steps of 5
+    return 10;                       // 200x+: steps of 10
   };
 
-  // Views slider input change
-  const handleViewsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value);
-    if (!isNaN(value)) {
-      setViewsThreshold(value);
-    }
+  // Channel age range step function
+  const getChannelAgeStep = (value: number): number => {
+    if (value < 12) return 1;        // 0-12 months: steps of 1 month
+    if (value < 36) return 3;        // 1-3 years: steps of 3 months
+    if (value < 60) return 6;        // 3-5 years: steps of 6 months
+    return 12;                       // 5+ years: steps of 1 year
   };
 
-  // Subscribers slider input change
-  const handleSubscribersChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value);
-    if (!isNaN(value)) {
-      setSubscribersThreshold(value);
-    }
-  };
-
-  // Video duration slider input change
-  const handleVideoDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value);
-    if (!isNaN(value)) {
-      setVideoDurationThreshold(value);
-    }
-  };
-
-  // View multiplier slider input change
-  const handleViewMultiplierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value);
-    if (!isNaN(value)) {
-      setViewMultiplierThreshold(value);
-    }
-  };
-
-  // Update existing handler for views
-  const handleViewsInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = safeParseInt(e.target.value, 0);
-    setViewsThreshold(Math.min(value, 500000000)); // Cap at 500M
-  };
-
-  // Handler for subscribers input
-  const handleSubscribersInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = safeParseInt(e.target.value, 0);
-    setSubscribersThreshold(Math.min(value, 500000000)); // Cap at 500M
-  };
-
-  // Handler for hours input
-  const handleHoursInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const hours = safeParseInt(e.target.value, 0);
-    const minutes = videoDurationThreshold % 60;
-    setVideoDurationThreshold(Math.min(hours, 24) * 60 + minutes); // Cap at 24h
-  };
-
-  // Handler for minutes input
-  const handleMinutesInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const hours = Math.floor(videoDurationThreshold / 60);
-    const minutes = safeParseInt(e.target.value, 0);
-    setVideoDurationThreshold(hours * 60 + Math.min(minutes, 59)); // Cap at 59m
-  };
-
-  // Handler for view multiplier input
-  const handleViewMultiplierInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value);
-    if (!isNaN(value)) {
-      setViewMultiplierThreshold(Math.max(0, Math.min(value, 500))); // Increased cap to 500x
-    }
-  };
-
-  // Channel age step function
-  const getChannelAgeStep = (): number => {
-    if (channelAgeThreshold < 12) return 1;        // 0-12 months: steps of 1 month
-    if (channelAgeThreshold < 36) return 3;        // 1-3 years: steps of 3 months
-    if (channelAgeThreshold < 60) return 6;        // 3-5 years: steps of 6 months
-    return 12;                                     // 5+ years: steps of 1 year
-  };
-
-  // Video comments step function
-  const getVideoCommentsStep = (): number => {
-    if (videoCommentsThreshold < 1000) return 50;
-    if (videoCommentsThreshold < 10000) return 500;
-    if (videoCommentsThreshold < 100000) return 5000;
+  // Video comments range step function
+  const getVideoCommentsStep = (value: number): number => {
+    if (value < 1000) return 50;
+    if (value < 10000) return 500;
+    if (value < 100000) return 5000;
     return 10000;
   };
 
-  // Video likes step function
-  const getVideoLikesStep = (): number => {
-    if (videoLikesThreshold < 1000) return 100;
-    if (videoLikesThreshold < 10000) return 500;
-    if (videoLikesThreshold < 100000) return 5000;
+  // Video likes range step function
+  const getVideoLikesStep = (value: number): number => {
+    if (value < 1000) return 100;
+    if (value < 10000) return 500;
+    if (value < 100000) return 5000;
     return 10000;
   };
 
-  // Video count step function
-  const getVideoCountStep = (): number => {
-    if (videoCountThreshold < 100) return 5;
-    if (videoCountThreshold < 500) return 25;
-    if (videoCountThreshold < 1000) return 50;
+  // Video count range step function
+  const getVideoCountStep = (value: number): number => {
+    if (value < 100) return 5;
+    if (value < 500) return 25;
+    if (value < 1000) return 50;
     return 100;
   };
 
-  // Total channel views step function
-  const getTotalChannelViewsStep = (): number => {
-    if (totalChannelViewsThreshold < 1000000) return 100000;
-    if (totalChannelViewsThreshold < 10000000) return 500000;
-    if (totalChannelViewsThreshold < 100000000) return 5000000;
+  // Total channel views range step function
+  const getTotalChannelViewsStep = (value: number): number => {
+    if (value < 1000000) return 100000;
+    if (value < 10000000) return 500000;
+    if (value < 100000000) return 5000000;
     return 10000000;
   };
 
-  // Handler functions for advanced filters
-  const handleChannelAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handler functions for advanced filters using ranges
+  const handleChannelAgeMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
     if (!isNaN(value)) {
-      setChannelAgeThreshold(value);
+      setChannelAgeRange([value, channelAgeRange[1]]);
     }
   };
 
-  const handleVideoCommentsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChannelAgeMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
     if (!isNaN(value)) {
-      setVideoCommentsThreshold(value);
+      setChannelAgeRange([channelAgeRange[0], value]);
     }
   };
 
-  const handleVideoLikesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleVideoCommentsMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
     if (!isNaN(value)) {
-      setVideoLikesThreshold(value);
+      setVideoCommentsRange([value, videoCommentsRange[1]]);
     }
   };
 
-  const handleVideoCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleVideoCommentsMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
     if (!isNaN(value)) {
-      setVideoCountThreshold(value);
+      setVideoCommentsRange([videoCommentsRange[0], value]);
     }
   };
 
-  const handleTotalChannelViewsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleVideoLikesMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
     if (!isNaN(value)) {
-      setTotalChannelViewsThreshold(value);
+      setVideoLikesRange([value, videoLikesRange[1]]);
+    }
+  };
+
+  const handleVideoLikesMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value)) {
+      setVideoLikesRange([videoLikesRange[0], value]);
+    }
+  };
+
+  const handleVideoCountMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value)) {
+      setVideoCountRange([value, videoCountRange[1]]);
+    }
+  };
+
+  const handleVideoCountMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value)) {
+      setVideoCountRange([videoCountRange[0], value]);
+    }
+  };
+
+  const handleTotalChannelViewsMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value)) {
+      setTotalChannelViewsRange([value, totalChannelViewsRange[1]]);
+    }
+  };
+
+  const handleTotalChannelViewsMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value)) {
+      setTotalChannelViewsRange([totalChannelViewsRange[0], value]);
     }
   };
 
@@ -602,18 +594,45 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
     setShowVideoContextMenu(true);
   };
 
-  // Filter videos based on search query
+  // Update the video filtering logic to also account for keywords
   const filteredVideos = activeVideoTab === 'competitors' 
-    ? competitorVideos.filter(video => 
-        video.title.toLowerCase().includes(videoSearchQuery.toLowerCase()) || 
-        video.description.toLowerCase().includes(videoSearchQuery.toLowerCase())
-      )
+    ? competitorVideos
+        .filter(video => {
+          // Text search filter 
+          const matchesSearch = video.title.toLowerCase().includes(videoSearchQuery.toLowerCase()) || 
+                               (video.description?.toLowerCase().includes(videoSearchQuery.toLowerCase() || ''));
+          
+          // Channel filter (if active)
+          const matchesChannelFilter = !isFilterActive || filteredCompetitorIds.includes(video.channelId);
+          
+          // Keywords filtering (if active)
+          let matchesKeywords = true;
+          if (isFilterActive && includeKeywords.trim()) {
+            const keywordsToInclude = includeKeywords.split(',').map(k => k.trim().toLowerCase());
+            matchesKeywords = keywordsToInclude.some(keyword => 
+              video.title.toLowerCase().includes(keyword) || 
+              (video.description?.toLowerCase().includes(keyword) || false)
+            );
+          }
+          
+          // Excluded keywords filtering (if active)
+          let noExcludedKeywords = true;
+          if (isFilterActive && excludeKeywords.trim()) {
+            const keywordsToExclude = excludeKeywords.split(',').map(k => k.trim().toLowerCase());
+            noExcludedKeywords = !keywordsToExclude.some(keyword => 
+              video.title.toLowerCase().includes(keyword) || 
+              (video.description?.toLowerCase().includes(keyword) || false)
+            );
+          }
+          
+          return matchesSearch && matchesChannelFilter && matchesKeywords && noExcludedKeywords;
+        })
     : similarVideos.filter(video => 
         video.title.toLowerCase().includes(videoSearchQuery.toLowerCase()) || 
-        video.description.toLowerCase().includes(videoSearchQuery.toLowerCase())
+        video.description?.toLowerCase().includes(videoSearchQuery.toLowerCase() || '')
       );
       
-  // Group videos by channel for organized display
+  // Updated function to group videos by channel and apply filters
   const getVideosByChannel = () => {
     const channelGroups: { [channelId: string]: { channel: Competitor | null, videos: Video[] } } = {};
     
@@ -700,6 +719,95 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
     if (e.target.value) {
       setChannelSearchQuery('');
       setChannelSearchResults([]);
+    }
+  };
+
+  // Add a function to count how many videos would match the current filter settings - updated for ranges
+  const countMatchingVideos = () => {
+    if (!isFilterOpen) return 0;
+    
+    // Check if any filters are set
+    const hasActiveFilters = 
+      viewsRange[0] > 0 || viewsRange[1] < 500000000 || 
+      subscribersRange[0] > 0 || subscribersRange[1] < 500000000;
+    
+    if (!hasActiveFilters) {
+      return competitorVideos.length;
+    }
+    
+    const matchingCompetitors = competitors
+      .filter(competitor => {
+        // Filter competitors based on range values
+        const meetsViewsRange = 
+          competitor.viewCount >= viewsRange[0] && 
+          competitor.viewCount <= viewsRange[1];
+          
+        const meetsSubscribersRange = 
+          competitor.subscriberCount >= subscribersRange[0] && 
+          competitor.subscriberCount <= subscribersRange[1];
+          
+        return meetsViewsRange && meetsSubscribersRange;
+      })
+      .map(comp => comp.youtubeId);
+    
+    // Count videos from these channels
+    return competitorVideos.filter(video => matchingCompetitors.includes(video.channelId)).length;
+  };
+
+  // Handler functions for range sliders
+  const handleViewsMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value)) {
+      setViewsRange([value, viewsRange[1]]);
+    }
+  };
+
+  const handleViewsMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value)) {
+      setViewsRange([viewsRange[0], value]);
+    }
+  };
+
+  const handleSubscribersMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value)) {
+      setSubscribersRange([value, subscribersRange[1]]);
+    }
+  };
+
+  const handleSubscribersMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value)) {
+      setSubscribersRange([subscribersRange[0], value]);
+    }
+  };
+
+  const handleVideoDurationMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value)) {
+      setVideoDurationRange([value, videoDurationRange[1]]);
+    }
+  };
+
+  const handleVideoDurationMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value)) {
+      setVideoDurationRange([videoDurationRange[0], value]);
+    }
+  };
+
+  const handleViewMultiplierMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value);
+    if (!isNaN(value)) {
+      setViewMultiplierRange([value, viewMultiplierRange[1]]);
+    }
+  };
+
+  const handleViewMultiplierMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value);
+    if (!isNaN(value)) {
+      setViewMultiplierRange([viewMultiplierRange[0], value]);
     }
   };
 
@@ -790,7 +898,6 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                           >
                             {competitor.name}
                           </a>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{competitor.youtubeId}</p>
                         </div>
                       </div>
                     </td>
@@ -876,131 +983,295 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
               Filter Competitors
             </h3>
             
+            {/* Updated helper note */}
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              Use the sliders to set a range of values for each filter. Videos will be shown if their values fall within your selected ranges.
+            </p>
+            
+            {/* Add a video count preview */}
+            <div className="mb-4 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-indigo-700 dark:text-indigo-300 text-sm">
+              <span className="font-medium">Preview:</span> {
+                viewsRange[0] === 0 && viewsRange[1] === 500000000 && 
+                subscribersRange[0] === 0 && subscribersRange[1] === 500000000 && 
+                viewMultiplierRange[0] === 0 && viewMultiplierRange[1] === 500
+                  ? `No filters applied. Showing all ${competitorVideos.length} videos from ${competitors.length} channels.`
+                  : `Your current filter settings will show approximately ${countMatchingVideos()} videos from ${
+                      competitors.filter(c => 
+                        c.viewCount >= viewsRange[0] && c.viewCount <= viewsRange[1] && 
+                        c.subscriberCount >= subscribersRange[0] && c.subscriberCount <= subscribersRange[1]
+                      ).length
+                    } channels.`
+              }
+            </div>
+            
             <div className="grid grid-cols-3 gap-8">
               {/* Left column with sliders */}
               <div className="col-span-2 space-y-8">
-                {/* Views slider */}
+                {/* Views range slider */}
                 <div>
                   <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
-                    Views: {formatNumber(viewsThreshold)}
+                    Views: {formatNumber(viewsRange[0])} - {formatNumber(viewsRange[1])}
                   </label>
                   <div className="flex flex-col">
                     <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
                       <span>0</span>
                       <span>500M</span>
                     </div>
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="500000000" 
-                      step={getViewsStep()}
-                      value={viewsThreshold}
-                      onChange={handleViewsChange}
-                      className="slider-track mb-2"
-                    />
-                    {/* Added input field for direct value entry */}
+                    
+                    {/* Min Views Slider */}
+                    <div className="flex items-center mb-2">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 mr-2 w-10">Min:</span>
+                      <input 
+                        type="range" 
+                        min="0" 
+                        max="500000000" 
+                        step="100000" 
+                        value={viewsRange[0]}
+                        onChange={handleViewsMinChange}
+                        className="slider-track flex-grow"
+                      />
+                    </div>
+                    
+                    {/* Max Views Slider */}
+                    <div className="flex items-center">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 mr-2 w-10">Max:</span>
+                      <input 
+                        type="range" 
+                        min="0" 
+                        max="500000000" 
+                        step="100000" 
+                        value={viewsRange[1]}
+                        onChange={handleViewsMaxChange}
+                        className="slider-track flex-grow"
+                      />
+                    </div>
+                    
+                    {/* Direct input for min/max values */}
                     <div className="flex items-center mt-2">
-                      <label className="text-xs text-gray-500 dark:text-gray-400 mr-2">Custom value:</label>
+                      <label className="text-xs text-gray-500 dark:text-gray-400 mr-2">Custom range:</label>
                       <input
                         type="number"
                         min="0"
+                        max={viewsRange[1]}
+                        value={viewsRange[0]}
+                        onChange={(e) => {
+                          const value = safeParseInt(e.target.value, 0);
+                          setViewsRange([value, Math.max(value, viewsRange[1])]);
+                        }}
+                        className="w-32 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-white mr-2"
+                        placeholder="Min"
+                      />
+                      <span className="text-xs text-gray-500 dark:text-gray-400 mx-2">to</span>
+                      <input
+                        type="number"
+                        min={viewsRange[0]}
                         max="500000000"
-                        value={viewsThreshold}
-                        onChange={handleViewsInput}
+                        value={viewsRange[1]}
+                        onChange={(e) => {
+                          const value = safeParseInt(e.target.value, 500000000);
+                          setViewsRange([Math.min(viewsRange[0], value), value]);
+                        }}
                         className="w-32 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-white"
+                        placeholder="Max"
                       />
                     </div>
                   </div>
                 </div>
                 
-                {/* Subscribers slider */}
+                {/* Subscribers range slider */}
                 <div>
                   <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
-                    Subscribers: {formatNumber(subscribersThreshold)}
+                    Subscribers: {formatNumber(subscribersRange[0])} - {formatNumber(subscribersRange[1])}
                   </label>
                   <div className="flex flex-col">
                     <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
                       <span>0</span>
                       <span>500M</span>
                     </div>
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="500000000" 
-                      step={getSubscribersStep()}
-                      value={subscribersThreshold}
-                      onChange={handleSubscribersChange}
-                      className="slider-track mb-2"
-                    />
-                    {/* Added input field for direct value entry */}
+                    
+                    {/* Min Subscribers Slider */}
+                    <div className="flex items-center mb-2">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 mr-2 w-10">Min:</span>
+                      <input 
+                        type="range" 
+                        min="0" 
+                        max="500000000" 
+                        step="10000" 
+                        value={subscribersRange[0]}
+                        onChange={handleSubscribersMinChange}
+                        className="slider-track flex-grow"
+                      />
+                    </div>
+                    
+                    {/* Max Subscribers Slider */}
+                    <div className="flex items-center">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 mr-2 w-10">Max:</span>
+                      <input 
+                        type="range" 
+                        min="0" 
+                        max="500000000" 
+                        step="10000" 
+                        value={subscribersRange[1]}
+                        onChange={handleSubscribersMaxChange}
+                        className="slider-track flex-grow"
+                      />
+                    </div>
+                    
+                    {/* Direct input for min/max values */}
                     <div className="flex items-center mt-2">
-                      <label className="text-xs text-gray-500 dark:text-gray-400 mr-2">Custom value:</label>
+                      <label className="text-xs text-gray-500 dark:text-gray-400 mr-2">Custom range:</label>
                       <input
                         type="number"
                         min="0"
+                        max={subscribersRange[1]}
+                        value={subscribersRange[0]}
+                        onChange={(e) => {
+                          const value = safeParseInt(e.target.value, 0);
+                          setSubscribersRange([value, Math.max(value, subscribersRange[1])]);
+                        }}
+                        className="w-32 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-white mr-2"
+                        placeholder="Min"
+                      />
+                      <span className="text-xs text-gray-500 dark:text-gray-400 mx-2">to</span>
+                      <input
+                        type="number"
+                        min={subscribersRange[0]}
                         max="500000000"
-                        value={subscribersThreshold}
-                        onChange={handleSubscribersInput}
+                        value={subscribersRange[1]}
+                        onChange={(e) => {
+                          const value = safeParseInt(e.target.value, 500000000);
+                          setSubscribersRange([Math.min(subscribersRange[0], value), value]);
+                        }}
                         className="w-32 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-white"
+                        placeholder="Max"
                       />
                     </div>
                   </div>
                 </div>
                 
-                {/* Video Duration slider */}
+                {/* Video Duration range slider */}
                 <div>
                   <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
-                    Video Duration: {Math.floor(videoDurationThreshold / 60)}h {videoDurationThreshold % 60}m
+                    Video Duration: {Math.floor(videoDurationRange[0] / 60)}h {videoDurationRange[0] % 60}m - {Math.floor(videoDurationRange[1] / 60)}h {videoDurationRange[1] % 60}m
                   </label>
                   <div className="flex flex-col">
                     <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
                       <span>0</span>
                       <span>24h</span>
                     </div>
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="1440" 
-                      step={getVideoDurationStep()}
-                      value={videoDurationThreshold}
-                      onChange={handleVideoDurationChange}
-                      className="slider-track mb-2"
-                    />
-                    {/* Added input field for direct value entry with hours and minutes */}
-                    <div className="flex items-center mt-2">
-                      <label className="text-xs text-gray-500 dark:text-gray-400 mr-2">Custom value:</label>
-                      <div className="flex">
-                        <div className="flex items-center mr-2">
-                          <input
-                            type="number"
-                            min="0"
-                            max="24"
-                            value={Math.floor(videoDurationThreshold / 60)}
-                            onChange={handleHoursInput}
-                            className="w-16 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-white"
-                          />
-                          <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">h</span>
+                    
+                    {/* Min Duration Slider */}
+                    <div className="flex items-center mb-2">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 mr-2 w-10">Min:</span>
+                      <input 
+                        type="range" 
+                        min="0" 
+                        max="1440" 
+                        step="10" 
+                        value={videoDurationRange[0]}
+                        onChange={handleVideoDurationMinChange}
+                        className="slider-track flex-grow"
+                      />
+                    </div>
+                    
+                    {/* Max Duration Slider */}
+                    <div className="flex items-center">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 mr-2 w-10">Max:</span>
+                      <input 
+                        type="range" 
+                        min="0" 
+                        max="1440" 
+                        step="10" 
+                        value={videoDurationRange[1]}
+                        onChange={handleVideoDurationMaxChange}
+                        className="slider-track flex-grow"
+                      />
+                    </div>
+                    
+                    {/* Added input fields for direct value entry with hours and minutes */}
+                    <div className="grid grid-cols-2 gap-4 mt-2">
+                      <div>
+                        <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Minimum duration:</label>
+                        <div className="flex">
+                          <div className="flex items-center mr-2">
+                            <input
+                              type="number"
+                              min="0"
+                              max="24"
+                              value={Math.floor(videoDurationRange[0] / 60)}
+                              onChange={(e) => {
+                                const hours = safeParseInt(e.target.value, 0);
+                                const minutes = videoDurationRange[0] % 60;
+                                const newMinutes = Math.min(hours, 24) * 60 + minutes;
+                                setVideoDurationRange([newMinutes, Math.max(newMinutes, videoDurationRange[1])]);
+                              }}
+                              className="w-16 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-white"
+                            />
+                            <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">h</span>
+                          </div>
+                          <div className="flex items-center">
+                            <input
+                              type="number"
+                              min="0"
+                              max="59"
+                              value={videoDurationRange[0] % 60}
+                              onChange={(e) => {
+                                const hours = Math.floor(videoDurationRange[0] / 60);
+                                const minutes = safeParseInt(e.target.value, 0);
+                                const newMinutes = hours * 60 + Math.min(minutes, 59);
+                                setVideoDurationRange([newMinutes, Math.max(newMinutes, videoDurationRange[1])]);
+                              }}
+                              className="w-16 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-white"
+                            />
+                            <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">m</span>
+                          </div>
                         </div>
-                        <div className="flex items-center">
-                          <input
-                            type="number"
-                            min="0"
-                            max="59"
-                            value={videoDurationThreshold % 60}
-                            onChange={handleMinutesInput}
-                            className="w-16 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-white"
-                          />
-                          <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">m</span>
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">Maximum duration:</label>
+                        <div className="flex">
+                          <div className="flex items-center mr-2">
+                            <input
+                              type="number"
+                              min="0"
+                              max="24"
+                              value={Math.floor(videoDurationRange[1] / 60)}
+                              onChange={(e) => {
+                                const hours = safeParseInt(e.target.value, 24);
+                                const minutes = videoDurationRange[1] % 60;
+                                const newMinutes = Math.min(hours, 24) * 60 + minutes;
+                                setVideoDurationRange([Math.min(videoDurationRange[0], newMinutes), newMinutes]);
+                              }}
+                              className="w-16 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-white"
+                            />
+                            <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">h</span>
+                          </div>
+                          <div className="flex items-center">
+                            <input
+                              type="number"
+                              min="0"
+                              max="59"
+                              value={videoDurationRange[1] % 60}
+                              onChange={(e) => {
+                                const hours = Math.floor(videoDurationRange[1] / 60);
+                                const minutes = safeParseInt(e.target.value, 0);
+                                const newMinutes = hours * 60 + Math.min(minutes, 59);
+                                setVideoDurationRange([Math.min(videoDurationRange[0], newMinutes), newMinutes]);
+                              }}
+                              className="w-16 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-white"
+                            />
+                            <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">m</span>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Add View Multiplier slider after Video Duration slider */}
+                {/* View Multiplier range slider */}
                 <div>
                   <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium flex items-center">
-                    View Multiplier: {viewMultiplierThreshold < 10 ? viewMultiplierThreshold.toFixed(1) : viewMultiplierThreshold.toFixed(0)}x
+                    View Multiplier: {viewMultiplierRange[0] < 10 ? viewMultiplierRange[0].toFixed(1) : viewMultiplierRange[0].toFixed(0)}x - {viewMultiplierRange[1] < 10 ? viewMultiplierRange[1].toFixed(1) : viewMultiplierRange[1].toFixed(0)}x
                     <div className="ml-1.5 text-xs text-gray-500 dark:text-gray-400 cursor-help group relative">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1018,33 +1289,70 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                       <span className="text-center ml-12">100x</span>
                       <span>500x</span>
                     </div>
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="500" 
-                      step={getViewMultiplierStep()}
-                      value={viewMultiplierThreshold}
-                      onChange={handleViewMultiplierChange}
-                      className="slider-track mb-2"
-                    />
-                    <div className="text-xs text-center text-gray-500 dark:text-gray-400 mt-1 mb-2">
-                      Current: {viewMultiplierThreshold < 10 ? viewMultiplierThreshold.toFixed(1) : viewMultiplierThreshold.toFixed(0)}x median views
+                    
+                    {/* Min Multiplier Slider */}
+                    <div className="flex items-center mb-2">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 mr-2 w-10">Min:</span>
+                      <input 
+                        type="range" 
+                        min="0" 
+                        max="500" 
+                        step="0.5" 
+                        value={viewMultiplierRange[0]}
+                        onChange={handleViewMultiplierMinChange}
+                        className="slider-track flex-grow"
+                      />
+                    </div>
+                    
+                    {/* Max Multiplier Slider */}
+                    <div className="flex items-center">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 mr-2 w-10">Max:</span>
+                      <input 
+                        type="range" 
+                        min="0" 
+                        max="500" 
+                        step="0.5" 
+                        value={viewMultiplierRange[1]}
+                        onChange={handleViewMultiplierMaxChange}
+                        className="slider-track flex-grow"
+                      />
                     </div>
                     
                     {/* Input field for direct value entry */}
                     <div className="flex items-center mt-2">
-                      <label className="text-xs text-gray-500 dark:text-gray-400 mr-2">Custom value:</label>
+                      <label className="text-xs text-gray-500 dark:text-gray-400 mr-2">Custom range:</label>
                       <div className="flex items-center">
                         <input
                           type="number"
                           min="0"
-                          max="500"
-                          step="0.5"
-                          value={viewMultiplierThreshold}
-                          onChange={handleViewMultiplierInput}
+                          max={viewMultiplierRange[1]}
+                          step="0.1"
+                          value={viewMultiplierRange[0]}
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value);
+                            if (!isNaN(value)) {
+                              setViewMultiplierRange([value, Math.max(value, viewMultiplierRange[1])]);
+                            }
+                          }}
                           className="w-20 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-white"
                         />
-                        <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">x median</span>
+                        <span className="ml-1 mr-2 text-xs text-gray-500 dark:text-gray-400">x</span>
+                        <span className="mx-2">to</span>
+                        <input
+                          type="number"
+                          min={viewMultiplierRange[0]}
+                          max="500"
+                          step="0.1"
+                          value={viewMultiplierRange[1]}
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value);
+                            if (!isNaN(value)) {
+                              setViewMultiplierRange([Math.min(viewMultiplierRange[0], value), value]);
+                            }
+                          }}
+                          className="w-20 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-white"
+                        />
+                        <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">x</span>
                       </div>
                     </div>
                   </div>
@@ -1179,7 +1487,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                 {/* Channel Age */}
                 <div>
                   <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
-                    Channel Age: {channelAgeThreshold < 12 ? `${channelAgeThreshold} months` : `${Math.floor(channelAgeThreshold/12)} years ${channelAgeThreshold%12 ? `${channelAgeThreshold%12} months` : ''}`}
+                    Channel Age: {channelAgeRange[0] < 12 ? `${channelAgeRange[0]} months` : `${Math.floor(channelAgeRange[0]/12)} years ${channelAgeRange[0]%12 ? `${channelAgeRange[0]%12} months` : ''}`} - {channelAgeRange[1] < 12 ? `${channelAgeRange[1]} months` : `${Math.floor(channelAgeRange[1]/12)} years ${channelAgeRange[1]%12 ? `${channelAgeRange[1]%12} months` : ''}`}
                   </label>
                   <div className="flex flex-col">
                     <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
@@ -1190,24 +1498,11 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                       type="range" 
                       min="0" 
                       max="120" 
-                      step={getChannelAgeStep()}
-                      value={channelAgeThreshold}
-                      onChange={handleChannelAgeChange}
+                      step={getChannelAgeStep(channelAgeRange[1])}
+                      value={channelAgeRange[0]}
+                      onChange={handleChannelAgeMinChange}
                       className="slider-track mb-2"
                     />
-                  </div>
-                </div>
-
-                {/* Video Comments */}
-                <div>
-                  <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
-                    Video Comments: {formatNumber(videoCommentsThreshold)}
-                  </label>
-                  <div className="flex flex-col">
-                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
-                      <span>0</span>
-                      <span>100K+</span>
-                    </div>
                     <input 
                       type="range" 
                       min="0" 
@@ -1382,17 +1677,34 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
           >
             Similar Content
           </button>
+          
+          {/* Filter Status Indicator */}
+          {isFilterActive && (
+            <div className="ml-auto flex items-center px-3">
+              <span className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 text-xs px-2 py-1 rounded-full">
+                {filteredCompetitorIds.length} channels filtered
+              </span>
+            </div>
+          )}
         </div>
         
         {/* Combined Search and Grid Controls */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center">
-            <button 
-              className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 p-2 rounded-xl text-gray-700 dark:text-gray-300 mr-2"
-              onClick={() => setIsFilterOpen(!isFilterOpen)}
-            >
-              <FaFilter size={18} />
-            </button>
+            <div className="relative">
+              <button 
+                className={`bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 p-2 rounded-xl text-gray-700 dark:text-gray-300 mr-2 ${isFilterActive ? 'ring-2 ring-indigo-500' : ''}`}
+                onClick={() => setIsFilterOpen(!isFilterOpen)}
+                title={isFilterActive ? "Filters active - click to modify" : "Filter videos"}
+              >
+                <FaFilter size={18} className={isFilterActive ? "text-indigo-500" : ""} />
+              </button>
+              {isFilterActive && (
+                <span className="absolute -top-2 -right-1 bg-indigo-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {filteredCompetitorIds.length}
+                </span>
+              )}
+            </div>
             <div className="relative">
               <input
                 type="text"
@@ -1406,7 +1718,24 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
+              {videoSearchQuery && (
+                <button 
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                  onClick={() => setVideoSearchQuery('')}
+                  title="Clear search"
+                >
+                  <FaTimes size={14} />
+                </button>
+              )}
             </div>
+            {isFilterActive && (
+              <button
+                className="ml-2 text-sm text-indigo-500 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+                onClick={resetFilter}
+              >
+                Reset filters
+              </button>
+            )}
           </div>
           
           {/* Grid Controls */}
