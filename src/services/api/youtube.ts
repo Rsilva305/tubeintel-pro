@@ -1,15 +1,25 @@
 import axios from 'axios';
 import { Video, Channel, VideoMetadata } from '@/types';
-import { YOUTUBE_API_KEY } from '@/lib/env';
+import { YOUTUBE_API_KEY, hasYouTubeApiKey } from '@/lib/env';
 import { IYouTubeService } from './interfaces';
 
 // The YouTube API key is now imported from environment variables
 const API_KEY = YOUTUBE_API_KEY;
 const BASE_URL = 'https://www.googleapis.com/youtube/v3';
 
-// Log if API key is missing or incomplete
-if (!API_KEY || API_KEY.length < 20) {
-  console.warn('YouTube API key is missing or appears to be invalid. API calls will likely fail.');
+// Check if API key is properly configured
+if (!hasYouTubeApiKey) {
+  console.error('YouTube API key is missing or invalid. Please set NEXT_PUBLIC_YOUTUBE_API_KEY in your environment variables.');
+  if (process.env.NODE_ENV === 'development') {
+    console.info('For local development:');
+    console.info('1. Create a .env.local file in your project root');
+    console.info('2. Add NEXT_PUBLIC_YOUTUBE_API_KEY=your_api_key');
+    console.info('3. Restart your development server');
+  } else {
+    console.info('For production:');
+    console.info('1. Add NEXT_PUBLIC_YOUTUBE_API_KEY to your Vercel environment variables');
+    console.info('2. Redeploy your application');
+  }
 }
 
 // Create an axios instance for YouTube API

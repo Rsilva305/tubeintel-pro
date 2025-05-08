@@ -10,9 +10,14 @@ import {
   mockInsights 
 } from './mockData';
 import { youtubeService } from './youtube';
+import { secureYoutubeService } from './youtube-secure';
 import { competitorListsApi } from './competitorLists';
 import { getCurrentUser } from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
+
+// Use the secure YouTube service by default, fall back to direct API calls if needed
+// This allows for a smooth transition to the secure API
+const youtubeApiService = secureYoutubeService;
 
 // Auth API
 const authApi = {
@@ -60,7 +65,7 @@ const channelsApi = {
         throw new Error('No channel ID found. Please connect your YouTube channel first.');
       }
       
-      return await youtubeService.getChannelById(profile.youtube_channel_id);
+      return await youtubeApiService.getChannelById(profile.youtube_channel_id);
     } catch (error) {
       console.error('Error fetching channel from YouTube API:', error);
       throw error;
@@ -70,7 +75,7 @@ const channelsApi = {
   updateChannel: async (channelId: string, data: Partial<Channel>): Promise<Channel> => {
     try {
       // Validate the channel exists
-      const channel = await youtubeService.getChannelById(channelId);
+      const channel = await youtubeApiService.getChannelById(channelId);
       return { ...channel, ...data };
     } catch (error) {
       console.error('Error updating channel:', error);
@@ -86,7 +91,7 @@ const videosApi = {
       // Get channel first
       const channel = await channelsApi.getMyChannel();
       // Then get videos for that channel
-      return await youtubeService.getVideosByChannelId(channel.youtubeId);
+      return await youtubeApiService.getVideosByChannelId(channel.youtubeId);
     } catch (error) {
       console.error('Error fetching videos from YouTube API:', error);
       return mockVideos; // Fallback to mock data
@@ -95,7 +100,7 @@ const videosApi = {
   
   getVideoById: async (id: string): Promise<Video | null> => {
     try {
-      return await youtubeService.getVideoById(id);
+      return await youtubeApiService.getVideoById(id);
     } catch (error) {
       console.error('Error fetching video from YouTube API:', error);
       return mockVideos.find(video => video.id === id) || null; // Fallback to mock data
@@ -105,7 +110,7 @@ const videosApi = {
   getRecentVideos: async (limit: number = 5): Promise<Video[]> => {
     try {
       const channel = await channelsApi.getMyChannel();
-      const videos = await youtubeService.getVideosByChannelId(channel.youtubeId, limit);
+      const videos = await youtubeApiService.getVideosByChannelId(channel.youtubeId, limit);
       return videos.sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime());
     } catch (error) {
       console.error('Error fetching recent videos from YouTube API:', error);
@@ -119,7 +124,7 @@ const videosApi = {
   getTopPerformingVideos: async (limit: number = 5): Promise<Video[]> => {
     try {
       // Get trending videos
-      return await youtubeService.getTopVideos(limit);
+      return await youtubeApiService.getTopVideos(limit);
     } catch (error) {
       console.error('Error fetching top videos from YouTube API:', error);
       // Fallback to mock data
@@ -167,7 +172,7 @@ const competitorsApi = {
   addCompetitor: async (data: Omit<Competitor, 'id'>): Promise<Competitor> => {
     try {
       // Get actual channel data from YouTube
-      const channelData = await youtubeService.getChannelById(data.youtubeId);
+      const channelData = await youtubeApiService.getChannelById(data.youtubeId);
       // Use the data from YouTube API but keep our app's ID system
       return {
         id: `${mockCompetitors.length + 1}`,
@@ -205,7 +210,7 @@ const transcriptsApi = {
 const metadataApi = {
   getMetadataForVideo: async (videoId: string): Promise<VideoMetadata | null> => {
     try {
-      return await youtubeService.getVideoMetadata(videoId);
+      return await youtubeApiService.getVideoMetadata(videoId);
     } catch (error) {
       console.error('Error fetching video metadata from YouTube API:', error);
       return mockMetadata.find(metadata => metadata.videoId === videoId) || null;

@@ -11,6 +11,20 @@ export const getEnv = (key: string, defaultValue: string = ''): string => {
   return value;
 };
 
+// Helper to get server-side only environment variables
+export const getServerEnv = (key: string, defaultValue: string = ''): string => {
+  // First try the regular environment variable (server-side only)
+  // Then fall back to the NEXT_PUBLIC_ prefixed version (for backward compatibility)
+  const value = process.env[key] || process.env[`NEXT_PUBLIC_${key}`] || defaultValue;
+  
+  // In development, log when important environment variables are missing
+  if (process.env.NODE_ENV === 'development' && !value && !defaultValue) {
+    console.warn(`Warning: Environment variable ${key} is missing`);
+  }
+  
+  return value;
+};
+
 // Environment variables with fallbacks
 // In production, these would be set in the real environment or .env.local file
 
@@ -18,15 +32,20 @@ export const getEnv = (key: string, defaultValue: string = ''): string => {
 export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 export const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-// YouTube API key for real API calls
-// Load from environment variable or use fallback for development
-export const YOUTUBE_API_KEY = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY || 'AIzaSyBTNCNWyklQlWyDOYKGgJxfiaspBv4W-CM';
+// YouTube API key for real API calls - client side (DEPRECATED)
+export const YOUTUBE_API_KEY = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY || '';
+
+// YouTube API key for server-side API routes only (PREFERRED)
+export const SERVER_YOUTUBE_API_KEY = getServerEnv('YOUTUBE_API_KEY', YOUTUBE_API_KEY);
 
 // Helper to check if Supabase environment variables are properly set
 export const hasSupabaseConfig = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
-// Helper to check if YouTube API key is set
-export const hasYouTubeApiKey = !!YOUTUBE_API_KEY;
+// Helper to check if YouTube API key is set and valid
+export const hasYouTubeApiKey = !!(YOUTUBE_API_KEY && YOUTUBE_API_KEY.length >= 20);
+
+// Helper to check if server-side YouTube API key is set and valid
+export const hasServerYouTubeApiKey = !!(SERVER_YOUTUBE_API_KEY && SERVER_YOUTUBE_API_KEY.length >= 20);
 
 // Export a function to check if we can use real authentication
 export const canUseRealAuth = () => {
@@ -38,9 +57,11 @@ export const getEnvironmentInfo = () => {
   return {
     hasSupabaseConfig,
     hasYouTubeApiKey,
+    hasServerYouTubeApiKey,
     isProduction: process.env.NODE_ENV === 'production',
     supabaseUrl: SUPABASE_URL ? 'Set' : 'Not set',
     supabaseKey: SUPABASE_ANON_KEY ? 'Set' : 'Not set',
-    youtubeApiKey: YOUTUBE_API_KEY ? 'Set' : 'Not set'
+    youtubeApiKey: hasYouTubeApiKey ? 'Set' : 'Not set',
+    serverYoutubeApiKey: hasServerYouTubeApiKey ? 'Set' : 'Not set'
   };
 }; 
