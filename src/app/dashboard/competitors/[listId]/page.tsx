@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { FaArrowLeft, FaPlus, FaTimes, FaYoutube, FaEllipsisV, FaChartBar, FaDownload, FaFilter, FaChevronDown, FaStar, FaRocket, FaTrophy, FaCheck, FaCalendarAlt, FaEye, FaEyeSlash, FaThLarge, FaSearch, FaExternalLinkAlt, FaPlay } from 'react-icons/fa';
+import { FaArrowLeft, FaPlus, FaTimes, FaYoutube, FaEllipsisV, FaChartBar, FaDownload, FaFilter, FaChevronDown, FaStar, FaRocket, FaTrophy, FaCheck, FaCalendarAlt, FaEye, FaEyeSlash, FaThLarge, FaSearch, FaExternalLinkAlt, FaPlay, FaBookmark, FaClipboard, FaChartLine } from 'react-icons/fa';
 import Link from 'next/link';
 import { Competitor, Video } from '@/types';
 import { competitorsApi, videosApi } from '@/services/api';
@@ -243,18 +243,55 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   const [activeVideoTab, setActiveVideoTab] = useState<'competitors' | 'similar'>('competitors');
   const [showSuggestedCompetitors, setShowSuggestedCompetitors] = useState<boolean>(false);
   const competitorCarouselRef = useRef<HTMLDivElement>(null);
+  
+  // Add states for the video context menu
+  const [showVideoContextMenu, setShowVideoContextMenu] = useState<boolean>(false);
+  const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number, y: number }>({ x: 0, y: 0 });
+  const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
+  const contextMenuRef = useRef<HTMLDivElement>(null);
 
+  // State for filter settings
+  const [minSubscribers, setMinSubscribers] = useState<number>(0);
+
+  // Call the check on mount
   useEffect(() => {
-    const fetchCompetitors = async () => {
+    fetchCompetitors();
+    
+    // Simulate API call for videos
+    setTimeout(() => {
+      setCompetitorVideos(mockCompetitorVideos);
+      setSimilarVideos(mockSimilarVideos);
+      setIsLoading(false);
+    }, 1000);
+  }, []);
+  
+  // Add a useEffect to handle clicks outside the context menu
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (contextMenuRef.current && !contextMenuRef.current.contains(event.target as Node)) {
+        setShowVideoContextMenu(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const fetchCompetitors = async () => {
+    try {
+      setIsLoading(true);
+      
+      console.log(`Fetching competitors for list ${params.listId}...`);
+      
+      // Get the competitor list from Supabase
       try {
-        // Properly fetch competitors for this specific list
-        setIsLoading(true);
+        const competitors = await competitorListsApi.getCompetitorsInList(params.listId);
+        console.log(`Found ${competitors.length} competitors in list ${params.listId}`);
         
-        // Use the listId from params to get the specific competitors
-        const data = await competitorListsApi.getCompetitorsInList(params.listId);
-        
-        // Format the competitors for display
-        const formattedCompetitors = data.map(c => ({
+        // Convert from DB format to our app format
+        const formattedCompetitors = competitors.map(c => ({
           id: c.id,
           youtubeId: c.youtubeId,
           name: c.name,
@@ -266,12 +303,26 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
         
         setCompetitors(formattedCompetitors);
       } catch (error) {
-        console.error('Error fetching competitors:', error);
-      } finally {
-        setIsLoading(false);
+        console.error('Error fetching competitors for list:', error);
+        if (error instanceof Error && error.message.includes('not found')) {
+          // List not found, redirect to the main competitors page
+          router.push('/dashboard/competitors');
+        }
       }
-    };
+      
+      // Simulate API call for videos
+      setTimeout(() => {
+        setCompetitorVideos(mockCompetitorVideos);
+        setSimilarVideos(mockSimilarVideos);
+        setIsLoading(false);
+      }, 1000);
+    } catch (error) {
+      console.error('Error in fetchCompetitors:', error);
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchCompetitors();
   }, [params.listId]);
 
@@ -631,6 +682,14 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   // Function to open video on YouTube
   const openVideoOnYouTube = (videoId: string) => {
     window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
+  };
+  
+  // Function to handle right-click on videos
+  const handleVideoContextMenu = (event: React.MouseEvent, videoId: string) => {
+    event.preventDefault(); // Prevent the default browser context menu
+    setSelectedVideoId(videoId);
+    setContextMenuPosition({ x: event.clientX, y: event.clientY });
+    setShowVideoContextMenu(true);
   };
 
   // Filter videos based on search query
@@ -1493,6 +1552,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                 key={video.id} 
                 className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow duration-200 cursor-pointer group"
                 onClick={() => openVideoOnYouTube(video.youtubeId)}
+                onContextMenu={(e) => handleVideoContextMenu(e, video.youtubeId)}
               >
                 <div className="relative pt-[56.25%]"> {/* 16:9 aspect ratio */}
                   <img 
@@ -1614,6 +1674,67 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
               </div>
             </form>
           </div>
+        </div>
+      )}
+      
+      {/* Video Context Menu */}
+      {showVideoContextMenu && (
+        <div 
+          ref={contextMenuRef}
+          className="fixed shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg py-2 z-50"
+          style={{ 
+            top: `${contextMenuPosition.y}px`, 
+            left: `${contextMenuPosition.x}px`,
+            minWidth: '180px'
+          }}
+        >
+          <div className="px-3 py-1 text-sm font-medium text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700 mb-1">
+            Video Options
+          </div>
+          
+          <button 
+            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+            onClick={() => {
+              if (selectedVideoId) openVideoOnYouTube(selectedVideoId);
+              setShowVideoContextMenu(false);
+            }}
+          >
+            <FaExternalLinkAlt size={14} />
+            Open in YouTube
+          </button>
+          
+          <button 
+            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+            onClick={() => {
+              alert('Feature not yet implemented');
+              setShowVideoContextMenu(false);
+            }}
+          >
+            <FaBookmark size={14} />
+            Save for later
+          </button>
+          
+          <button 
+            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+            onClick={() => {
+              alert('Feature not yet implemented');
+              setShowVideoContextMenu(false);
+            }}
+          >
+            <FaClipboard size={14} />
+            Copy link
+          </button>
+          
+          <button 
+            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+            onClick={() => {
+              alert('Feature not yet implemented');
+              setShowVideoContextMenu(false);
+            }}
+          >
+            <FaChartLine size={14} />
+            Analyze performance
+          </button>
         </div>
       )}
     </div>
