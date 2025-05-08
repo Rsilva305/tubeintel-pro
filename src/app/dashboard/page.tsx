@@ -3,10 +3,41 @@
 import { useState, useEffect } from 'react';
 import { Video, Alert } from '@/types';
 import { videosApi, alertsApi } from '@/services/api';
-import { FaTable, FaThLarge } from 'react-icons/fa';
+import { FaTable, FaThLarge, FaChartLine, FaArrowUp, FaArrowDown } from 'react-icons/fa';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+import { getChannelTrendData } from '@/services/metrics/history';
+
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 type SortOption = 'date' | 'vph';
 type ViewMode = 'list' | 'grid';
+type TimeFrame = '24h' | '7d' | '30d';
+
+interface TrendData {
+  current: number;
+  previous: number;
+  percentage: number;
+  hasPreviousData?: boolean;
+}
 
 export default function DashboardPage() {
   const [user, setUser] = useState<{ username: string } | null>(null);
@@ -16,6 +47,14 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [sortOption, setSortOption] = useState<SortOption>('date');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [showUpdateNotification, setShowUpdateNotification] = useState(false);
+  const [selectedTimeFrame, setSelectedTimeFrame] = useState<TimeFrame>('24h');
+
+  // Calculate trends with historical data if available
+  const [viewsTrend, setViewsTrend] = useState<TrendData>({ current: 0, previous: 0, percentage: 0 });
+  const [likesTrend, setLikesTrend] = useState<TrendData>({ current: 0, previous: 0, percentage: 0 });
+  const [vphTrend, setVphTrend] = useState<TrendData>({ current: 0, previous: 0, percentage: 0 });
 
   useEffect(() => {
     // Get user from localStorage
@@ -29,26 +68,81 @@ export default function DashboardPage() {
     }
   }, []);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [recentVideosData, topVideosData, alertsData] = await Promise.all([
-          videosApi.getRecentVideos(5), // Increased to 5 videos
-          videosApi.getTopPerformingVideos(3),
-          alertsApi.getUnreadAlerts()
-        ]);
-        
-        setRecentVideos(recentVideosData);
-        setTopVideos(topVideosData);
-        setAlerts(alertsData);
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  // Function to get date range based on selected time frame
+  const getDateRange = (timeFrame: TimeFrame) => {
+    const now = new Date();
+    const start = new Date();
+    
+    switch (timeFrame) {
+      case '24h':
+        start.setHours(start.getHours() - 24);
+        break;
+      case '7d':
+        start.setDate(start.getDate() - 7);
+        break;
+      case '30d':
+        start.setDate(start.getDate() - 30);
+        break;
+    }
+    
+    return { start, end: now };
+  };
 
+  // Function to filter videos by date range
+  const filterVideosByDateRange = (videos: Video[], timeFrame: TimeFrame) => {
+    const { start } = getDateRange(timeFrame);
+    return videos.filter(video => new Date(video.publishedAt) >= start);
+  };
+
+  // Function to fetch data
+  const fetchData = async () => {
+    try {
+      const [recentVideosData, topVideosData, alertsData] = await Promise.all([
+        videosApi.getRecentVideos(100), // Increased to get more historical data for 30d trends
+        videosApi.getTopPerformingVideos(3),
+        alertsApi.getUnreadAlerts()
+      ]);
+      
+      console.log("Fetched videos count:", recentVideosData.length);
+      // Log date ranges of videos to help with debugging
+      if (recentVideosData.length > 0) {
+        const dates = recentVideosData.map(v => new Date(v.publishedAt).getTime());
+        const oldest = new Date(Math.min(...dates));
+        const newest = new Date(Math.max(...dates));
+        console.log("Video date range:", {
+          oldest: oldest.toISOString().split('T')[0],
+          newest: newest.toISOString().split('T')[0],
+          daysSpan: Math.round((newest.getTime() - oldest.getTime()) / (1000 * 60 * 60 * 24))
+        });
+      }
+      
+      setRecentVideos(recentVideosData);
+      setTopVideos(topVideosData);
+      setAlerts(alertsData);
+      setLastUpdated(new Date());
+      setShowUpdateNotification(true);
+      
+      setTimeout(() => {
+        setShowUpdateNotification(false);
+      }, 5000);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Initial data fetch
+  useEffect(() => {
     fetchData();
+  }, []);
+
+  // Set up background updates every 4 hours
+  useEffect(() => {
+    const fourHours = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
+    const intervalId = setInterval(fetchData, fourHours);
+
+    return () => clearInterval(intervalId);
   }, []);
 
   // Sort videos based on selected option
@@ -68,10 +162,165 @@ export default function DashboardPage() {
     setViewMode(mode);
   };
 
-  // Calculate channel statistics
-  const totalViews = recentVideos.reduce((sum, video) => sum + video.viewCount, 0);
-  const totalLikes = recentVideos.reduce((sum, video) => sum + video.likeCount, 0);
-  const averageVph = Math.round(recentVideos.reduce((sum, video) => sum + video.vph, 0) / Math.max(1, recentVideos.length));
+  // Calculate channel statistics based on selected time frame
+  const filteredVideos = filterVideosByDateRange(recentVideos, selectedTimeFrame);
+  const totalViews = filteredVideos.reduce((sum, video) => sum + video.viewCount, 0);
+  const totalLikes = filteredVideos.reduce((sum, video) => sum + video.likeCount, 0);
+  const averageVph = Math.round(filteredVideos.reduce((sum, video) => sum + video.vph, 0) / Math.max(1, filteredVideos.length));
+
+  // Function to calculate trend data
+  const calculateTrend = (current: number, previous: number): TrendData => {
+    // If both are 0, trend is 0
+    if (current === 0 && previous === 0) return { current, previous, percentage: 0 };
+    
+    // If only previous is 0 but current has value, show as 100% increase
+    if (previous === 0 && current > 0) return { current, previous, percentage: 100 };
+    
+    // Normal calculation
+    const percentage = ((current - previous) / previous) * 100;
+    return {
+      current,
+      previous,
+      percentage: Math.round(percentage * 10) / 10 // Round to 1 decimal place
+    };
+  };
+
+  // Function to get previous period data
+  const getPreviousPeriodData = (timeFrame: TimeFrame) => {
+    const { start } = getDateRange(timeFrame);
+    
+    // For each timeframe, calculate the equivalent previous period
+    let previousStart: Date, previousEnd: Date;
+    
+    switch (timeFrame) {
+      case '24h':
+        // Previous period is the 24 hours before current period
+        previousStart = new Date(start);
+        previousStart.setHours(previousStart.getHours() - 24);
+        previousEnd = new Date(start);
+        break;
+      case '7d':
+        // Previous period is the 7 days before current period
+        previousStart = new Date(start);
+        previousStart.setDate(previousStart.getDate() - 7);
+        previousEnd = new Date(start);
+        break;
+      case '30d':
+        // Previous period is the 30 days before current period
+        previousStart = new Date(start);
+        previousStart.setDate(previousStart.getDate() - 30);
+        previousEnd = new Date(start);
+        break;
+    }
+    
+    return { start: previousStart, end: previousEnd };
+  };
+
+  // Get videos from previous period
+  const { start: prevStart, end: prevEnd } = getPreviousPeriodData(selectedTimeFrame);
+  const previousPeriodVideos = recentVideos.filter(video => {
+    const videoDate = new Date(video.publishedAt);
+    return videoDate >= prevStart && videoDate <= prevEnd;
+  });
+
+  // Calculate metrics for previous period
+  const previousTotalViews = previousPeriodVideos.reduce((sum, video) => sum + video.viewCount, 0);
+  const previousTotalLikes = previousPeriodVideos.reduce((sum, video) => sum + video.likeCount, 0);
+  const previousAverageVph = Math.round(previousPeriodVideos.reduce((sum, video) => sum + video.vph, 0) / Math.max(1, previousPeriodVideos.length));
+
+  // Get trend data from historical metrics
+  useEffect(() => {
+    async function fetchHistoricalTrends() {
+      if (recentVideos.length > 0) {
+        const channelId = recentVideos[0].channelId;
+        
+        try {
+          // Get days for the selected timeframe
+          let daysBack = 1;
+          switch (selectedTimeFrame) {
+            case '24h': daysBack = 1; break;
+            case '7d': daysBack = 7; break;
+            case '30d': daysBack = 30; break;
+          }
+          
+          // Get metrics trends from stored history data
+          const [viewsTrendData, subscriberTrendData] = await Promise.all([
+            getChannelTrendData(channelId, 'total_views', totalViews, daysBack),
+            getChannelTrendData(channelId, 'subscriber_count', 0, daysBack), // We don't have subscriber count in our UI stats yet
+          ]);
+          
+          // Calculate VPH trend using our regular calculation as backup
+          const regularVphTrend = calculateTrend(averageVph, previousAverageVph);
+          
+          // Update trend states with the historical data
+          setViewsTrend(viewsTrendData.hasPreviousData ? viewsTrendData : calculateTrend(totalViews, previousTotalViews));
+          setLikesTrend(calculateTrend(totalLikes, previousTotalLikes)); // We don't store total_likes in channel history yet
+          setVphTrend(regularVphTrend); // Using regular calculation for VPH for now
+          
+        } catch (error) {
+          console.error('Error fetching historical trend data:', error);
+          // Fallback to regular calculations if historical data fails
+          setViewsTrend(calculateTrend(totalViews, previousTotalViews));
+          setLikesTrend(calculateTrend(totalLikes, previousTotalLikes));
+          setVphTrend(calculateTrend(averageVph, previousAverageVph));
+        }
+      } else {
+        // No videos, set default trends
+        setViewsTrend(calculateTrend(totalViews, previousTotalViews));
+        setLikesTrend(calculateTrend(totalLikes, previousTotalLikes));
+        setViewsTrend({ current: 0, previous: 0, percentage: 0 });
+        setLikesTrend({ current: 0, previous: 0, percentage: 0 });
+        setVphTrend({ current: 0, previous: 0, percentage: 0 });
+      }
+    }
+    
+    fetchHistoricalTrends();
+  }, [recentVideos, selectedTimeFrame, totalViews, totalLikes, averageVph, previousTotalViews, previousTotalLikes, previousAverageVph]);
+
+  // Prepare data for mini-graphs
+  const prepareGraphData = (videos: Video[], metric: 'viewCount' | 'likeCount' | 'vph') => {
+    const sortedVideos = [...videos].sort((a, b) => 
+      new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime()
+    );
+    
+    return {
+      labels: sortedVideos.map(v => new Date(v.publishedAt).toLocaleDateString()),
+      datasets: [{
+        label: metric === 'viewCount' ? 'Views' : metric === 'likeCount' ? 'Likes' : 'VPH',
+        data: sortedVideos.map(v => v[metric]),
+        borderColor: 'rgba(255, 255, 255, 0.8)',
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        tension: 0.4,
+        pointRadius: 0,
+      }]
+    };
+  };
+
+  const graphOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false
+      },
+      tooltip: {
+        enabled: false
+      }
+    },
+    scales: {
+      x: {
+        display: false
+      },
+      y: {
+        display: false
+      }
+    },
+    elements: {
+      line: {
+        borderWidth: 2
+      }
+    }
+  };
 
   if (isLoading) {
     return (
@@ -93,27 +342,129 @@ export default function DashboardPage() {
             <div className="flex flex-col md:flex-row md:justify-between">
               <div>
                 <h2 className="text-2xl font-bold">Channel Summary</h2>
-                <p className="opacity-80 mt-1">Last updated: {new Date().toLocaleDateString()}</p>
+                <p className="opacity-80 mt-1">Last updated: {lastUpdated.toLocaleString()}</p>
               </div>
               <div className="mt-4 md:mt-0">
-                <button className="bg-white bg-opacity-20 hover:bg-opacity-30 transition-all duration-200 px-4 py-2 rounded-xl text-sm font-medium">
-                  Refresh Data
-                </button>
+                <div className="flex items-center space-x-2 bg-white bg-opacity-20 rounded-xl p-1">
+                  <button
+                    onClick={() => setSelectedTimeFrame('24h')}
+                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      selectedTimeFrame === '24h' 
+                        ? 'bg-white bg-opacity-30 text-white' 
+                        : 'text-white text-opacity-70 hover:text-opacity-100'
+                    }`}
+                  >
+                    24h
+                  </button>
+                  <button
+                    onClick={() => setSelectedTimeFrame('7d')}
+                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      selectedTimeFrame === '7d' 
+                        ? 'bg-white bg-opacity-30 text-white' 
+                        : 'text-white text-opacity-70 hover:text-opacity-100'
+                    }`}
+                  >
+                    7d
+                  </button>
+                  <button
+                    onClick={() => setSelectedTimeFrame('30d')}
+                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      selectedTimeFrame === '30d' 
+                        ? 'bg-white bg-opacity-30 text-white' 
+                        : 'text-white text-opacity-70 hover:text-opacity-100'
+                    }`}
+                  >
+                    30d
+                  </button>
+                </div>
               </div>
             </div>
             
+            {/* Update Notification */}
+            {showUpdateNotification && (
+              <div className="mt-4 bg-white bg-opacity-20 rounded-lg p-2 text-sm flex items-center">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
+                Data refreshed successfully
+              </div>
+            )}
+            
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
               <div className="bg-white bg-opacity-20 p-4 rounded-xl">
-                <p className="text-sm font-medium opacity-70">Total Views</p>
-                <p className="text-3xl font-bold mt-1">{totalViews.toLocaleString()}</p>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm font-medium opacity-70">Total Views</p>
+                    <p className="text-3xl font-bold mt-1">{totalViews.toLocaleString()}</p>
+                    <div className="flex items-center mt-1">
+                      {viewsTrend.percentage > 0 ? (
+                        <FaArrowUp className="text-green-400 mr-1" />
+                      ) : (
+                        <FaArrowDown className="text-red-400 mr-1" />
+                      )}
+                      <span className={`text-sm ${viewsTrend.percentage > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {Math.abs(viewsTrend.percentage)}%
+                      </span>
+                    </div>
+                  </div>
+                  <FaChartLine className="text-white text-opacity-50" />
+                </div>
+                <div className="h-16 mt-2">
+                  <Line data={prepareGraphData(filteredVideos, 'viewCount')} options={graphOptions} />
+                </div>
+                <p className="text-sm mt-2 text-white text-opacity-70">
+                  Last {selectedTimeFrame === '24h' ? '24 hours' : selectedTimeFrame === '7d' ? '7 days' : '30 days'}
+                </p>
               </div>
               <div className="bg-white bg-opacity-20 p-4 rounded-xl">
-                <p className="text-sm font-medium opacity-70">Total Likes</p>
-                <p className="text-3xl font-bold mt-1">{totalLikes.toLocaleString()}</p>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm font-medium opacity-70">Total Likes</p>
+                    <p className="text-3xl font-bold mt-1">{totalLikes.toLocaleString()}</p>
+                    <div className="flex items-center mt-1">
+                      {likesTrend.percentage > 0 ? (
+                        <FaArrowUp className="text-green-400 mr-1" />
+                      ) : (
+                        <FaArrowDown className="text-red-400 mr-1" />
+                      )}
+                      <span className={`text-sm ${likesTrend.percentage > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {Math.abs(likesTrend.percentage)}%
+                      </span>
+                    </div>
+                  </div>
+                  <FaChartLine className="text-white text-opacity-50" />
+                </div>
+                <div className="h-16 mt-2">
+                  <Line data={prepareGraphData(filteredVideos, 'likeCount')} options={graphOptions} />
+                </div>
+                <p className="text-sm mt-2 text-white text-opacity-70">
+                  Last {selectedTimeFrame === '24h' ? '24 hours' : selectedTimeFrame === '7d' ? '7 days' : '30 days'}
+                </p>
               </div>
               <div className="bg-white bg-opacity-20 p-4 rounded-xl">
-                <p className="text-sm font-medium opacity-70">Average VPH</p>
-                <p className="text-3xl font-bold mt-1">{averageVph}</p>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm font-medium opacity-70">Average VPH</p>
+                    <p className="text-3xl font-bold mt-1">{averageVph}</p>
+                    <div className="flex items-center mt-1">
+                      {vphTrend.percentage > 0 ? (
+                        <FaArrowUp className="text-green-400 mr-1" />
+                      ) : (
+                        <FaArrowDown className="text-red-400 mr-1" />
+                      )}
+                      <span className={`text-sm ${vphTrend.percentage > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {Math.abs(vphTrend.percentage)}%
+                      </span>
+                    </div>
+                  </div>
+                  <FaChartLine className="text-white text-opacity-50" />
+                </div>
+                <div className="h-16 mt-2">
+                  <Line data={prepareGraphData(filteredVideos, 'vph')} options={graphOptions} />
+                </div>
+                <p className="text-sm mt-2 text-white text-opacity-70">
+                  Last {selectedTimeFrame === '24h' ? '24 hours' : selectedTimeFrame === '7d' ? '7 days' : '30 days'}
+                </p>
               </div>
             </div>
           </div>
@@ -134,48 +485,40 @@ export default function DashboardPage() {
         </header>
         
         {/* VPH Overview */}
-        {!isLoading && (
-          <section className="mb-10">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-indigo-200 dark:border-indigo-900">
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Average VPH</h3>
-                <div className="mt-1 flex items-baseline">
-                  <p className="text-2xl font-semibold text-indigo-600 dark:text-indigo-400">
-                    {Math.round(recentVideos.reduce((sum, video) => sum + video.vph, 0) / Math.max(1, recentVideos.length))}
-                  </p>
-                  <p className="ml-2 text-sm text-gray-600 dark:text-gray-400">views per hour</p>
-                </div>
-              </div>
-              
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-purple-200 dark:border-purple-900">
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Highest VPH</h3>
-                <div className="mt-1 flex items-baseline">
-                  <p className="text-2xl font-semibold text-purple-600 dark:text-purple-400">
-                    {recentVideos.length > 0 ? Math.max(...recentVideos.map(v => v.vph)) : 0}
-                  </p>
-                  <p className="ml-2 text-sm text-gray-600 dark:text-gray-400">views per hour</p>
-                </div>
-                <p className="mt-1 text-xs text-purple-600 dark:text-purple-400">
-                  {recentVideos.length > 0 ? 
-                    recentVideos.reduce((max, video) => max.vph > video.vph ? max : video, recentVideos[0]).title.substring(0, 30) + '...' 
-                    : 'No videos found'}
+        <section className="mb-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-indigo-200 dark:border-indigo-900">
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Average VPH</h3>
+              <div className="mt-1 flex items-baseline">
+                <p className="text-2xl font-semibold text-indigo-600 dark:text-indigo-400">
+                  {Math.round(recentVideos.reduce((sum, video) => sum + video.vph, 0) / Math.max(1, recentVideos.length))}
                 </p>
-              </div>
-              
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-green-200 dark:border-green-900">
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">VPH Trend</h3>
-                <div className="mt-1 flex items-baseline">
-                  <p className="text-2xl font-semibold text-green-600 dark:text-green-400">
-                    +12%
-                  </p>
-                  <p className="ml-2 text-sm text-gray-600 dark:text-gray-400">from last week</p>
-                </div>
+                <p className="ml-2 text-sm text-gray-600 dark:text-gray-400">views per hour</p>
               </div>
             </div>
-          </section>
-        )}
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-purple-200 dark:border-purple-900">
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Highest VPH</h3>
+              <div className="mt-1 flex items-baseline">
+                <p className="text-2xl font-semibold text-purple-600 dark:text-purple-400">
+                  {recentVideos.length > 0 ? Math.max(...recentVideos.map(v => v.vph)) : 0}
+                </p>
+                <p className="ml-2 text-sm text-gray-600 dark:text-gray-400">views per hour</p>
+              </div>
+              <p className="mt-1 text-xs text-purple-600 dark:text-purple-400">
+                {recentVideos.length > 0 ? recentVideos.reduce((max, video) => max.vph > video.vph ? max : video, recentVideos[0]).title.substring(0, 30) + '...' : 'No videos found'}
+              </p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-green-200 dark:border-green-900">
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">VPH Trend</h3>
+              <div className="mt-1 flex items-baseline">
+                <p className={`text-2xl font-semibold ${vphTrend.percentage > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{vphTrend.percentage > 0 ? '+' : ''}{vphTrend.percentage}%</p>
+                <p className="ml-2 text-sm text-gray-600 dark:text-gray-400">from {selectedTimeFrame === '24h' ? 'last day' : selectedTimeFrame === '7d' ? 'last week' : 'last month'}</p>
+              </div>
+            </div>
+          </div>
+        </section>
 
-        {/* Alerts Section */}
+        {/* Recent Alerts - full width */}
         <section className="mb-10">
           <h2 className="text-2xl font-semibold mb-4 dark:text-white">Recent Alerts</h2>
           {alerts.length > 0 ? (
@@ -197,7 +540,7 @@ export default function DashboardPage() {
           )}
         </section>
 
-        {/* Videos Sections */}
+        {/* Videos Sections - two column grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Recent Videos */}
           <section>
