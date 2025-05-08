@@ -5,187 +5,10 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { FaArrowLeft, FaPlus, FaTimes, FaYoutube, FaEllipsisV, FaChartBar, FaDownload, FaFilter, FaChevronDown, FaStar, FaRocket, FaTrophy, FaCheck, FaCalendarAlt, FaEye, FaEyeSlash, FaThLarge, FaSearch, FaExternalLinkAlt, FaPlay, FaBookmark, FaClipboard, FaChartLine } from 'react-icons/fa';
 import Link from 'next/link';
 import { Competitor, Video } from '@/types';
-import { competitorsApi, videosApi } from '@/services/api';
+import { videosApi } from '@/services/api';
 import { getUseRealApi } from '@/services/api/config';
 import { competitorListsApi } from '@/services/api/competitorLists';
-
-// Mock suggested competitors for demo - Expanded to 10+ competitors
-const suggestedCompetitors = [
-  { id: 'sugg1', name: 'TechReviewer', thumbnailUrl: 'https://via.placeholder.com/150?text=TR', subscriberCount: 208000, videoCount: 342, viewCount: 15600000, youtubeId: 'UCTR123456789' },
-  { id: 'sugg2', name: 'GamingDaily', thumbnailUrl: 'https://via.placeholder.com/150?text=GD', subscriberCount: 620000, videoCount: 527, viewCount: 48000000, youtubeId: 'UCGD987654321' },
-  { id: 'sugg3', name: 'FoodChannel', thumbnailUrl: 'https://via.placeholder.com/150?text=FC', subscriberCount: 779000, videoCount: 623, viewCount: 53000000, youtubeId: 'UCFC456789123' },
-  { id: 'sugg4', name: 'TravelVlog', thumbnailUrl: 'https://via.placeholder.com/150?text=TV', subscriberCount: 318000, videoCount: 287, viewCount: 22000000, youtubeId: 'UCTV789123456' },
-  { id: 'sugg5', name: 'MusicMasters', thumbnailUrl: 'https://via.placeholder.com/150?text=MM', subscriberCount: 1250000, videoCount: 412, viewCount: 89000000, youtubeId: 'UCMM567890123' },
-  { id: 'sugg6', name: 'DIYCreator', thumbnailUrl: 'https://via.placeholder.com/150?text=DIY', subscriberCount: 435000, videoCount: 328, viewCount: 31000000, youtubeId: 'UCDIY12345678' },
-  { id: 'sugg7', name: 'ScienceExplorer', thumbnailUrl: 'https://via.placeholder.com/150?text=SCI', subscriberCount: 890000, videoCount: 275, viewCount: 65000000, youtubeId: 'UCSCI87654321' },
-  { id: 'sugg8', name: 'FitnessPro', thumbnailUrl: 'https://via.placeholder.com/150?text=FIT', subscriberCount: 520000, videoCount: 380, viewCount: 42000000, youtubeId: 'UCFIT12345678' },
-  { id: 'sugg9', name: 'BeautyTips', thumbnailUrl: 'https://via.placeholder.com/150?text=BTY', subscriberCount: 1800000, videoCount: 520, viewCount: 112000000, youtubeId: 'UCBTY98765432' },
-  { id: 'sugg10', name: 'CookingExpert', thumbnailUrl: 'https://via.placeholder.com/150?text=CKG', subscriberCount: 670000, videoCount: 430, viewCount: 58000000, youtubeId: 'UCCK765432109' }
-];
-
-// Mock similar videos for demo that would come from competitor channels
-const mockCompetitorVideos: Video[] = [
-  {
-    id: 'video1',
-    youtubeId: 'dQw4w9WgXcQ',
-    channelId: 'UCTR123456789',
-    title: 'How to Grow Your YouTube Channel in 2023',
-    description: 'Learn the latest strategies for growing your YouTube channel',
-    thumbnailUrl: 'https://via.placeholder.com/320x180?text=YouTube+Growth',
-    publishedAt: new Date('2023-06-15'),
-    viewCount: 125000,
-    likeCount: 8500,
-    commentCount: 650,
-    vph: 180,
-  },
-  {
-    id: 'video2',
-    youtubeId: 'oHg5SJYRHA0',
-    channelId: 'UCGD987654321',
-    title: 'Top 10 Video Editing Mistakes to Avoid',
-    description: 'Avoiding these common mistakes will drastically improve your videos',
-    thumbnailUrl: 'https://via.placeholder.com/320x180?text=Editing+Tips',
-    publishedAt: new Date('2023-05-20'),
-    viewCount: 98000,
-    likeCount: 7200,
-    commentCount: 520,
-    vph: 150,
-  },
-  {
-    id: 'video3',
-    youtubeId: 'y8Yv4pnO7qc',
-    channelId: 'UCFC456789123',
-    title: 'Best Camera Settings for YouTube',
-    description: 'Optimize your camera settings for professional-looking YouTube videos',
-    thumbnailUrl: 'https://via.placeholder.com/320x180?text=Camera+Settings',
-    publishedAt: new Date('2023-07-01'),
-    viewCount: 72000,
-    likeCount: 5100,
-    commentCount: 380,
-    vph: 130,
-  },
-  {
-    id: 'video4',
-    youtubeId: 'z9bZufPHFLU',
-    channelId: 'UCTV789123456',
-    title: 'YouTube Algorithm: What Changed in 2023',
-    description: 'Understanding the latest YouTube algorithm changes',
-    thumbnailUrl: 'https://via.placeholder.com/320x180?text=Algorithm+Updates',
-    publishedAt: new Date('2023-06-25'),
-    viewCount: 85000,
-    likeCount: 6300,
-    commentCount: 470,
-    vph: 140,
-  },
-  {
-    id: 'video5',
-    youtubeId: 'lGEmnVX9TNc',
-    channelId: 'UCTR123456789',
-    title: 'How to Research Video Topics that Get Views',
-    description: 'Find winning video topics that will bring in views and subscribers',
-    thumbnailUrl: 'https://via.placeholder.com/320x180?text=Topic+Research',
-    publishedAt: new Date('2023-07-10'),
-    viewCount: 62000,
-    likeCount: 4800,
-    commentCount: 350,
-    vph: 120,
-  },
-  {
-    id: 'video6',
-    youtubeId: 'k1BneeJTDcU',
-    channelId: 'UCGD987654321',
-    title: 'Thumbnail Design That Gets Clicks',
-    description: 'Create thumbnails that attract viewers and increase CTR',
-    thumbnailUrl: 'https://via.placeholder.com/320x180?text=Thumbnail+Design',
-    publishedAt: new Date('2023-06-05'),
-    viewCount: 105000,
-    likeCount: 7800,
-    commentCount: 590,
-    vph: 160,
-  },
-];
-
-// Mock similar videos based on keywords
-const mockSimilarVideos: Video[] = [
-  {
-    id: 'video7',
-    youtubeId: 'dQw4w9WgXcQ',
-    channelId: 'UCnew123456',
-    title: '5 Ways to Improve Video Retention',
-    description: 'Techniques to keep viewers watching your videos longer',
-    thumbnailUrl: 'https://via.placeholder.com/320x180?text=Video+Retention',
-    publishedAt: new Date('2023-05-10'),
-    viewCount: 88000,
-    likeCount: 6500,
-    commentCount: 480,
-    vph: 145,
-  },
-  {
-    id: 'video8',
-    youtubeId: 'oHg5SJYRHA0',
-    channelId: 'UCnew789123',
-    title: 'Best Time to Upload on YouTube',
-    description: 'Find the optimal upload schedule for maximum views',
-    thumbnailUrl: 'https://via.placeholder.com/320x180?text=Upload+Timing',
-    publishedAt: new Date('2023-07-05'),
-    viewCount: 75000,
-    likeCount: 5500,
-    commentCount: 410,
-    vph: 135,
-  },
-  {
-    id: 'video9',
-    youtubeId: 'abCD123456',
-    channelId: 'UCnew456789',
-    title: 'How to Optimize YouTube SEO',
-    description: 'Improve your video rankings with these SEO tips',
-    thumbnailUrl: 'https://via.placeholder.com/320x180?text=YouTube+SEO',
-    publishedAt: new Date('2023-04-15'),
-    viewCount: 112000,
-    likeCount: 8200,
-    commentCount: 570,
-    vph: 155,
-  },
-  {
-    id: 'video10',
-    youtubeId: 'efGH789012',
-    channelId: 'UCnew234567',
-    title: 'The Perfect YouTube Studio Setup',
-    description: 'Create a professional studio on any budget',
-    thumbnailUrl: 'https://via.placeholder.com/320x180?text=Studio+Setup',
-    publishedAt: new Date('2023-06-20'),
-    viewCount: 95000,
-    likeCount: 7100,
-    commentCount: 490,
-    vph: 148,
-  },
-  {
-    id: 'video11',
-    youtubeId: 'ijKL345678',
-    channelId: 'UCnew567890',
-    title: 'YouTube Analytics Explained',
-    description: 'Understanding your channel metrics for growth',
-    thumbnailUrl: 'https://via.placeholder.com/320x180?text=Analytics',
-    publishedAt: new Date('2023-05-05'),
-    viewCount: 82000,
-    likeCount: 6000,
-    commentCount: 420,
-    vph: 138,
-  },
-  {
-    id: 'video12',
-    youtubeId: 'mnoP901234',
-    channelId: 'UCnew345678',
-    title: 'Creating Better YouTube Titles',
-    description: 'Write titles that attract viewers and boost CTR',
-    thumbnailUrl: 'https://via.placeholder.com/320x180?text=Better+Titles',
-    publishedAt: new Date('2023-07-15'),
-    viewCount: 68000,
-    likeCount: 5000,
-    commentCount: 360,
-    vph: 125,
-  },
-];
+import { secureYoutubeService } from '@/services/api/youtube-secure';
 
 // Format number to compact form
 const formatNumber = (num: number): string => {
@@ -237,32 +60,26 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   // Add new state variables for similar videos section
   const [competitorVideos, setCompetitorVideos] = useState<Video[]>([]);
   const [similarVideos, setSimilarVideos] = useState<Video[]>([]);
-  const [videoGridColumns, setVideoGridColumns] = useState<number>(3);
+  const [videoGridColumns, setVideoGridColumns] = useState<number>(6); // Default to 6 columns for video grid
   const [showVideoInfo, setShowVideoInfo] = useState<boolean>(true);
   const [videoSearchQuery, setVideoSearchQuery] = useState<string>('');
   const [activeVideoTab, setActiveVideoTab] = useState<'competitors' | 'similar'>('competitors');
-  const [showSuggestedCompetitors, setShowSuggestedCompetitors] = useState<boolean>(false);
-  const competitorCarouselRef = useRef<HTMLDivElement>(null);
   
   // Add states for the video context menu
   const [showVideoContextMenu, setShowVideoContextMenu] = useState<boolean>(false);
-  const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number, y: number }>({ x: 0, y: 0 });
+  const [contextMenuPosition, setContextMenuPosition] = useState<{x: number, y: number}>({x: 0, y: 0});
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const contextMenuRef = useRef<HTMLDivElement>(null);
 
   // State for filter settings
   const [minSubscribers, setMinSubscribers] = useState<number>(0);
+  
+  // State for loading videos
+  const [isVideoLoading, setIsVideoLoading] = useState<boolean>(false);
 
   // Call the check on mount
   useEffect(() => {
     fetchCompetitors();
-    
-    // Simulate API call for videos
-    setTimeout(() => {
-      setCompetitorVideos(mockCompetitorVideos);
-      setSimilarVideos(mockSimilarVideos);
-      setIsLoading(false);
-    }, 1000);
   }, []);
   
   // Add a useEffect to handle clicks outside the context menu
@@ -291,33 +108,96 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
         console.log(`Found ${competitors.length} competitors in list ${params.listId}`);
         
         // Convert from DB format to our app format
-        const formattedCompetitors = competitors.map(c => ({
-          id: c.id,
-          youtubeId: c.youtubeId,
-          name: c.name,
-          thumbnailUrl: c.thumbnailUrl || '',
-          subscriberCount: c.subscriberCount || 0,
-          videoCount: c.videoCount || 0,
-          viewCount: c.viewCount || 0
-        }));
+        const formattedCompetitors: Competitor[] = [];
+        
+        // For each competitor, get fresh data from YouTube
+        for (const c of competitors) {
+          try {
+            // Try to get fresh data from YouTube
+            console.log(`Fetching updated data for channel ${c.name} (${c.youtubeId})...`);
+            const channelData = await secureYoutubeService.getChannelById(c.youtubeId);
+            
+            // Use the fresh data but keep our database ID
+            formattedCompetitors.push({
+              id: c.id,
+              youtubeId: c.youtubeId,
+              name: channelData.name,
+              thumbnailUrl: channelData.thumbnailUrl,
+              subscriberCount: channelData.subscriberCount,
+              videoCount: channelData.videoCount,
+              viewCount: channelData.viewCount
+            });
+            
+            console.log(`Updated data received for ${channelData.name}`);
+          } catch (error) {
+            console.error(`Error fetching data for channel ${c.youtubeId}:`, error);
+            
+            // Fall back to database data if YouTube API fails
+            formattedCompetitors.push({
+              id: c.id,
+              youtubeId: c.youtubeId,
+              name: c.name,
+              thumbnailUrl: c.thumbnailUrl || '',
+              subscriberCount: c.subscriberCount || 0,
+              videoCount: c.videoCount || 0,
+              viewCount: c.viewCount || 0
+            });
+          }
+        }
         
         setCompetitors(formattedCompetitors);
+        
+        // After getting competitors, fetch their videos
+        if (formattedCompetitors.length > 0) {
+          fetchCompetitorVideos(formattedCompetitors);
+        } else {
+          setIsLoading(false);
+        }
       } catch (error) {
         console.error('Error fetching competitors for list:', error);
         if (error instanceof Error && error.message.includes('not found')) {
           // List not found, redirect to the main competitors page
           router.push('/dashboard/competitors');
         }
-      }
-      
-      // Simulate API call for videos
-      setTimeout(() => {
-        setCompetitorVideos(mockCompetitorVideos);
-        setSimilarVideos(mockSimilarVideos);
         setIsLoading(false);
-      }, 1000);
+      }
     } catch (error) {
       console.error('Error in fetchCompetitors:', error);
+      setIsLoading(false);
+    }
+  };
+  
+  const fetchCompetitorVideos = async (competitorsList: Competitor[]) => {
+    try {
+      setIsVideoLoading(true);
+      const allVideos: Video[] = [];
+      
+      // Process all competitors
+      const competitorsToFetch = competitorsList;
+      
+      // Fetch videos for each competitor (10 videos per competitor)
+      for (const competitor of competitorsToFetch) {
+        try {
+          console.log(`Fetching videos for channel ${competitor.name} (${competitor.youtubeId})...`);
+          const videos = await secureYoutubeService.getVideosByChannelId(competitor.youtubeId, 10);
+          allVideos.push(...videos);
+          console.log(`Found ${videos.length} videos for channel ${competitor.name}`);
+        } catch (error) {
+          console.error(`Error fetching videos for channel ${competitor.youtubeId}:`, error);
+        }
+      }
+      
+      // Sort videos by published date (newest first)
+      const sortedVideos = allVideos.sort((a, b) => 
+        new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+      );
+      
+      setCompetitorVideos(sortedVideos);
+      setIsVideoLoading(false);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error fetching competitor videos:', error);
+      setIsVideoLoading(false);
       setIsLoading(false);
     }
   };
@@ -338,37 +218,55 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
     setIsAdding(true);
     
     try {
-      // When using real API, we only need the YouTube ID
-      // The API will fetch all other details
+      // First get the channel data from YouTube
+      let channelData;
+      try {
+        console.log(`Fetching channel data for ${newCompetitorId}...`);
+        channelData = await secureYoutubeService.getChannelById(newCompetitorId);
+        console.log('Channel data retrieved:', channelData);
+      } catch (channelError) {
+        console.error('Error fetching channel data from YouTube:', channelError);
+        setError('Could not fetch channel information. Please check the channel ID and try again.');
+        setIsAdding(false);
+        return;
+      }
+      
+      // Now use the data from YouTube to add to the competitor list
       const competitorData = {
-        youtubeId: newCompetitorId,
-        name: useRealApi ? '' : `Competitor ${competitors.length + 1}`, // API will override this for real API
-        thumbnailUrl: 'https://via.placeholder.com/150', // API will override this for real API
-        subscriberCount: 0, // API will override this for real API
-        videoCount: 0, // API will override this for real API
-        viewCount: 0 // API will override this for real API
+        youtubeId: channelData.youtubeId,
+        name: channelData.name,
+        thumbnailUrl: channelData.thumbnailUrl,
+        subscriberCount: channelData.subscriberCount,
+        videoCount: channelData.videoCount,
+        viewCount: channelData.viewCount
       };
       
-      const competitor = await competitorsApi.addCompetitor(competitorData);
-      setCompetitors(prev => [...prev, competitor]);
+      // Add to competitor list in Supabase
+      const competitor = await competitorListsApi.addCompetitorToList(
+        params.listId,
+        competitorData
+      );
       
-      // Create a sample video for this competitor to show in the Related Videos section
-      const newVideo: Video = {
-        id: `video-${Date.now()}`,
-        youtubeId: `v-${Date.now()}`,
-        channelId: competitor.youtubeId,
-        title: `Latest video from ${competitor.name}`,
-        description: 'This channel was just added to your tracked competitors',
-        thumbnailUrl: 'https://via.placeholder.com/320x180?text=New+Channel+Video',
-        publishedAt: new Date(),
-        viewCount: Math.floor(Math.random() * 50000) + 5000,
-        likeCount: Math.floor(Math.random() * 5000) + 500,
-        commentCount: Math.floor(Math.random() * 300) + 50,
-        vph: Math.floor(Math.random() * 100) + 20
+      // Convert from the TrackedCompetitor type to Competitor type for UI
+      const newCompetitor: Competitor = {
+        id: competitor.id,
+        youtubeId: competitor.youtubeId,
+        name: competitor.name,
+        thumbnailUrl: competitor.thumbnailUrl || '',
+        subscriberCount: competitor.subscriberCount || 0,
+        videoCount: competitor.videoCount || 0,
+        viewCount: competitor.viewCount || 0
       };
       
-      // Add this video to the competitor videos array
-      setCompetitorVideos(prev => [newVideo, ...prev]);
+      setCompetitors(prev => [...prev, newCompetitor]);
+      
+      // Fetch videos for the new competitor
+      try {
+        const videos = await secureYoutubeService.getVideosByChannelId(newCompetitor.youtubeId, 10);
+        setCompetitorVideos(prev => [...videos, ...prev]);
+      } catch (videoError) {
+        console.error('Error fetching videos for new competitor:', videoError);
+      }
       
       setNewCompetitorId('');
       setIsModalOpen(false);
@@ -385,8 +283,8 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
       // Find the competitor being removed to get its youtubeId
       const competitorToRemove = competitors.find(comp => comp.id === id);
       
-      // Remove the competitor from the database/API
-      await competitorsApi.removeCompetitor(id);
+      // Remove the competitor using the direct API instead of the adapter
+      await competitorListsApi.removeCompetitorFromList(id);
       
       // Update the competitors list in UI
       setCompetitors(prev => prev.filter(competitor => competitor.id !== id));
@@ -702,20 +600,34 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
         video.title.toLowerCase().includes(videoSearchQuery.toLowerCase()) || 
         video.description.toLowerCase().includes(videoSearchQuery.toLowerCase())
       );
-
-  // Function to scroll competitor carousel
-  const scrollCompetitorCarousel = (direction: 'left' | 'right') => {
-    if (competitorCarouselRef.current) {
-      const scrollAmount = 300; // px to scroll
-      const currentScroll = competitorCarouselRef.current.scrollLeft;
       
-      competitorCarouselRef.current.scrollTo({
-        left: direction === 'left' 
-          ? Math.max(currentScroll - scrollAmount, 0) 
-          : currentScroll + scrollAmount,
-        behavior: 'smooth'
+  // Group videos by channel for organized display
+  const getVideosByChannel = () => {
+    const channelGroups: { [channelId: string]: { channel: Competitor | null, videos: Video[] } } = {};
+    
+    // Group videos by channel ID
+    filteredVideos.forEach(video => {
+      if (!channelGroups[video.channelId]) {
+        // Find matching competitor for the channel
+        const matchingCompetitor = competitors.find(comp => comp.youtubeId === video.channelId);
+        
+        channelGroups[video.channelId] = {
+          channel: matchingCompetitor || null,
+          videos: []
+        };
+      }
+      
+      channelGroups[video.channelId].videos.push(video);
+    });
+    
+    // Convert object to array and sort by channel name
+    return Object.values(channelGroups)
+      .filter(group => group.videos.length > 0)
+      .sort((a, b) => {
+        const nameA = a.channel?.name || '';
+        const nameB = b.channel?.name || '';
+        return nameA.localeCompare(nameB);
       });
-    }
   };
 
   if (isLoading) {
@@ -874,99 +786,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
         </div>
       </div>
 
-      {/* Suggested competitors - Now with toggle and more options */}
-      {showSuggestedCompetitors && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center gap-2">
-              <FaChartBar className="text-indigo-500" />
-              <h2 className="text-xl font-bold text-gray-800 dark:text-white">Suggested competitors</h2>
-              <div className="text-gray-400 dark:text-gray-500 cursor-help" title="Channels similar to your current competitors">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
-            <button 
-              onClick={() => setShowSuggestedCompetitors(false)}
-              className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
-              title="Hide suggested competitors"
-            >
-              <FaTimes size={18} />
-            </button>
-          </div>
-
-          {/* Competitor Carousel with scroll indicators */}
-          <div className="relative">
-            <div 
-              ref={competitorCarouselRef}
-              className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 pb-2"
-              style={{ scrollbarWidth: 'thin' }}
-            >
-              <div className="flex gap-8 pb-8 px-2" style={{ width: 'max-content', minWidth: '100%' }}>
-                {suggestedCompetitors.map((competitor) => (
-                  <div key={competitor.id} className="flex-shrink-0 flex flex-col items-center text-center" style={{ minWidth: '120px' }}>
-                    <div className="relative group">
-                      <div className="w-28 h-28 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 ring-4 ring-gray-100 dark:ring-gray-800 shadow-md hover:shadow-lg transition-all duration-200">
-                        <img 
-                          src={competitor.thumbnailUrl}
-                          alt={competitor.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="absolute -bottom-2 -right-2 bg-white dark:bg-gray-800 rounded-full p-2 shadow-sm">
-                        {getCompetitorIcon(competitor)}
-                      </div>
-                      <div className="opacity-0 group-hover:opacity-100 absolute inset-0 bg-black bg-opacity-40 rounded-full flex items-center justify-center transition-all duration-200">
-                        <button 
-                          className="bg-indigo-600 dark:bg-indigo-500 text-white p-2 rounded-full hover:bg-indigo-700"
-                          onClick={() => {
-                            // In a real implementation, we would add this competitor
-                            alert(`Would add ${competitor.name} to your tracked competitors`);
-                          }}
-                        >
-                          <FaPlus size={16} />
-                        </button>
-                      </div>
-                    </div>
-                    <h3 className="text-gray-800 dark:text-white font-medium text-base mt-4 max-w-[120px] truncate">{competitor.name}</h3>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">{formatNumber(competitor.subscriberCount)} subs</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            {/* Scroll indicators with click handlers */}
-            <div 
-              onClick={() => scrollCompetitorCarousel('left')}
-              className="absolute left-0 top-1/2 -translate-y-1/2 w-8 h-8 bg-white dark:bg-gray-700 shadow-md rounded-full flex items-center justify-center z-10 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </div>
-            <div 
-              onClick={() => scrollCompetitorCarousel('right')}
-              className="absolute right-0 top-1/2 -translate-y-1/2 w-8 h-8 bg-white dark:bg-gray-700 shadow-md rounded-full flex items-center justify-center z-10 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Show button to restore suggested competitors when hidden */}
-      {!showSuggestedCompetitors && (
-        <button 
-          onClick={() => setShowSuggestedCompetitors(true)} 
-          className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm px-4 py-3 mb-6 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-        >
-          <FaChartBar className="text-indigo-500" />
-          <span>Show suggested competitors</span>
-        </button>
-      )}
+      {/* Suggested competitors section - REMOVED */}
 
       {/* New Filter Popup */}
       {isFilterOpen && (
@@ -1545,7 +1365,99 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
         </div>
 
         {/* Video Grid */}
-        {filteredVideos.length > 0 ? (
+        {isVideoLoading ? (
+          <div className="w-full flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+            <p className="ml-4 text-gray-600 dark:text-gray-400">Loading videos...</p>
+          </div>
+        ) : activeVideoTab === 'competitors' && getVideosByChannel().length > 0 ? (
+          <div className="space-y-8">
+            {getVideosByChannel().map((group) => (
+              <div key={group.channel?.youtubeId || 'unknown'} className="mb-8">
+                {/* Channel header */}
+                <div className="flex items-center mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+                  {group.channel && (
+                    <>
+                      <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 mr-3">
+                        <img 
+                          src={group.channel.thumbnailUrl} 
+                          alt={group.channel.name} 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div>
+                        <a 
+                          href={`https://youtube.com/channel/${group.channel.youtubeId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-medium text-lg text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors"
+                        >
+                          {group.channel.name}
+                        </a>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Latest {group.videos.length} videos
+                        </p>
+                      </div>
+                    </>
+                  )}
+                  {!group.channel && (
+                    <div className="font-medium text-lg text-gray-700 dark:text-gray-300">
+                      Unknown Channel
+                    </div>
+                  )}
+                </div>
+                
+                {/* Channel videos grid */}
+                <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${videoGridColumns}, minmax(0, 1fr))` }}>
+                  {group.videos.map((video) => (
+                    <div 
+                      key={video.id} 
+                      className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow duration-200 cursor-pointer group"
+                      onClick={() => openVideoOnYouTube(video.youtubeId)}
+                      onContextMenu={(e) => handleVideoContextMenu(e, video.youtubeId)}
+                    >
+                      <div className="relative pt-[56.25%]"> {/* 16:9 aspect ratio */}
+                        <img 
+                          src={video.thumbnailUrl} 
+                          alt={video.title} 
+                          className="absolute top-0 left-0 w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-40 transition-opacity duration-300"></div>
+                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <FaPlay className="text-white text-4xl" />
+                        </div>
+                        <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
+                          {new Date(video.publishedAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                      
+                      {showVideoInfo && (
+                        <div className="p-3">
+                          <div className="flex justify-between items-start">
+                            <h3 className="font-medium text-gray-900 dark:text-white line-clamp-2 mb-1 flex-1">{video.title}</h3>
+                            <FaExternalLinkAlt size={12} className="text-gray-400 dark:text-gray-500 mt-1 ml-2 flex-shrink-0" />
+                          </div>
+                          
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
+                              {formatNumber(video.viewCount)} views
+                            </span>
+                            <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
+                              {formatNumber(video.likeCount)} likes
+                            </span>
+                            <span className="text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 rounded-xl px-2 py-1 font-medium">
+                              {video.vph} VPH
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : activeVideoTab === 'similar' && filteredVideos.length > 0 ? (
           <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${videoGridColumns}, minmax(0, 1fr))` }}>
             {filteredVideos.map((video) => (
               <div 
@@ -1597,7 +1509,11 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
             <p className="text-gray-500 dark:text-gray-400 mb-4">
               {videoSearchQuery 
                 ? "No videos found matching your search." 
-                : "Videos from your tracked competitors will appear here. Add competitors to the Tracked Channels section above."}
+                : activeVideoTab === 'competitors'
+                  ? competitors.length > 0
+                    ? "No videos found for your tracked competitors."
+                    : "Videos from your tracked competitors will appear here. Add competitors to the Tracked Channels section above."
+                  : "Similar content videos are not available at this time."}
             </p>
             {videoSearchQuery && (
               <button
