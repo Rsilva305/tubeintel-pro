@@ -28,8 +28,8 @@ const SidebarItem = ({ icon, label, href, isActive, collapsed }: SidebarItemProp
       href={href}
       className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3 px-3'} py-3 rounded-lg transition-all duration-200 ${
         isActive 
-          ? `${theme === 'dark' ? 'bg-blue-900/20 text-blue-400' : 'bg-blue-100 text-blue-600'}` 
-          : `${theme === 'dark' ? 'text-gray-400 hover:bg-gray-800 hover:text-white' : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900'}`
+          ? 'bg-blue-900/20 text-blue-400' 
+          : 'text-gray-400 hover:bg-gray-800 hover:text-white'
       }`}
     >
       <div className={collapsed ? 'flex justify-center items-center w-full' : ''}>
@@ -53,23 +53,23 @@ export default function Sidebar({ collapsed, toggleSidebar }: SidebarProps): JSX
     return pathname === path || pathname.startsWith(`${path}/`);
   };
   
-  const bgColor = theme === 'dark' ? 'bg-gray-800' : 'bg-white';
-  const borderColor = theme === 'dark' ? 'border-gray-700' : 'border-gray-200';
-  const textColor = theme === 'dark' ? 'text-white' : 'text-gray-900';
+  const bgColor = 'bg-gray-900';
+  const borderColor = 'border-gray-700';
+  const textColor = 'text-white';
   
   return (
     <div 
       className={`${
         collapsed ? 'w-[70px]' : 'w-[240px]'
       } h-screen flex-shrink-0 ${bgColor} border-r ${borderColor} py-6 flex flex-col transition-all duration-300 ease-in-out`}
-      style={{ boxShadow: theme === 'dark' ? '0 0 10px 5px rgba(0,0,0,0.3)' : 'none' }}
+      style={{ boxShadow: '0 0 10px 5px rgba(0,0,0,0.3)' }}
     >
       {collapsed ? (
         <>
           <div className="flex justify-center mb-6">
             <button 
               onClick={toggleSidebar}
-              className={`${theme === 'dark' ? 'text-gray-400 hover:text-white hover:bg-gray-700' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'} p-2 rounded-full transition-colors`}
+              className="text-gray-400 hover:text-white hover:bg-gray-800 p-2 rounded-full transition-colors"
               aria-label="Expand sidebar"
             >
               <FaBars className="h-5 w-5" />
@@ -97,7 +97,7 @@ export default function Sidebar({ collapsed, toggleSidebar }: SidebarProps): JSX
 
           <button 
             onClick={toggleSidebar}
-            className={`${theme === 'dark' ? 'text-gray-400 hover:text-white hover:bg-gray-700' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'} p-2 rounded-full transition-colors ml-auto`}
+            className="text-gray-400 hover:text-white hover:bg-gray-800 p-2 rounded-full transition-colors ml-auto"
             aria-label="Collapse sidebar"
           >
             <FaBars className="h-5 w-5" />
@@ -139,7 +139,7 @@ export default function Sidebar({ collapsed, toggleSidebar }: SidebarProps): JSX
       <div className="mt-auto px-4">
         {!collapsed && (
           <div className={`border-t ${borderColor} pt-4`}>
-            <p className={`${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'} text-xs`}>© 2024 TubeIntel Pro</p>
+            <p className="text-gray-500 text-xs">© 2024 TubeIntel Pro</p>
           </div>
         )}
       </div>

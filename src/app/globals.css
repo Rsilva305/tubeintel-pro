@@ -10,7 +10,7 @@
 
 /* Dark mode enhancement to ensure full coverage */
 html.dark {
-  background-color: rgb(17, 24, 39); /* bg-gray-900 */
+  background-color: rgb(11, 15, 25); /* Darker gray */
 }
 
 html, body {
