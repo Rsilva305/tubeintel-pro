@@ -6,6 +6,16 @@ export interface User {
   createdAt: Date;
 }
 
+// Profile types
+export interface Profile {
+  id: string;
+  username: string | null;
+  email: string | null;
+  created_at: string;
+  updated_at: string;
+  youtube_channel_id: string | null;
+}
+
 // Authentication types
 export interface AuthState {
   user: User | null;

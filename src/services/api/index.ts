@@ -1,4 +1,4 @@
-import { User, Channel, Video, Alert, Competitor, Transcript, VideoMetadata, Insight } from '@/types';
+import { User, Channel, Video, Alert, Competitor, Transcript, VideoMetadata, Insight, Profile } from '@/types';
 import { 
   mockUsers, 
   mockChannels, 
@@ -11,6 +11,8 @@ import {
 } from './mockData';
 import { youtubeService } from './youtube';
 import { competitorListsApi } from './competitorLists';
+import { getCurrentUser } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 // Auth API
 const authApi = {
@@ -37,27 +39,43 @@ const authApi = {
 const channelsApi = {
   getMyChannel: async (): Promise<Channel> => {
     try {
-      // Get the user's specified channel ID from localStorage
-      let channelId = 'UC_x5XG1OV2P6uZZ5FSM9Ttw'; // Default to Google Developers channel
-      
-      // In browser environment, try to get the user's specified channel
-      if (typeof window !== 'undefined') {
-        const userChannelId = localStorage.getItem('youtubeChannelId');
-        if (userChannelId) {
-          channelId = userChannelId;
-        }
+      // Get current user
+      const user = await getCurrentUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      // Get channel ID from Supabase
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('youtube_channel_id')
+        .eq('id', user.id)
+        .single<Pick<Profile, 'youtube_channel_id'>>();
+
+      if (error) {
+        throw new Error('Failed to load profile: ' + error.message);
+      }
+
+      if (!profile?.youtube_channel_id) {
+        throw new Error('No channel ID found. Please connect your YouTube channel first.');
       }
       
-      return await youtubeService.getChannelById(channelId);
+      return await youtubeService.getChannelById(profile.youtube_channel_id);
     } catch (error) {
       console.error('Error fetching channel from YouTube API:', error);
-      return mockChannels[0]; // Fallback to mock data
+      throw error;
     }
   },
   
   updateChannel: async (channelId: string, data: Partial<Channel>): Promise<Channel> => {
-    // Return updated channel for demo
-    return { ...mockChannels[0], ...data };
+    try {
+      // Validate the channel exists
+      const channel = await youtubeService.getChannelById(channelId);
+      return { ...channel, ...data };
+    } catch (error) {
+      console.error('Error updating channel:', error);
+      throw error;
+    }
   }
 };
 
