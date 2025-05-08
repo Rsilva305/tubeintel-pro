@@ -46,7 +46,7 @@ export default function DashboardPage() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sortOption, setSortOption] = useState<SortOption>('date');
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [showUpdateNotification, setShowUpdateNotification] = useState(false);
   const [selectedTimeFrame, setSelectedTimeFrame] = useState<TimeFrame>('24h');
@@ -97,9 +97,8 @@ export default function DashboardPage() {
   // Function to fetch data
   const fetchData = async () => {
     try {
-      const [recentVideosData, topVideosData, alertsData] = await Promise.all([
+      const [recentVideosData, alertsData] = await Promise.all([
         videosApi.getRecentVideos(100), // Increased to get more historical data for 30d trends
-        videosApi.getTopPerformingVideos(3),
         alertsApi.getUnreadAlerts()
       ]);
       
@@ -116,8 +115,13 @@ export default function DashboardPage() {
         });
       }
       
+      // Get top performing videos from the recent videos based on VPH
+      const topPerformingVideos = [...recentVideosData]
+        .sort((a, b) => b.vph - a.vph)
+        .slice(0, 3);
+      
       setRecentVideos(recentVideosData);
-      setTopVideos(topVideosData);
+      setTopVideos(topPerformingVideos);
       setAlerts(alertsData);
       setLastUpdated(new Date());
       setShowUpdateNotification(true);
@@ -598,7 +602,7 @@ export default function DashboardPage() {
 
           {/* Top Performing Videos */}
           <section>
-            <h2 className="text-2xl font-semibold mb-4 dark:text-white">Top Performing Videos</h2>
+            <h2 className="text-2xl font-semibold mb-4 dark:text-white">Your Top Performing Videos</h2>
             {topVideos.length > 0 ? (
               viewMode === 'list' ? (
                 <div className="space-y-4">

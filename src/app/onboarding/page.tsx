@@ -2,8 +2,17 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { FaYoutube } from 'react-icons/fa';
+import { FaYoutube, FaSearch } from 'react-icons/fa';
 import { supabase, isAuthenticated, getCurrentUser } from '@/lib/supabase';
+
+// Define the search result type
+interface ChannelSearchResult {
+  id: string;
+  title: string;
+  description: string;
+  thumbnailUrl: string;
+  subscriberCount?: string;
+}
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -12,6 +21,11 @@ export default function OnboardingPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
+  
+  // Add new state variables for channel search
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<ChannelSearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -142,11 +156,74 @@ export default function OnboardingPage() {
     }
   };
 
+  // Add search function for channels
+  const searchChannels = async (query: string) => {
+    if (!query || query.length < 3) {
+      setSearchResults([]);
+      return;
+    }
+    
+    setIsSearching(true);
+    setError('');
+    
+    try {
+      const response = await fetch(`/api/youtube/search?q=${encodeURIComponent(query)}&type=channel&maxResults=5`);
+      if (!response.ok) {
+        throw new Error('Search failed');
+      }
+      
+      const data = await response.json();
+      
+      // Format results
+      const formattedResults: ChannelSearchResult[] = data.items.map((item: any) => ({
+        id: item.id.channelId,
+        title: item.snippet.title,
+        description: item.snippet.description,
+        thumbnailUrl: item.snippet.thumbnails.default.url
+      }));
+      
+      setSearchResults(formattedResults);
+    } catch (error) {
+      console.error('Error searching channels:', error);
+      setError('Failed to search channels. Please try again.');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Debounce search function
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery) {
+        searchChannels(searchQuery);
+      }
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Select a channel from search results
+  const selectChannel = (channel: ChannelSearchResult) => {
+    setChannelId(channel.id);
+    setSearchQuery(channel.title);
+    setSearchResults([]);
+  };
+
+  // Handle direct channelId input changes
+  const handleChannelIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setChannelId(e.target.value);
+    // Clear the search query if user is manually entering a channel ID
+    if (e.target.value) {
+      setSearchQuery('');
+      setSearchResults([]);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!channelId && !channelUrl) {
-      setError('Please enter your YouTube channel URL or ID');
+    if (!channelId && !channelUrl && !searchQuery) {
+      setError('Please search for or enter your YouTube channel URL or ID');
       return;
     }
 
@@ -218,6 +295,68 @@ export default function OnboardingPage() {
           )}
           
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Add channel search */}
+            <div>
+              <label htmlFor="channelSearch" className="block text-gray-700 dark:text-gray-300 mb-2">
+                Search for your YouTube Channel
+              </label>
+              <div className="relative">
+                <input
+                  id="channelSearch"
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
+                  placeholder="Enter your channel name..."
+                  autoFocus
+                />
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaSearch className="text-gray-400" />
+                </div>
+                {isSearching && (
+                  <div className="absolute right-3 top-2">
+                    <svg className="animate-spin h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  </div>
+                )}
+                
+                {searchResults.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg">
+                    <ul className="max-h-60 overflow-y-auto">
+                      {searchResults.map((channel) => (
+                        <li 
+                          key={channel.id}
+                          onClick={() => selectChannel(channel)}
+                          className="flex items-center p-3 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer"
+                        >
+                          <img 
+                            src={channel.thumbnailUrl} 
+                            alt={channel.title} 
+                            className="w-10 h-10 rounded-full mr-3"
+                          />
+                          <div>
+                            <p className="font-medium dark:text-white">{channel.title}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{channel.description}</p>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Start typing your channel name to find your channel
+              </p>
+            </div>
+            
+            <div className="flex items-center">
+              <div className="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
+              <span className="mx-4 text-gray-500 dark:text-gray-400">OR</span>
+              <div className="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
+            </div>
+            
             <div>
               <label htmlFor="channelUrl" className="block text-gray-700 dark:text-gray-300 mb-2">
                 YouTube Channel URL
@@ -249,7 +388,7 @@ export default function OnboardingPage() {
                 id="channelId"
                 type="text"
                 value={channelId}
-                onChange={(e) => setChannelId(e.target.value)}
+                onChange={handleChannelIdChange}
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
                 placeholder="UC..."
               />
