@@ -28,9 +28,19 @@ export default function OnboardingPage() {
         if (currentUser) {
           setUser(currentUser);
           
-          // Check if user has already completed onboarding
-          const storedChannelId = localStorage.getItem('youtubeChannelId');
-          if (storedChannelId) {
+          // Check if user has already completed onboarding in Supabase
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('youtube_channel_id')
+            .eq('id', currentUser.id)
+            .single();
+
+          if (profileError) {
+            console.error('Error fetching profile:', profileError);
+            return;
+          }
+
+          if (profile?.youtube_channel_id) {
             // User has already completed onboarding, redirect to dashboard
             router.push('/dashboard');
           }
@@ -47,7 +57,7 @@ export default function OnboardingPage() {
     checkAuth();
   }, [router]);
 
-  const extractChannelId = (url: string) => {
+  const extractChannelId = async (url: string) => {
     try {
       const urlObj = new URL(url);
       
@@ -58,31 +68,77 @@ export default function OnboardingPage() {
           const parts = urlObj.pathname.split('/');
           const index = parts.indexOf('channel');
           if (index !== -1 && index + 1 < parts.length) {
-            return parts[index + 1];
+            const channelId = parts[index + 1];
+            // Validate channel ID format (should start with UC and be 24 characters)
+            if (channelId.startsWith('UC') && channelId.length === 24) {
+              return channelId;
+            }
           }
         }
         
-        // Format: youtube.com/c/ChannelName or youtube.com/@username
-        if (urlObj.pathname.includes('/c/') || urlObj.pathname.includes('/@')) {
-          // We'll return the part after /c/ or /@ as a channel identifier
-          const parts = urlObj.pathname.split('/');
-          return parts[parts.length - 1];
+        // Format: youtube.com/@username
+        if (urlObj.pathname.startsWith('/@')) {
+          const username = urlObj.pathname.substring(2); // Remove the @ symbol
+          if (username) {
+            try {
+              // Fetch channel ID using YouTube API
+              const response = await fetch(`/api/youtube/channel?username=${encodeURIComponent(username)}`);
+              if (!response.ok) {
+                throw new Error('Failed to fetch channel ID');
+              }
+              const data = await response.json();
+              return data.channelId;
+            } catch (error) {
+              console.error('Error fetching channel ID:', error);
+              throw new Error('Could not find channel ID for this username');
+            }
+          }
+        }
+
+        // Format: youtube.com/c/ChannelName
+        if (urlObj.pathname.startsWith('/c/')) {
+          const customUrl = urlObj.pathname.substring(3); // Remove the c/ prefix
+          if (customUrl) {
+            try {
+              // Fetch channel ID using YouTube API
+              const response = await fetch(`/api/youtube/channel?customUrl=${encodeURIComponent(customUrl)}`);
+              if (!response.ok) {
+                throw new Error('Failed to fetch channel ID');
+              }
+              const data = await response.json();
+              return data.channelId;
+            } catch (error) {
+              console.error('Error fetching channel ID:', error);
+              throw new Error('Could not find channel ID for this custom URL');
+            }
+          }
         }
       }
     } catch (error) {
       console.error('Error parsing URL:', error);
+      throw new Error('Invalid YouTube URL format');
     }
     
-    return '';
+    throw new Error('Could not extract a valid YouTube channel ID');
   };
 
-  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUrlChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const url = e.target.value;
     setChannelUrl(url);
+    setError('');
     
-    const extractedId = extractChannelId(url);
-    if (extractedId) {
-      setChannelId(extractedId);
+    if (url) {
+      try {
+        const extractedId = await extractChannelId(url);
+        if (extractedId) {
+          setChannelId(extractedId);
+        }
+      } catch (err: any) {
+        setError(err.message);
+        setChannelId('');
+      }
+    } else {
+      setChannelId('');
     }
   };
 
@@ -90,7 +146,7 @@ export default function OnboardingPage() {
     e.preventDefault();
     
     if (!channelId && !channelUrl) {
-      setError('Please enter your YouTube channel ID or URL');
+      setError('Please enter your YouTube channel URL or ID');
       return;
     }
 
@@ -99,28 +155,27 @@ export default function OnboardingPage() {
 
     try {
       // Get the final channel ID
-      const finalChannelId = channelId || extractChannelId(channelUrl);
+      let finalChannelId = channelId;
+      
+      if (!finalChannelId && channelUrl) {
+        finalChannelId = await extractChannelId(channelUrl);
+      }
       
       if (!finalChannelId) {
         throw new Error('Could not extract a valid YouTube channel ID');
       }
       
-      // Store the channel ID in localStorage for immediate use
-      localStorage.setItem('youtubeChannelId', finalChannelId);
-      
-      // Update the user object with completed onboarding
-      const updatedUser = { ...user, hasCompletedOnboarding: true };
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      
       // Update the profile in Supabase
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ youtube_channel_id: finalChannelId })
+        .update({ 
+          youtube_channel_id: finalChannelId,
+          has_completed_onboarding: true 
+        })
         .eq('id', user.id);
         
       if (updateError) {
-        console.error('Error updating profile:', updateError);
-        // Continue anyway since we stored in localStorage
+        throw new Error('Failed to update profile: ' + updateError.message);
       }
       
       // Redirect to dashboard

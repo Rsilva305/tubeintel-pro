@@ -8,6 +8,7 @@ import { Zap } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { signOut } from '@/lib/supabase';
 import YouTubeApiToggle from './YouTubeApiToggle';
+import RefreshCacheButton from './RefreshCacheButton';
 
 interface TopNavProps {
   username?: string;
@@ -72,6 +73,9 @@ export default function TopNav({ username = 'User' }: TopNavProps): JSX.Element 
       <div className="flex items-center gap-4">
         {/* YouTube API Toggle */}
         <YouTubeApiToggle />
+        
+        {/* Refresh Cache Button */}
+        <RefreshCacheButton />
         
         {/* Extension Button */}
         <button 
