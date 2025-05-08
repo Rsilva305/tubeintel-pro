@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaYoutube, FaSearch } from 'react-icons/fa';
 import { supabase, isAuthenticated, getCurrentUser } from '@/lib/supabase';
@@ -21,11 +21,15 @@ export default function OnboardingPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [sessionTimeout, setSessionTimeout] = useState<number | null>(null);
   
   // Add new state variables for channel search
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<ChannelSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -69,6 +73,15 @@ export default function OnboardingPage() {
     };
     
     checkAuth();
+    
+    // Set a session timeout to refresh the page or warn the user
+    const timeout = window.setTimeout(() => {
+      setSessionTimeout(Date.now());
+    }, 30 * 60 * 1000); // 30 minutes
+    
+    return () => {
+      if (timeout) window.clearTimeout(timeout);
+    };
   }, [router]);
 
   const extractChannelId = async (url: string) => {
@@ -160,6 +173,7 @@ export default function OnboardingPage() {
   const searchChannels = async (query: string) => {
     if (!query || query.length < 3) {
       setSearchResults([]);
+      setShowResults(false);
       return;
     }
     
@@ -183,6 +197,7 @@ export default function OnboardingPage() {
       }));
       
       setSearchResults(formattedResults);
+      setShowResults(true);
     } catch (error) {
       console.error('Error searching channels:', error);
       setError('Failed to search channels. Please try again.');
@@ -202,11 +217,30 @@ export default function OnboardingPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  // Handle clicking outside search results
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        searchInputRef.current && 
+        !searchInputRef.current.contains(event.target as Node) &&
+        resultsRef.current && 
+        !resultsRef.current.contains(event.target as Node)
+      ) {
+        setShowResults(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   // Select a channel from search results
   const selectChannel = (channel: ChannelSearchResult) => {
     setChannelId(channel.id);
     setSearchQuery(channel.title);
-    setSearchResults([]);
+    setShowResults(false); // Hide results after selection
   };
 
   // Handle direct channelId input changes
@@ -216,6 +250,7 @@ export default function OnboardingPage() {
     if (e.target.value) {
       setSearchQuery('');
       setSearchResults([]);
+      setShowResults(false);
     }
   };
 
@@ -242,18 +277,39 @@ export default function OnboardingPage() {
         throw new Error('Could not extract a valid YouTube channel ID');
       }
       
-      // Update the profile in Supabase
-      const { error: updateError } = await supabase
+      // First, try to update with both fields
+      let { error: updateError } = await supabase
         .from('profiles')
         .update({ 
           youtube_channel_id: finalChannelId,
           has_completed_onboarding: true 
         })
         .eq('id', user.id);
+      
+      // If there's an error about the column not existing
+      if (updateError && updateError.message.includes("has_completed_onboarding")) {
+        console.warn("has_completed_onboarding column doesn't exist, updating just youtube_channel_id");
         
-      if (updateError) {
+        // Try updating just the youtube_channel_id
+        const { error: fallbackError } = await supabase
+          .from('profiles')
+          .update({ youtube_channel_id: finalChannelId })
+          .eq('id', user.id);
+          
+        if (fallbackError) {
+          throw new Error('Failed to update profile: ' + fallbackError.message);
+        }
+        
+        // Also update the localStorage to consider onboarding complete
+        const userData = JSON.parse(localStorage.getItem('user') || '{}');
+        userData.hasCompletedOnboarding = true;
+        localStorage.setItem('user', JSON.stringify(userData));
+      } else if (updateError) {
         throw new Error('Failed to update profile: ' + updateError.message);
       }
+      
+      // Store the channel ID in localStorage for easier access
+      localStorage.setItem('youtubeChannelId', finalChannelId);
       
       // Redirect to dashboard
       router.push('/dashboard');
@@ -264,6 +320,25 @@ export default function OnboardingPage() {
       setIsLoading(false);
     }
   };
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      localStorage.removeItem('user');
+      localStorage.removeItem('youtubeChannelId');
+      router.push('/login');
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  };
+
+  // If session is about to expire
+  useEffect(() => {
+    if (sessionTimeout) {
+      // Refresh the page to get a new session
+      window.location.reload();
+    }
+  }, [sessionTimeout]);
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gray-50 dark:bg-gray-900 px-4">
@@ -304,8 +379,14 @@ export default function OnboardingPage() {
                 <input
                   id="channelSearch"
                   type="text"
+                  ref={searchInputRef}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => {
+                    if (searchResults.length > 0) {
+                      setShowResults(true);
+                    }
+                  }}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
                   placeholder="Enter your channel name..."
                   autoFocus
@@ -322,8 +403,11 @@ export default function OnboardingPage() {
                   </div>
                 )}
                 
-                {searchResults.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg">
+                {showResults && searchResults.length > 0 && (
+                  <div 
+                    ref={resultsRef}
+                    className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg"
+                  >
                     <ul className="max-h-60 overflow-y-auto">
                       {searchResults.map((channel) => (
                         <li 
@@ -403,6 +487,14 @@ export default function OnboardingPage() {
               className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
             >
               {isLoading ? 'Saving...' : 'Continue to Dashboard'}
+            </button>
+            
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="w-full text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium py-2 px-4 rounded-md text-center"
+            >
+              Sign Out
             </button>
           </form>
         </div>

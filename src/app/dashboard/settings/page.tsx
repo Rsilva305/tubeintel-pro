@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { channelsApi } from '@/services/api';
 import { Channel, Profile } from '@/types';
 import { supabase } from '@/lib/supabase';
@@ -23,6 +23,9 @@ export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
   const [connectedChannel, setConnectedChannel] = useState<Channel | null>(null);
+  const [showResults, setShowResults] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   // Load current channel on mount
   useEffect(() => {
@@ -195,6 +198,7 @@ export default function SettingsPage() {
   const searchChannels = async (query: string) => {
     if (!query || query.length < 3) {
       setSearchResults([]);
+      setShowResults(false);
       return;
     }
     
@@ -216,6 +220,7 @@ export default function SettingsPage() {
       }));
       
       setSearchResults(formattedResults);
+      setShowResults(true);
     } catch (error) {
       console.error('Error searching channels:', error);
       setMessage({
@@ -238,11 +243,30 @@ export default function SettingsPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  // Handle clicking outside search results
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        searchInputRef.current && 
+        !searchInputRef.current.contains(event.target as Node) &&
+        resultsRef.current && 
+        !resultsRef.current.contains(event.target as Node)
+      ) {
+        setShowResults(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   // Select a channel from search results
   const selectChannel = (channel: ChannelSearchResult) => {
     setChannelId(channel.id);
     setSearchQuery(channel.title);
-    setSearchResults([]);
+    setShowResults(false); // Hide results after selection
   };
 
   // Handle direct channelId input changes
@@ -252,6 +276,7 @@ export default function SettingsPage() {
     if (e.target.value) {
       setSearchQuery('');
       setSearchResults([]);
+      setShowResults(false);
     }
   };
 
@@ -260,6 +285,7 @@ export default function SettingsPage() {
     setChannelId('');
     setSearchQuery('');
     setSearchResults([]);
+    setShowResults(false);
     setMessage(null);
   };
 
@@ -301,8 +327,14 @@ export default function SettingsPage() {
               <input
                 type="text"
                 id="channelSearch"
+                ref={searchInputRef}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => {
+                  if (searchResults.length > 0) {
+                    setShowResults(true);
+                  }
+                }}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Enter your channel name..."
               />
@@ -315,8 +347,11 @@ export default function SettingsPage() {
                 </div>
               )}
               
-              {searchResults.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg">
+              {showResults && searchResults.length > 0 && (
+                <div 
+                  ref={resultsRef}
+                  className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg"
+                >
                   <ul className="max-h-60 overflow-y-auto">
                     {searchResults.map((channel) => (
                       <li 

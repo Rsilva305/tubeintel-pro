@@ -72,14 +72,21 @@ export const signIn = async (email: string, password: string): Promise<SignInRes
         // Check if there's a profile with a YouTube channel ID
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('youtube_channel_id')
+          .select('youtube_channel_id, has_completed_onboarding')
           .eq('id', data.user.id)
           .single();
           
-        if (!profileError && profileData && profileData.youtube_channel_id) {
-          hasCompletedOnboarding = true;
-          // Store the channel ID in localStorage for easier access
-          localStorage.setItem('youtubeChannelId', profileData.youtube_channel_id.toString());
+        if (!profileError && profileData) {
+          // If has_completed_onboarding exists and is true OR youtube_channel_id exists
+          if ((profileData.has_completed_onboarding === true) || 
+              (profileData.youtube_channel_id && typeof profileData.youtube_channel_id === 'string' && profileData.youtube_channel_id !== '')) {
+            hasCompletedOnboarding = true;
+            
+            // Store the channel ID in localStorage for easier access if it exists
+            if (profileData.youtube_channel_id) {
+              localStorage.setItem('youtubeChannelId', profileData.youtube_channel_id.toString());
+            }
+          }
         }
       } catch (profileError) {
         console.error('Error checking profile:', profileError);
@@ -140,14 +147,21 @@ export const getCurrentUser = async () => {
         // Check if there's a profile with a YouTube channel ID
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('youtube_channel_id')
+          .select('youtube_channel_id, has_completed_onboarding')
           .eq('id', user.id)
           .single();
           
-        if (!profileError && profileData && profileData.youtube_channel_id) {
-          hasCompletedOnboarding = true;
-          // Store the channel ID in localStorage for easier access
-          localStorage.setItem('youtubeChannelId', profileData.youtube_channel_id.toString());
+        if (!profileError && profileData) {
+          // If has_completed_onboarding exists and is true OR youtube_channel_id exists
+          if ((profileData.has_completed_onboarding === true) || 
+              (profileData.youtube_channel_id && typeof profileData.youtube_channel_id === 'string' && profileData.youtube_channel_id !== '')) {
+            hasCompletedOnboarding = true;
+            
+            // Store the channel ID in localStorage for easier access if it exists
+            if (profileData.youtube_channel_id) {
+              localStorage.setItem('youtubeChannelId', profileData.youtube_channel_id.toString());
+            }
+          }
         }
       } catch (profileError) {
         console.error('Error checking profile:', profileError);
