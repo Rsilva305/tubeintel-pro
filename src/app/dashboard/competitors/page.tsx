@@ -26,8 +26,6 @@ export default function CompetitorsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [listCategory, setListCategory] = useState('default');
   const menuRef = useRef<HTMLDivElement>(null);
-  const [authStatus, setAuthStatus] = useState<string>('Checking...');
-  const [lastError, setLastError] = useState<string | null>(null);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -300,14 +298,11 @@ export default function CompetitorsPage() {
             }
           } catch (innerError) {
             console.error("Detailed error creating list:", innerError);
-            // Store error in state for UI display
-            setLastError(innerError instanceof Error ? innerError.message : 'Unknown error creating list');
             // Show error message to user
             alert(`Error creating list: ${innerError instanceof Error ? innerError.message : 'Unknown error'}`);
           }
         } catch (error) {
           console.error('Error creating list:', error);
-          setLastError(error instanceof Error ? error.message : 'Unknown error in outer catch');
           alert(`Failed to create list. Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
       }
@@ -417,38 +412,6 @@ export default function CompetitorsPage() {
     return 0;
   });
 
-  // Add a function to check auth status
-  const checkAuthStatus = async () => {
-    try {
-      // Check localStorage first
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        const user = JSON.parse(storedUser);
-        setAuthStatus(`Authenticated as: ${user.email || user.username || user.id}`);
-        return;
-      }
-      
-      // Check Supabase
-      try {
-        const { data } = await supabase.auth.getSession();
-        if (data.session) {
-          setAuthStatus(`Supabase session found for: ${data.session.user.email}`);
-        } else {
-          setAuthStatus('No authenticated user found');
-        }
-      } catch (err) {
-        setAuthStatus(`Error checking Supabase: ${err instanceof Error ? err.message : 'Unknown error'}`);
-      }
-    } catch (error) {
-      setAuthStatus(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  };
-  
-  // Call the check on mount
-  useEffect(() => {
-    checkAuthStatus();
-  }, []);
-
   if (isLoading) {
     return (
       <div className="w-full flex items-center justify-center h-64">
@@ -462,20 +425,6 @@ export default function CompetitorsPage() {
     <div className="w-full max-w-[1200px] mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-bold dark:text-white">Tracked Competitors</h1>
-        
-        {/* Debug info */}
-        <div className="mt-2 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
-          <p className="text-sm font-medium">Auth Status: {authStatus}</p>
-          {lastError && (
-            <p className="text-sm text-red-500 mt-1">Last Error: {lastError}</p>
-          )}
-          <button 
-            onClick={checkAuthStatus}
-            className="mt-2 text-xs bg-blue-500 text-white px-2 py-1 rounded"
-          >
-            Refresh Auth Status
-          </button>
-        </div>
       </div>
       
       {competitorLists.length === 0 ? (
