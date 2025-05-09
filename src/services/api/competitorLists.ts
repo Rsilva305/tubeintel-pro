@@ -98,7 +98,7 @@ export const competitorListsApi = {
     
     try {
       const user = await getCurrentUser();
-      console.log("getCurrentUser result:", user);
+      console.log("getCurrentUser result:", user ? 'Authenticated' : 'Not authenticated', user);
       
       if (!user) {
         console.error("User not authenticated - cannot create list");
@@ -109,6 +109,10 @@ export const competitorListsApi = {
       console.log("Using userId:", userId);
       
       try {
+        console.log("Making Supabase request to create list for user:", userId);
+        console.log("Supabase client initialized:", !!supabase);
+        console.log("Supabase auth available:", !!supabase.auth);
+        
         const { data, error } = await supabase
           .from('competitor_lists')
           .insert([{
@@ -121,6 +125,10 @@ export const competitorListsApi = {
           
         if (error) {
           console.error('Error creating competitor list in Supabase:', error);
+          console.error('Error details - code:', error.code);
+          console.error('Error details - message:', error.message);
+          console.error('Error details - hint:', error.hint);
+          console.error('Error details - details:', error.details);
           
           // If the error is related to RLS or auth, try a fallback approach with localStorage
           if (error.code === 'PGRST301' || error.code?.includes('auth') || 

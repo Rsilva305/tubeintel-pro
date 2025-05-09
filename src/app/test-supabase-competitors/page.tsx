@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { getCurrentUser } from '@/lib/supabase';
 import { competitorListsApi } from '@/services/api/competitorLists';
-import { getUseRealApi, setUseRealApi } from '@/services/api/config';
+import { getUseRealApi, setUseRealApi, useRealApiForCompetitors } from '@/services/api/config';
 import Link from 'next/link';
 
 export default function TestSupabaseCompetitorsPage() {
@@ -56,7 +56,9 @@ export default function TestSupabaseCompetitorsPage() {
       
       // Log real API mode
       const realApi = getUseRealApi();
+      const competitorsApi = useRealApiForCompetitors();
       addTestResult('API Mode Check', `Using real API: ${realApi}`);
+      addTestResult('Competitors API Check', `Using real API for competitors: ${competitorsApi}`);
       
       // First, directly try the Supabase query
       addTestResult('Direct Supabase Test', 'Testing direct insert...');

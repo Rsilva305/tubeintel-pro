@@ -24,6 +24,11 @@ We've added a diagnostic page to help identify and fix database issues:
 2. The API mode toggle (which appears in the bottom right corner of some pages) doesn't affect competitor list saving
 3. Your data is consistently persisted
 
+Recent fixes (2023-07-14):
+- Added a dedicated `useRealApiForCompetitors()` function that always returns true
+- Updated all competitorsAdapter functions to use this function instead of the general API toggle
+- This ensures competitor lists are always saved to Supabase regardless of the API toggle state
+
 You can test this functionality by visiting `/test-supabase-competitors` which allows you to:
 - Check if competitor lists are being saved properly
 - Test direct Supabase queries

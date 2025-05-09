@@ -64,12 +64,22 @@ if (isBrowser) {
   }
 }
 
+// Function to always use real API for competitor lists
+export const useRealApiForCompetitors = () => {
+  // Always return true for competitor lists, regardless of API toggle state
+  return true;
+};
+
 // For backward compatibility - this is what competitorsAdapter uses
 export const getUseRealApi = () => {
-  // Always return true for competitor lists functionality
-  if (isBrowser && typeof window.location !== 'undefined' && 
-      window.location.pathname.includes('/competitors')) {
+  // Always use real API for competitor functionality, regardless of path
+  if (useRealApiForCompetitors()) {
     return true;
+  }
+  
+  // Log the current path for debugging
+  if (isBrowser && typeof window.location !== 'undefined') {
+    console.log("Current path for API mode check:", window.location.pathname);
   }
   
   // Otherwise fallback to the YouTube API setting

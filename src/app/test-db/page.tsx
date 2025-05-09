@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { getCurrentUser } from '@/lib/supabase';
+import Link from 'next/link';
+import DebugComponent from './debug';
+import SupabaseTest from './supabase-test';
 
 type TestResult = {
   status: 'success' | 'error';
@@ -219,8 +222,12 @@ export default function TestDatabasePage() {
   };
   
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6">Database Test Page</h1>
+    <div className="container mx-auto p-4 max-w-4xl">
+      <h1 className="text-2xl font-bold mb-6">Database Connection Test</h1>
+      
+      <SupabaseTest />
+      
+      <DebugComponent />
       
       {error && (
         <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4">

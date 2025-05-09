@@ -1,6 +1,6 @@
 import { Competitor } from '@/types';
 import { competitorListsApi } from './competitorLists';
-import { getUseRealApi } from './config';
+import { useRealApiForCompetitors } from './config';
 
 // This adapter connects the existing UI (which expects 'competitorsApi')
 // to our new Supabase implementation (competitorListsApi)
@@ -8,12 +8,6 @@ import { getUseRealApi } from './config';
 
 // Cache for list name to ID mapping
 const listIdCache: Record<string, string> = {};
-
-// Always use real API for competitor lists
-const useRealApiForCompetitors = () => {
-  // Force true for competitor lists, regardless of API toggle state
-  return true;
-};
 
 export const competitorsAdapter = {
   // Get all competitors from a specific list (or default list)
@@ -68,7 +62,7 @@ export const competitorsAdapter = {
   // Get competitor by ID
   getCompetitorById: async (id: string): Promise<Competitor | null> => {
     try {
-      if (!getUseRealApi()) {
+      if (!useRealApiForCompetitors()) {
         // Use the original mock implementation when in demo mode
         return (await import('./index')).competitorsApi.getCompetitorById(id);
       }
@@ -105,32 +99,42 @@ export const competitorsAdapter = {
   // Add a new competitor
   addCompetitor: async (data: Omit<Competitor, 'id'>): Promise<Competitor> => {
     try {
+      console.log("addCompetitor called with data:", data);
+      console.log("useRealApiForCompetitors() returns:", useRealApiForCompetitors());
+      
       if (!useRealApiForCompetitors()) {
         // Use the original mock implementation when in demo mode
+        console.log("Using mock implementation for addCompetitor");
         return (await import('./index')).competitorsApi.addCompetitor(data);
       }
       
       // Get all lists to find or create a default list
+      console.log("Getting user lists from Supabase...");
       let lists = await competitorListsApi.getUserLists();
+      console.log("Retrieved lists:", lists);
       
       // Get or create default list
       let defaultListId: string;
       
       if (lists.length === 0) {
+        console.log("No lists found, creating default list...");
         const defaultList = await competitorListsApi.createList({
           name: "All Competitors",
           description: "Default list for all tracked competitors",
           userId: 'current' // The API will use the current user ID
         });
         
+        console.log("Created default list:", defaultList);
         defaultListId = defaultList.id;
         listIdCache["All Competitors"] = defaultListId;
       } else {
+        console.log("Using existing list:", lists[0]);
         defaultListId = lists[0].id;
         listIdCache[lists[0].name] = defaultListId;
       }
       
       // Add the competitor to the default list
+      console.log(`Adding competitor to list ${defaultListId}...`);
       const trackedCompetitor = await competitorListsApi.addCompetitorToList(
         defaultListId,
         {
@@ -142,6 +146,8 @@ export const competitorsAdapter = {
           viewCount: data.viewCount
         }
       );
+      
+      console.log("Competitor added successfully:", trackedCompetitor);
       
       // Return in expected format
       return {
