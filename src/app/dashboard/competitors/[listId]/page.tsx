@@ -1091,27 +1091,125 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
         
         {/* Combined Search and Grid Controls */}
         <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center">
-            <button 
-              className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 p-2 rounded-xl text-gray-700 dark:text-gray-300 mr-2"
-              onClick={handleOpenFilters}
-            >
-              <FaFilter size={18} />
-            </button>
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search related videos"
-                value={videoSearchQuery}
-                onChange={(e) => setVideoSearchQuery(e.target.value)}
-                className="w-60 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600"
-              />
-              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+          <div className="flex items-center flex-col items-start">
+            <div className="flex mb-2">
+              <button 
+                className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 p-2 rounded-xl text-gray-700 dark:text-gray-300 mr-2 relative"
+                onClick={handleOpenFilters}
+              >
+                <FaFilter size={18} />
+                {activeFilters && (
+                  <span className="absolute -top-2 -right-2 bg-indigo-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {Object.keys(activeFilters).filter(key => {
+                      if (key === 'advancedFilters') {
+                        return Object.values(activeFilters.advancedFilters).some(val => 
+                          val !== '' && val !== null && val !== undefined
+                        );
+                      }
+                      if (key === 'timeRange') return activeFilters[key] !== 'All Time';
+                      if (key === 'viewsMin') return activeFilters[key] !== '0';
+                      if (key === 'subscribersMin') return activeFilters[key] !== '0';
+                      return activeFilters[key] !== null && activeFilters[key] !== undefined && activeFilters[key] !== '';
+                    }).length}
+                  </span>
+                )}
+              </button>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search related videos"
+                  value={videoSearchQuery}
+                  onChange={(e) => setVideoSearchQuery(e.target.value)}
+                  className="w-60 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600"
+                />
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
               </div>
             </div>
+            
+            {/* Active Filters Display */}
+            {activeFilters && (
+              <div className="flex flex-wrap items-center gap-2 mt-2 ml-2">
+                <span className="text-xs text-gray-500 dark:text-gray-400">Active filters:</span>
+                
+                {activeFilters.contentFormat && (
+                  <span className="text-xs bg-indigo-100 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-300 rounded-full px-2 py-0.5 flex items-center">
+                    {activeFilters.contentFormat}
+                    <button 
+                      onClick={() => {
+                        const newFilters = {...activeFilters, contentFormat: null};
+                        handleApplyFilters(newFilters);
+                      }}
+                      className="ml-1 text-indigo-500 hover:text-indigo-700"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
+                
+                {activeFilters.timeRange && activeFilters.timeRange !== 'All Time' && (
+                  <span className="text-xs bg-indigo-100 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-300 rounded-full px-2 py-0.5 flex items-center">
+                    {activeFilters.timeRange}
+                    <button 
+                      onClick={() => {
+                        const newFilters = {...activeFilters, timeRange: 'All Time'};
+                        handleApplyFilters(newFilters);
+                      }}
+                      className="ml-1 text-indigo-500 hover:text-indigo-700"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
+                
+                {activeFilters.viewsMin && activeFilters.viewsMin !== '0' && (
+                  <span className="text-xs bg-indigo-100 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-300 rounded-full px-2 py-0.5 flex items-center">
+                    Min views: {activeFilters.viewsMin}
+                    <button 
+                      onClick={() => {
+                        const newFilters = {...activeFilters, viewsMin: '0'};
+                        handleApplyFilters(newFilters);
+                      }}
+                      className="ml-1 text-indigo-500 hover:text-indigo-700"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
+                
+                {(activeFilters.advancedFilters?.includeKeywords || activeFilters.advancedFilters?.excludeKeywords) && (
+                  <span className="text-xs bg-indigo-100 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-300 rounded-full px-2 py-0.5 flex items-center">
+                    Keyword filters
+                    <button 
+                      onClick={() => {
+                        const newFilters = {
+                          ...activeFilters, 
+                          advancedFilters: {
+                            ...activeFilters.advancedFilters,
+                            includeKeywords: '',
+                            excludeKeywords: ''
+                          }
+                        };
+                        handleApplyFilters(newFilters);
+                      }}
+                      className="ml-1 text-indigo-500 hover:text-indigo-700"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
+                
+                <button 
+                  onClick={resetFilter}
+                  className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                >
+                  Clear all
+                </button>
+              </div>
+            )}
           </div>
           
           {/* Grid Controls */}

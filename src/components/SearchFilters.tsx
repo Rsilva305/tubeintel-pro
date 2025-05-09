@@ -22,6 +22,46 @@ export default function SearchFilters({
   onReset,
   onSavePreset
 }: SearchFiltersProps) {
+  // Helper functions for parsing values
+  const parseNumberValue = (value: string): number | null => {
+    if (!value) return null;
+    
+    // Handle "+" suffix
+    if (value.includes('+')) {
+      value = value.replace('+', '');
+    }
+    
+    // Handle K, M, B suffixes
+    if (value.includes('K') || value.includes('k')) {
+      return parseFloat(value.replace(/[Kk]/g, '')) * 1000;
+    } else if (value.includes('M') || value.includes('m')) {
+      return parseFloat(value.replace(/[Mm]/g, '')) * 1000000;
+    } else if (value.includes('B') || value.includes('b')) {
+      return parseFloat(value.replace(/[Bb]/g, '')) * 1000000000;
+    }
+    
+    return parseFloat(value);
+  };
+  
+  const parseDurationValue = (value: string): number | null => {
+    if (!value) return null;
+    
+    // Handle HH:MM:SS format
+    const parts = value.split(':').map(part => parseInt(part, 10));
+    if (parts.length === 3) {
+      return parts[0] * 60 + parts[1]; // Convert to minutes
+    } else if (parts.length === 2) {
+      return parts[0] * 60 + parts[1];
+    }
+    
+    // Handle values with + suffix
+    if (value.includes('+')) {
+      return parseFloat(value.replace(/\+/g, ''));
+    }
+    
+    return parseFloat(value);
+  };
+
   // Search precision state
   const [searchPrecision, setSearchPrecision] = useState<SearchPrecision>('Hybrid');
   
@@ -220,6 +260,9 @@ export default function SearchFilters({
                   type="range"
                   min="0"
                   max="500"
+                  step="0.1"
+                  value={parseFloat(multiplierMin) || 0}
+                  onChange={(e) => setMultiplierMin(e.target.value + 'x')}
                   className="search-filter-range w-full"
                 />
                 <div className="flex justify-between text-xs text-gray-400 mt-1">
@@ -264,7 +307,9 @@ export default function SearchFilters({
                   type="range"
                   min="0"
                   max="1000000000"
-                  step="1000"
+                  step="10000"
+                  value={parseNumberValue(viewsMin) || 0}
+                  onChange={(e) => setViewsMin(e.target.value)}
                   className="search-filter-range w-full"
                 />
                 <div className="flex justify-between text-xs text-gray-400 mt-1">
@@ -309,7 +354,9 @@ export default function SearchFilters({
                   type="range"
                   min="0"
                   max="500000000"
-                  step="1000"
+                  step="10000"
+                  value={parseNumberValue(subscribersMin) || 0}
+                  onChange={(e) => setSubscribersMin(e.target.value)}
                   className="search-filter-range w-full"
                 />
                 <div className="flex justify-between text-xs text-gray-400 mt-1">
@@ -355,8 +402,19 @@ export default function SearchFilters({
                   min="0"
                   max="420"
                   step="1"
+                  value={parseDurationValue(videoDurationMin) || 0}
+                  onChange={(e) => {
+                    const minutes = parseInt(e.target.value);
+                    const hours = Math.floor(minutes / 60);
+                    const mins = minutes % 60;
+                    setVideoDurationMin(`${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:00`);
+                  }}
                   className="search-filter-range w-full"
                 />
+                <div className="flex justify-between text-xs text-gray-400 mt-1">
+                  <span>00:00:00</span>
+                  <span>07:00:00+</span>
+                </div>
               </div>
               
               <div className="flex justify-between mt-1">
@@ -585,6 +643,9 @@ export default function SearchFilters({
                       type="range"
                       min="0"
                       max="500"
+                      step="0.1"
+                      value={parseNumberValue(viewsToSubsRatioMin) || 0}
+                      onChange={(e) => setViewsToSubsRatioMin(e.target.value)}
                       className="search-filter-range w-full"
                     />
                   </div>
@@ -668,6 +729,8 @@ export default function SearchFilters({
                       min="0"
                       max="400000000"
                       step="1000"
+                      value={parseNumberValue(medianViewsMin) || 0}
+                      onChange={(e) => setMedianViewsMin(e.target.value)}
                       className="search-filter-range w-full"
                     />
                   </div>
@@ -708,6 +771,8 @@ export default function SearchFilters({
                       min="0"
                       max="50000000"
                       step="1000"
+                      value={parseNumberValue(videoLikesMin) || 0}
+                      onChange={(e) => setVideoLikesMin(e.target.value)}
                       className="search-filter-range w-full"
                     />
                   </div>
@@ -790,7 +855,9 @@ export default function SearchFilters({
                       type="range"
                       min="0"
                       max="5000000"
-                      step="1000"
+                      step="100"
+                      value={parseNumberValue(videoCommentsMin) || 0}
+                      onChange={(e) => setVideoCommentsMin(e.target.value)}
                       className="search-filter-range w-full"
                     />
                   </div>
