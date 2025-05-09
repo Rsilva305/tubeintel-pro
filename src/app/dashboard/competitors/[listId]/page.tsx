@@ -2,13 +2,14 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { FaArrowLeft, FaPlus, FaTimes, FaYoutube, FaEllipsisV, FaChartBar, FaDownload, FaFilter, FaChevronDown, FaStar, FaRocket, FaTrophy, FaCheck, FaCalendarAlt, FaEye, FaEyeSlash, FaThLarge, FaSearch, FaExternalLinkAlt, FaPlay, FaBookmark, FaClipboard, FaChartLine } from 'react-icons/fa';
+import { FaArrowLeft, FaPlus, FaTimes, FaYoutube, FaEllipsisV, FaChartBar, FaDownload, FaFilter, FaChevronDown, FaStar, FaRocket, FaTrophy, FaCheck, FaCalendarAlt, FaEye, FaEyeSlash, FaThLarge, FaSearch, FaExternalLinkAlt, FaPlay, FaBookmark, FaClipboard, FaChartLine, FaListUl, FaTh, FaInfoCircle, FaRegClock, FaLink } from 'react-icons/fa';
 import Link from 'next/link';
 import { Competitor, Video } from '@/types';
 import { videosApi } from '@/services/api';
 import { getUseRealApi } from '@/services/api/config';
 import { competitorListsApi } from '@/services/api/competitorLists';
 import { secureYoutubeService } from '@/services/api/youtube-secure';
+import SearchFilters from '@/components/SearchFilters';
 
 // Format number to compact form
 const formatNumber = (num: number): string => {
@@ -88,6 +89,10 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   
   // State for loading videos
   const [isVideoLoading, setIsVideoLoading] = useState<boolean>(false);
+
+  // Add a new state variable for filtered videos
+  const [filteredCompetitorVideos, setFilteredCompetitorVideos] = useState<Video[]>([]);
+  const [activeFilters, setActiveFilters] = useState<any>(null);
 
   // Call the check on mount
   useEffect(() => {
@@ -205,6 +210,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
       );
       
       setCompetitorVideos(sortedVideos);
+      setFilteredCompetitorVideos(sortedVideos); // Also set filtered videos initially
       setIsVideoLoading(false);
       setIsLoading(false);
     } catch (error) {
@@ -361,26 +367,198 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
     setIsFilterOpen(false);
   }
 
-  // Function to reset filters (updated for single values)
-  const resetFilter = () => {
-    setViewsThreshold(10000000);
-    setSubscribersThreshold(100000);
-    setVideoDurationThreshold(60);
-    setViewMultiplierThreshold(1.5);
-    setDateRange([
-      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      new Date().toISOString().split('T')[0]
-    ]);
+  // Helper functions to parse filter values
+  const parseNumberValue = (value: string): number | null => {
+    if (!value) return null;
     
-    // Reset advanced filters
-    setChannelAgeThreshold(12);
-    setVideoCommentsThreshold(1000);
-    setVideoLikesThreshold(5000);
-    setVideoCountThreshold(50);
-    setTotalChannelViewsThreshold(1000000);
-    setIncludeKeywords("");
-    setExcludeKeywords("");
-  }
+    // Handle "+" suffix
+    if (value.includes('+')) {
+      value = value.replace('+', '');
+    }
+    
+    // Handle K, M, B suffixes
+    if (value.includes('K') || value.includes('k')) {
+      return parseFloat(value.replace(/[Kk]/g, '')) * 1000;
+    } else if (value.includes('M') || value.includes('m')) {
+      return parseFloat(value.replace(/[Mm]/g, '')) * 1000000;
+    } else if (value.includes('B') || value.includes('b')) {
+      return parseFloat(value.replace(/[Bb]/g, '')) * 1000000000;
+    }
+    
+    return parseFloat(value);
+  };
+  
+  const parseDurationValue = (value: string): number | null => {
+    if (!value) return null;
+    
+    // Handle HH:MM:SS format
+    const parts = value.split(':').map(part => parseInt(part));
+    if (parts.length === 3) {
+      return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    } else if (parts.length === 2) {
+      return parts[0] * 60 + parts[1];
+    }
+    
+    // Handle values with + suffix
+    if (value.includes('+')) {
+      return parseFloat(value.replace(/\+/g, ''));
+    }
+    
+    return parseFloat(value);
+  };
+  
+  const parseMultiplierValue = (value: string): number | null => {
+    if (!value) return null;
+    
+    // Handle multiplier format (e.g., 5.0x)
+    if (value.includes('x')) {
+      return parseFloat(value.replace(/x/g, ''));
+    }
+    
+    // Handle values with + suffix
+    if (value.includes('+')) {
+      return parseFloat(value.replace(/\+/g, ''));
+    }
+    
+    return parseFloat(value);
+  };
+  
+  // Helper function to detect if a video is a YouTube Short
+  const isShort = (video: Video): boolean => {
+    // YouTube Shorts are typically vertical videos less than 60 seconds
+    // This is an approximation based on metadata we have available
+    return video.title.toLowerCase().includes('#shorts') || 
+           video.description.toLowerCase().includes('#shorts') ||
+           video.title.toLowerCase().includes('#short') || 
+           video.description.toLowerCase().includes('#short');
+  };
+
+  // Updated handleApplyFilters function
+  const handleApplyFilters = (filters: any) => {
+    console.log('Applying filters:', filters);
+    setActiveFilters(filters);
+    
+    // Close the filter modal
+    setIsFilterOpen(false);
+    
+    // Filter the videos based on the selected criteria
+    const filtered = competitorVideos.filter(video => {
+      // Filter by content format (Videos vs Shorts)
+      if (filters.contentFormat === 'Videos' && isShort(video)) return false;
+      if (filters.contentFormat === 'Shorts' && !isShort(video)) return false;
+      
+      // Filter by views
+      if (filters.viewsMin) {
+        const minViews = parseNumberValue(filters.viewsMin);
+        if (minViews !== null && video.viewCount < minViews) return false;
+      }
+      
+      if (filters.viewsMax && !filters.viewsMax.includes('+')) {
+        const maxViews = parseNumberValue(filters.viewsMax);
+        if (maxViews !== null && video.viewCount > maxViews) return false;
+      }
+      
+      // Filter by likes (advanced filter)
+      if (filters.advancedFilters.videoLikesMin) {
+        const minLikes = parseNumberValue(filters.advancedFilters.videoLikesMin);
+        if (minLikes !== null && video.likeCount < minLikes) return false;
+      }
+      
+      if (filters.advancedFilters.videoLikesMax && !filters.advancedFilters.videoLikesMax.includes('+')) {
+        const maxLikes = parseNumberValue(filters.advancedFilters.videoLikesMax);
+        if (maxLikes !== null && video.likeCount > maxLikes) return false;
+      }
+      
+      // Filter by comments (advanced filter)
+      if (filters.advancedFilters.videoCommentsMin) {
+        const minComments = parseNumberValue(filters.advancedFilters.videoCommentsMin);
+        if (minComments !== null && video.commentCount < minComments) return false;
+      }
+      
+      if (filters.advancedFilters.videoCommentsMax && !filters.advancedFilters.videoCommentsMax.includes('+')) {
+        const maxComments = parseNumberValue(filters.advancedFilters.videoCommentsMax);
+        if (maxComments !== null && video.commentCount > maxComments) return false;
+      }
+      
+      // Filter by time range (when posted)
+      if (filters.timeRange !== 'All Time') {
+        const videoDate = new Date(video.publishedAt);
+        const now = new Date();
+        let startDate: Date;
+        
+        switch (filters.timeRange) {
+          case '30 Days':
+            startDate = new Date(now);
+            startDate.setDate(now.getDate() - 30);
+            if (videoDate < startDate) return false;
+            break;
+          case '90 Days':
+            startDate = new Date(now);
+            startDate.setDate(now.getDate() - 90);
+            if (videoDate < startDate) return false;
+            break;
+          case '180 Days':
+            startDate = new Date(now);
+            startDate.setDate(now.getDate() - 180);
+            if (videoDate < startDate) return false;
+            break;
+          case '365 Days':
+            startDate = new Date(now);
+            startDate.setDate(now.getDate() - 365);
+            if (videoDate < startDate) return false;
+            break;
+          case '3 Years':
+            startDate = new Date(now);
+            startDate.setFullYear(now.getFullYear() - 3);
+            if (videoDate < startDate) return false;
+            break;
+          case 'Custom':
+            // For custom range, use the startDate and endDate from filters
+            if (filters.startDate && filters.endDate) {
+              const customStartDate = new Date(filters.startDate);
+              const customEndDate = new Date(filters.endDate);
+              if (videoDate < customStartDate || videoDate > customEndDate) return false;
+            }
+            break;
+        }
+      }
+      
+      // Filter by keywords (advanced filter)
+      if (filters.advancedFilters.includeKeywords && filters.advancedFilters.includeKeywords.trim() !== '') {
+        const keywords = filters.advancedFilters.includeKeywords.split(/[\s,]+/).filter(Boolean);
+        if (keywords.length > 0) {
+          const hasKeyword = keywords.some((keyword: string) => 
+            video.title.toLowerCase().includes(keyword.toLowerCase()) || 
+            video.description.toLowerCase().includes(keyword.toLowerCase())
+          );
+          if (!hasKeyword) return false;
+        }
+      }
+      
+      if (filters.advancedFilters.excludeKeywords && filters.advancedFilters.excludeKeywords.trim() !== '') {
+        const keywords = filters.advancedFilters.excludeKeywords.split(/[\s,]+/).filter(Boolean);
+        if (keywords.length > 0) {
+          const hasKeyword = keywords.some((keyword: string) => 
+            video.title.toLowerCase().includes(keyword.toLowerCase()) || 
+            video.description.toLowerCase().includes(keyword.toLowerCase())
+          );
+          if (hasKeyword) return false;
+        }
+      }
+      
+      return true;
+    });
+    
+    console.log(`Filter applied: Videos matching criteria: ${filtered.length} out of ${competitorVideos.length}`);
+    setFilteredCompetitorVideos(filtered);
+  };
+  
+  // Reset filters function
+  const resetFilter = () => {
+    setActiveFilters(null);
+    setFilteredCompetitorVideos(competitorVideos);
+    setIsFilterOpen(false);
+  };
 
   // Helper function to safely parse input values
   const safeParseInt = (value: string, fallback = 0): number => {
@@ -602,16 +780,18 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
     setShowVideoContextMenu(true);
   };
 
-  // Filter videos based on search query
+  // Update the filteredVideos definition
   const filteredVideos = activeVideoTab === 'competitors' 
-    ? competitorVideos.filter(video => 
-        video.title.toLowerCase().includes(videoSearchQuery.toLowerCase()) || 
-        video.description.toLowerCase().includes(videoSearchQuery.toLowerCase())
-      )
-    : similarVideos.filter(video => 
-        video.title.toLowerCase().includes(videoSearchQuery.toLowerCase()) || 
-        video.description.toLowerCase().includes(videoSearchQuery.toLowerCase())
-      );
+    ? (videoSearchQuery 
+        ? filteredCompetitorVideos.filter(video => 
+            video.title.toLowerCase().includes(videoSearchQuery.toLowerCase()) || 
+            video.description.toLowerCase().includes(videoSearchQuery.toLowerCase()))
+        : filteredCompetitorVideos)
+    : (videoSearchQuery 
+        ? similarVideos.filter(video => 
+            video.title.toLowerCase().includes(videoSearchQuery.toLowerCase()) || 
+            video.description.toLowerCase().includes(videoSearchQuery.toLowerCase()))
+        : similarVideos);
       
   // Group videos by channel for organized display
   const getVideosByChannel = () => {
@@ -701,6 +881,15 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
       setChannelSearchQuery('');
       setChannelSearchResults([]);
     }
+  };
+
+  // Add this code to correctly handle the SearchFilters component
+  const handleOpenFilters = () => {
+    setIsFilterOpen(true);
+  };
+
+  const handleCloseFilters = () => {
+    setIsFilterOpen(false);
   };
 
   if (isLoading) {
@@ -862,485 +1051,13 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
       {/* Suggested competitors section - REMOVED */}
 
       {/* New Filter Popup */}
-      {isFilterOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-4xl p-6 relative overflow-y-auto max-h-[90vh]">
-            <button 
-              onClick={() => setIsFilterOpen(false)} 
-              className="absolute top-4 right-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
-            >
-              <FaTimes size={20} />
-            </button>
-            
-            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-6">
-              Filter Competitors
-            </h3>
-            
-            <div className="grid grid-cols-3 gap-8">
-              {/* Left column with sliders */}
-              <div className="col-span-2 space-y-8">
-                {/* Views slider */}
-                <div>
-                  <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
-                    Views: {formatNumber(viewsThreshold)}
-                  </label>
-                  <div className="flex flex-col">
-                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
-                      <span>0</span>
-                      <span>500M</span>
-                    </div>
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="500000000" 
-                      step={getViewsStep()}
-                      value={viewsThreshold}
-                      onChange={handleViewsChange}
-                      className="slider-track mb-2"
-                    />
-                    {/* Added input field for direct value entry */}
-                    <div className="flex items-center mt-2">
-                      <label className="text-xs text-gray-500 dark:text-gray-400 mr-2">Custom value:</label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="500000000"
-                        value={viewsThreshold}
-                        onChange={handleViewsInput}
-                        className="w-32 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-white"
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Subscribers slider */}
-                <div>
-                  <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
-                    Subscribers: {formatNumber(subscribersThreshold)}
-                  </label>
-                  <div className="flex flex-col">
-                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
-                      <span>0</span>
-                      <span>500M</span>
-                    </div>
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="500000000" 
-                      step={getSubscribersStep()}
-                      value={subscribersThreshold}
-                      onChange={handleSubscribersChange}
-                      className="slider-track mb-2"
-                    />
-                    {/* Added input field for direct value entry */}
-                    <div className="flex items-center mt-2">
-                      <label className="text-xs text-gray-500 dark:text-gray-400 mr-2">Custom value:</label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="500000000"
-                        value={subscribersThreshold}
-                        onChange={handleSubscribersInput}
-                        className="w-32 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-white"
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Video Duration slider */}
-                <div>
-                  <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
-                    Video Duration: {Math.floor(videoDurationThreshold / 60)}h {videoDurationThreshold % 60}m
-                  </label>
-                  <div className="flex flex-col">
-                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
-                      <span>0</span>
-                      <span>24h</span>
-                    </div>
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="1440" 
-                      step={getVideoDurationStep()}
-                      value={videoDurationThreshold}
-                      onChange={handleVideoDurationChange}
-                      className="slider-track mb-2"
-                    />
-                    {/* Added input field for direct value entry with hours and minutes */}
-                    <div className="flex items-center mt-2">
-                      <label className="text-xs text-gray-500 dark:text-gray-400 mr-2">Custom value:</label>
-                      <div className="flex">
-                        <div className="flex items-center mr-2">
-                          <input
-                            type="number"
-                            min="0"
-                            max="24"
-                            value={Math.floor(videoDurationThreshold / 60)}
-                            onChange={handleHoursInput}
-                            className="w-16 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-white"
-                          />
-                          <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">h</span>
-                        </div>
-                        <div className="flex items-center">
-                          <input
-                            type="number"
-                            min="0"
-                            max="59"
-                            value={videoDurationThreshold % 60}
-                            onChange={handleMinutesInput}
-                            className="w-16 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-white"
-                          />
-                          <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">m</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Add View Multiplier slider after Video Duration slider */}
-                <div>
-                  <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium flex items-center">
-                    View Multiplier: {viewMultiplierThreshold < 10 ? viewMultiplierThreshold.toFixed(1) : viewMultiplierThreshold.toFixed(0)}x
-                    <div className="ml-1.5 text-xs text-gray-500 dark:text-gray-400 cursor-help group relative">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <div className="absolute left-full ml-2 w-60 p-2 bg-white dark:bg-gray-700 shadow-lg rounded text-xs border border-gray-200 dark:border-gray-600 hidden group-hover:block z-10">
-                        View Multiplier is the ratio of video views to the channel's median views. A value of 2 means videos with twice the channel's normal performance.
-                      </div>
-                    </div>
-                  </label>
-                  <div className="flex flex-col">
-                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
-                      <span>0x</span>
-                      <span className="text-center ml-12">10x</span>
-                      <span className="text-center ml-12">50x</span>
-                      <span className="text-center ml-12">100x</span>
-                      <span>500x</span>
-                    </div>
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="500" 
-                      step={getViewMultiplierStep()}
-                      value={viewMultiplierThreshold}
-                      onChange={handleViewMultiplierChange}
-                      className="slider-track mb-2"
-                    />
-                    <div className="text-xs text-center text-gray-500 dark:text-gray-400 mt-1 mb-2">
-                      Current: {viewMultiplierThreshold < 10 ? viewMultiplierThreshold.toFixed(1) : viewMultiplierThreshold.toFixed(0)}x median views
-                    </div>
-                    
-                    {/* Input field for direct value entry */}
-                    <div className="flex items-center mt-2">
-                      <label className="text-xs text-gray-500 dark:text-gray-400 mr-2">Custom value:</label>
-                      <div className="flex items-center">
-                        <input
-                          type="number"
-                          min="0"
-                          max="500"
-                          step="0.5"
-                          value={viewMultiplierThreshold}
-                          onChange={handleViewMultiplierInput}
-                          className="w-20 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-white"
-                        />
-                        <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">x median</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Right column with calendar */}
-              <div className="col-span-1">
-                <div>
-                  <label className="block text-gray-600 dark:text-gray-300 text-sm mb-4 font-medium flex items-center">
-                    <FaCalendarAlt className="mr-2" /> Time Range
-                  </label>
-                  
-                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                    <div className="mb-4">
-                      <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                        Start Date
-                      </label>
-                      <input 
-                        type="date" 
-                        value={dateRange[0]}
-                        onChange={(e) => setDateRange([e.target.value, dateRange[1]])}
-                        className="w-full bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md px-3 py-2 text-sm"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                        End Date
-                      </label>
-                      <input 
-                        type="date" 
-                        value={dateRange[1]}
-                        onChange={(e) => setDateRange([dateRange[0], e.target.value])}
-                        className="w-full bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md px-3 py-2 text-sm"
-                      />
-                    </div>
-                    
-                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
-                      <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
-                        <span className="mr-auto">Quick select:</span>
-                      </div>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        <button 
-                          onClick={() => setDateRange([
-                            new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                            new Date().toISOString().split('T')[0]
-                          ])}
-                          className="bg-white dark:bg-gray-600 text-xs text-gray-700 dark:text-gray-300 px-2 py-1 rounded border border-gray-300 dark:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-500"
-                        >
-                          Last 7 days
-                        </button>
-                        <button 
-                          onClick={() => setDateRange([
-                            new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                            new Date().toISOString().split('T')[0]
-                          ])}
-                          className="bg-white dark:bg-gray-600 text-xs text-gray-700 dark:text-gray-300 px-2 py-1 rounded border border-gray-300 dark:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-500"
-                        >
-                          Last 30 days
-                        </button>
-                        <button 
-                          onClick={() => setDateRange([
-                            new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                            new Date().toISOString().split('T')[0]
-                          ])}
-                          className="bg-white dark:bg-gray-600 text-xs text-gray-700 dark:text-gray-300 px-2 py-1 rounded border border-gray-300 dark:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-500"
-                        >
-                          Last 90 days
-                        </button>
-                        <button 
-                          onClick={() => setDateRange([
-                            new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                            new Date().toISOString().split('T')[0]
-                          ])}
-                          className="bg-white dark:bg-gray-600 text-xs text-gray-700 dark:text-gray-300 px-2 py-1 rounded border border-gray-300 dark:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-500"
-                        >
-                          Last 180 days
-                        </button>
-                        <button 
-                          onClick={() => setDateRange([
-                            new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                            new Date().toISOString().split('T')[0]
-                          ])}
-                          className="bg-white dark:bg-gray-600 text-xs text-gray-700 dark:text-gray-300 px-2 py-1 rounded border border-gray-300 dark:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-500"
-                        >
-                          Last 365 days
-                        </button>
-                        <button 
-                          onClick={() => setDateRange([
-                            "2010-01-01", // YouTube started in 2005, but using 2010 as a reasonable "all time" starting point
-                            new Date().toISOString().split('T')[0]
-                          ])}
-                          className="bg-white dark:bg-gray-600 text-xs text-gray-700 dark:text-gray-300 px-2 py-1 rounded border border-gray-300 dark:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-500"
-                        >
-                          All time
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Advanced Filters Toggle */}
-            <div className="mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <button 
-                onClick={() => setIsAdvancedFiltersOpen(!isAdvancedFiltersOpen)}
-                className="flex items-center justify-between w-full text-left px-4 py-3 text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-650 rounded-lg transition-colors"
-              >
-                <div className="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                  </svg>
-                  <span className="font-medium">Advanced Filters</span>
-                </div>
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  className={`h-5 w-5 transition-transform ${isAdvancedFiltersOpen ? 'transform rotate-180' : ''}`} 
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-            </div>
-            
-            {/* Advanced Filters Section */}
-            {isAdvancedFiltersOpen && (
-              <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-6 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg animate-fadeIn">
-                {/* Channel Age */}
-                <div>
-                  <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
-                    Channel Age: {channelAgeThreshold < 12 ? `${channelAgeThreshold} months` : `${Math.floor(channelAgeThreshold/12)} years ${channelAgeThreshold%12 ? `${channelAgeThreshold%12} months` : ''}`}
-                  </label>
-                  <div className="flex flex-col">
-                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
-                      <span>0</span>
-                      <span>5+ years</span>
-                    </div>
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="120" 
-                      step={getChannelAgeStep()}
-                      value={channelAgeThreshold}
-                      onChange={handleChannelAgeChange}
-                      className="slider-track mb-2"
-                    />
-                  </div>
-                </div>
-
-                {/* Video Comments */}
-                <div>
-                  <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
-                    Video Comments: {formatNumber(videoCommentsThreshold)}
-                  </label>
-                  <div className="flex flex-col">
-                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
-                      <span>0</span>
-                      <span>100K+</span>
-                    </div>
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="200000" 
-                      step={getVideoCommentsStep()}
-                      value={videoCommentsThreshold}
-                      onChange={handleVideoCommentsChange}
-                      className="slider-track mb-2"
-                    />
-                  </div>
-                </div>
-
-                {/* Video Likes */}
-                <div>
-                  <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
-                    Video Likes: {formatNumber(videoLikesThreshold)}
-                  </label>
-                  <div className="flex flex-col">
-                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
-                      <span>0</span>
-                      <span>1M+</span>
-                    </div>
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="1000000" 
-                      step={getVideoLikesStep()}
-                      value={videoLikesThreshold}
-                      onChange={handleVideoLikesChange}
-                      className="slider-track mb-2"
-                    />
-                  </div>
-                </div>
-
-                {/* Video Count */}
-                <div>
-                  <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
-                    Video Count: {videoCountThreshold}
-                  </label>
-                  <div className="flex flex-col">
-                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
-                      <span>0</span>
-                      <span>1000+</span>
-                    </div>
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="1000" 
-                      step={getVideoCountStep()}
-                      value={videoCountThreshold}
-                      onChange={handleVideoCountChange}
-                      className="slider-track mb-2"
-                    />
-                  </div>
-                </div>
-
-                {/* Total Channel Views */}
-                <div>
-                  <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
-                    Total Channel Views: {formatNumber(totalChannelViewsThreshold)}
-                  </label>
-                  <div className="flex flex-col">
-                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
-                      <span>0</span>
-                      <span>1B+</span>
-                    </div>
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="1000000000" 
-                      step={getTotalChannelViewsStep()}
-                      value={totalChannelViewsThreshold}
-                      onChange={handleTotalChannelViewsChange}
-                      className="slider-track mb-2"
-                    />
-                  </div>
-                </div>
-
-                {/* Keywords section - spans both columns */}
-                <div className="col-span-1 lg:col-span-2">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Include Keywords */}
-                    <div>
-                      <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
-                        Include Keywords
-                      </label>
-                      <input 
-                        type="text" 
-                        placeholder="gaming, tutorial, review"
-                        value={includeKeywords}
-                        onChange={(e) => setIncludeKeywords(e.target.value)}
-                        className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Separate keywords with commas</p>
-                    </div>
-                    
-                    {/* Exclude Keywords */}
-                    <div>
-                      <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium">
-                        Exclude Keywords
-                      </label>
-                      <input 
-                        type="text" 
-                        placeholder="unboxing, shorts, live"
-                        value={excludeKeywords}
-                        onChange={(e) => setExcludeKeywords(e.target.value)}
-                        className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Separate keywords with commas</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* Filter Actions */}
-            <div className="flex justify-end items-center gap-4 mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <button 
-                onClick={resetFilter}
-                className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              >
-                Reset
-              </button>
-              <button 
-                onClick={applyFilter}
-                className="px-4 py-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
-              >
-                Apply Filters
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <SearchFilters
+        isOpen={isFilterOpen}
+        onClose={handleCloseFilters}
+        onApply={handleApplyFilters}
+        onReset={resetFilter}
+        onSavePreset={(name) => console.log('Saving preset:', name)}
+      />
 
       {/* Competitors Grid */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
@@ -1389,7 +1106,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
           <div className="flex items-center">
             <button 
               className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 p-2 rounded-xl text-gray-700 dark:text-gray-300 mr-2"
-              onClick={() => setIsFilterOpen(!isFilterOpen)}
+              onClick={handleOpenFilters}
             >
               <FaFilter size={18} />
             </button>
