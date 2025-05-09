@@ -48,24 +48,24 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   const [searchQuery, setSearchQuery] = useState('');
   
   // Modified filter states (changed from range arrays to single values)
-  const [viewsThreshold, setViewsThreshold] = useState<number>(10000000); // Default to 10M
-  const [subscribersThreshold, setSubscribersThreshold] = useState<number>(100000); // Default to 100K
-  const [videoDurationThreshold, setVideoDurationThreshold] = useState<number>(60); // Default to 60 minutes (1 hour)
+  const [viewsThreshold, setViewsThreshold] = useState<number>(0); // Default to 0
+  const [subscribersThreshold, setSubscribersThreshold] = useState<number>(0); // Default to 0
+  const [videoDurationThreshold, setVideoDurationThreshold] = useState<number>(0); // Default to 0 minutes
   const [dateRange, setDateRange] = useState<[string, string]>([
     new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days ago
     new Date().toISOString().split('T')[0] // today
   ]);
 
   // Add new state for view multiplier
-  const [viewMultiplierThreshold, setViewMultiplierThreshold] = useState<number>(1.5); // Default to 1.5x
+  const [viewMultiplierThreshold, setViewMultiplierThreshold] = useState<number>(0); // Default to 0x
 
   // State for advanced filters
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState<boolean>(false);
-  const [channelAgeThreshold, setChannelAgeThreshold] = useState<number>(12); // Default to 12 months
-  const [videoCommentsThreshold, setVideoCommentsThreshold] = useState<number>(1000);
-  const [videoLikesThreshold, setVideoLikesThreshold] = useState<number>(5000);
-  const [videoCountThreshold, setVideoCountThreshold] = useState<number>(50);
-  const [totalChannelViewsThreshold, setTotalChannelViewsThreshold] = useState<number>(1000000);
+  const [channelAgeThreshold, setChannelAgeThreshold] = useState<number>(0); // Default to 0 months
+  const [videoCommentsThreshold, setVideoCommentsThreshold] = useState<number>(0); // Default to 0
+  const [videoLikesThreshold, setVideoLikesThreshold] = useState<number>(0); // Default to 0
+  const [videoCountThreshold, setVideoCountThreshold] = useState<number>(0); // Default to 0
+  const [totalChannelViewsThreshold, setTotalChannelViewsThreshold] = useState<number>(0); // Default to 0
   const [includeKeywords, setIncludeKeywords] = useState<string>("");
   const [excludeKeywords, setExcludeKeywords] = useState<string>("");
 
@@ -363,21 +363,21 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
 
   // Function to reset filters (updated for single values)
   const resetFilter = () => {
-    setViewsThreshold(10000000);
-    setSubscribersThreshold(100000);
-    setVideoDurationThreshold(60);
-    setViewMultiplierThreshold(1.5);
+    setViewsThreshold(0);
+    setSubscribersThreshold(0);
+    setVideoDurationThreshold(0);
+    setViewMultiplierThreshold(0);
     setDateRange([
       new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       new Date().toISOString().split('T')[0]
     ]);
     
     // Reset advanced filters
-    setChannelAgeThreshold(12);
-    setVideoCommentsThreshold(1000);
-    setVideoLikesThreshold(5000);
-    setVideoCountThreshold(50);
-    setTotalChannelViewsThreshold(1000000);
+    setChannelAgeThreshold(0);
+    setVideoCommentsThreshold(0);
+    setVideoLikesThreshold(0);
+    setVideoCountThreshold(0);
+    setTotalChannelViewsThreshold(0);
     setIncludeKeywords("");
     setExcludeKeywords("");
   }
