@@ -549,14 +549,23 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
       return true;
     });
     
+    // Sort filtered videos by date (newest first)
+    const sortedFiltered = filtered.sort((a, b) => 
+      new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+    );
+    
     console.log(`Filter applied: Videos matching criteria: ${filtered.length} out of ${competitorVideos.length}`);
-    setFilteredCompetitorVideos(filtered);
+    setFilteredCompetitorVideos(sortedFiltered);
   };
   
   // Reset filters function
   const resetFilter = () => {
     setActiveFilters(null);
-    setFilteredCompetitorVideos(competitorVideos);
+    // Sort videos by date (newest first) when resetting filters
+    const sortedVideos = [...competitorVideos].sort((a, b) => 
+      new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+    );
+    setFilteredCompetitorVideos(sortedVideos);
     setIsFilterOpen(false);
   };
 
@@ -793,33 +802,12 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
             video.description.toLowerCase().includes(videoSearchQuery.toLowerCase()))
         : similarVideos);
       
-  // Group videos by channel for organized display
-  const getVideosByChannel = () => {
-    const channelGroups: { [channelId: string]: { channel: Competitor | null, videos: Video[] } } = {};
-    
-    // Group videos by channel ID
-    filteredVideos.forEach(video => {
-      if (!channelGroups[video.channelId]) {
-        // Find matching competitor for the channel
-        const matchingCompetitor = competitors.find(comp => comp.youtubeId === video.channelId);
-        
-        channelGroups[video.channelId] = {
-          channel: matchingCompetitor || null,
-          videos: []
-        };
-      }
-      
-      channelGroups[video.channelId].videos.push(video);
-    });
-    
-    // Convert object to array and sort by channel name
-    return Object.values(channelGroups)
-      .filter(group => group.videos.length > 0)
-      .sort((a, b) => {
-        const nameA = a.channel?.name || '';
-        const nameB = b.channel?.name || '';
-        return nameA.localeCompare(nameB);
-      });
+  // Removed the channel grouping functionality and renamed to getSortedVideos
+  const getSortedVideos = () => {
+    // Sort videos by published date (newest first)
+    return filteredVideos.sort((a, b) => 
+      new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+    );
   };
 
   // Add a new search function for channels
@@ -1160,92 +1148,59 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
             <p className="ml-4 text-gray-600 dark:text-gray-400">Loading videos...</p>
           </div>
-        ) : activeVideoTab === 'competitors' && getVideosByChannel().length > 0 ? (
-          <div className="space-y-8">
-            {getVideosByChannel().map((group) => (
-              <div key={group.channel?.youtubeId || 'unknown'} className="mb-8">
-                {/* Channel header */}
-                <div className="flex items-center mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-                  {group.channel && (
-                    <>
-                      <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 mr-3">
-                        <img 
-                          src={group.channel.thumbnailUrl} 
-                          alt={group.channel.name} 
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div>
-                        <a 
-                          href={`https://youtube.com/channel/${group.channel.youtubeId}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-medium text-lg text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors"
-                        >
-                          {group.channel.name}
-                        </a>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Latest {group.videos.length} videos
-                        </p>
-                      </div>
-                    </>
-                  )}
-                  {!group.channel && (
-                    <div className="font-medium text-lg text-gray-700 dark:text-gray-300">
-                      Unknown Channel
+        ) : activeVideoTab === 'competitors' && filteredVideos.length > 0 ? (
+          <div>
+            {/* Combined video grid */}
+            <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${videoGridColumns}, minmax(0, 1fr))` }}>
+              {getSortedVideos().map((video) => (
+                <div 
+                  key={video.id} 
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow duration-200 cursor-pointer group"
+                  onClick={() => openVideoOnYouTube(video.youtubeId)}
+                  onContextMenu={(e) => handleVideoContextMenu(e, video.youtubeId)}
+                >
+                  <div className="relative pt-[56.25%]"> {/* 16:9 aspect ratio */}
+                    <img 
+                      src={video.thumbnailUrl} 
+                      alt={video.title} 
+                      className="absolute top-0 left-0 w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-40 transition-opacity duration-300"></div>
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <FaPlay className="text-white text-4xl" />
                     </div>
-                  )}
-                </div>
-                
-                {/* Channel videos grid */}
-                <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${videoGridColumns}, minmax(0, 1fr))` }}>
-                  {group.videos.map((video) => (
-                    <div 
-                      key={video.id} 
-                      className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow duration-200 cursor-pointer group"
-                      onClick={() => openVideoOnYouTube(video.youtubeId)}
-                      onContextMenu={(e) => handleVideoContextMenu(e, video.youtubeId)}
-                    >
-                      <div className="relative pt-[56.25%]"> {/* 16:9 aspect ratio */}
-                        <img 
-                          src={video.thumbnailUrl} 
-                          alt={video.title} 
-                          className="absolute top-0 left-0 w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-40 transition-opacity duration-300"></div>
-                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                          <FaPlay className="text-white text-4xl" />
-                        </div>
-                        <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
-                          {new Date(video.publishedAt).toLocaleDateString()}
-                        </div>
+                    <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
+                      {new Date(video.publishedAt).toLocaleDateString()}
+                    </div>
+                    {/* Add channel info badge */}
+                    <div className="absolute top-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded-full flex items-center">
+                      {competitors.find(c => c.youtubeId === video.channelId)?.name || 'Unknown Channel'}
+                    </div>
+                  </div>
+                  
+                  {showVideoInfo && (
+                    <div className="p-3">
+                      <div className="flex justify-between items-start">
+                        <h3 className="font-medium text-gray-900 dark:text-white line-clamp-2 mb-1 flex-1">{video.title}</h3>
+                        <FaExternalLinkAlt size={12} className="text-gray-400 dark:text-gray-500 mt-1 ml-2 flex-shrink-0" />
                       </div>
                       
-                      {showVideoInfo && (
-                        <div className="p-3">
-                          <div className="flex justify-between items-start">
-                            <h3 className="font-medium text-gray-900 dark:text-white line-clamp-2 mb-1 flex-1">{video.title}</h3>
-                            <FaExternalLinkAlt size={12} className="text-gray-400 dark:text-gray-500 mt-1 ml-2 flex-shrink-0" />
-                          </div>
-                          
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
-                              {formatNumber(video.viewCount)} views
-                            </span>
-                            <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
-                              {formatNumber(video.likeCount)} likes
-                            </span>
-                            <span className="text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 rounded-xl px-2 py-1 font-medium">
-                              {video.vph} VPH
-                            </span>
-                          </div>
-                        </div>
-                      )}
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
+                          {formatNumber(video.viewCount)} views
+                        </span>
+                        <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
+                          {formatNumber(video.likeCount)} likes
+                        </span>
+                        <span className="text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 rounded-xl px-2 py-1 font-medium">
+                          {video.vph} VPH
+                        </span>
+                      </div>
                     </div>
-                  ))}
+                  )}
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         ) : activeVideoTab === 'similar' && filteredVideos.length > 0 ? (
           <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${videoGridColumns}, minmax(0, 1fr))` }}>
