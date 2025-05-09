@@ -155,7 +155,7 @@ export default function SearchFilters({
                 <div className="flex bg-zinc-900 rounded-full p-1 w-fit">
                   <button
                     className={`px-4 py-1 rounded-full text-xs ${
-                      searchPrecision === 'Specific' ? 'bg-green-500 text-white' : 'text-white'
+                      searchPrecision === 'Specific' ? 'bg-red-600 text-white' : 'text-white'
                     }`}
                     onClick={() => setSearchPrecision('Specific')}
                   >
@@ -163,7 +163,7 @@ export default function SearchFilters({
                   </button>
                   <button
                     className={`px-4 py-1 rounded-full text-xs ${
-                      searchPrecision === 'Hybrid' ? 'bg-green-500 text-white' : 'text-white'
+                      searchPrecision === 'Hybrid' ? 'bg-red-600 text-white' : 'text-white'
                     }`}
                     onClick={() => setSearchPrecision('Hybrid')}
                   >
@@ -183,7 +183,7 @@ export default function SearchFilters({
                 <div className="flex bg-zinc-900 rounded-full p-1 w-fit">
                   <button
                     className={`px-4 py-1 rounded-full text-xs flex items-center ${
-                      contentFormat === 'Videos' ? 'bg-green-500 text-white' : 'text-white'
+                      contentFormat === 'Videos' ? 'bg-red-600 text-white' : 'text-white'
                     }`}
                     onClick={() => setContentFormat('Videos')}
                   >
@@ -194,7 +194,7 @@ export default function SearchFilters({
                   </button>
                   <button
                     className={`px-4 py-1 rounded-full text-xs flex items-center ${
-                      contentFormat === 'Shorts' ? 'bg-green-500 text-white' : 'text-white'
+                      contentFormat === 'Shorts' ? 'bg-red-600 text-white' : 'text-white'
                     }`}
                     onClick={() => setContentFormat('Shorts')}
                   >
@@ -234,7 +234,7 @@ export default function SearchFilters({
                     type="text"
                     value={multiplierMin}
                     onChange={(e) => setMultiplierMin(e.target.value)}
-                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-md text-white text-center text-sm"
+                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-center text-sm"
                   />
                 </div>
                 <div className="flex items-center">
@@ -245,7 +245,7 @@ export default function SearchFilters({
                     type="text"
                     value={multiplierMax}
                     onChange={(e) => setMultiplierMax(e.target.value)}
-                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-md text-white text-center text-sm"
+                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-center text-sm"
                   />
                 </div>
               </div>
@@ -279,7 +279,7 @@ export default function SearchFilters({
                     type="text"
                     value={viewsMin}
                     onChange={(e) => setViewsMin(e.target.value)}
-                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-md text-white text-center text-sm"
+                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-center text-sm"
                   />
                 </div>
                 <div className="flex items-center">
@@ -290,7 +290,7 @@ export default function SearchFilters({
                     type="text"
                     value={viewsMax}
                     onChange={(e) => setViewsMax(e.target.value)}
-                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-md text-white text-center text-sm"
+                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-center text-sm"
                   />
                 </div>
               </div>
@@ -324,7 +324,7 @@ export default function SearchFilters({
                     type="text"
                     value={subscribersMin}
                     onChange={(e) => setSubscribersMin(e.target.value)}
-                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-md text-white text-center text-sm"
+                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-center text-sm"
                   />
                 </div>
                 <div className="flex items-center">
@@ -335,7 +335,7 @@ export default function SearchFilters({
                     type="text"
                     value={subscribersMax}
                     onChange={(e) => setSubscribersMax(e.target.value)}
-                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-md text-white text-center text-sm"
+                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-center text-sm"
                   />
                 </div>
               </div>
@@ -365,7 +365,7 @@ export default function SearchFilters({
                     type="text"
                     value={videoDurationMin}
                     onChange={(e) => setVideoDurationMin(e.target.value)}
-                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-md text-white text-center text-sm"
+                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-center text-sm"
                   />
                 </div>
                 <div className="flex items-center">
@@ -376,7 +376,7 @@ export default function SearchFilters({
                     type="text"
                     value={videoDurationMax}
                     onChange={(e) => setVideoDurationMax(e.target.value)}
-                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-md text-white text-center text-sm"
+                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-center text-sm"
                   />
                 </div>
               </div>
@@ -406,7 +406,7 @@ export default function SearchFilters({
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <button 
-                    className="flex justify-between items-center w-full bg-zinc-900 hover:bg-zinc-800 px-3 py-1 rounded-md"
+                    className="flex justify-between items-center w-full bg-zinc-900 hover:bg-zinc-800 px-3 py-1 rounded-full"
                     onClick={() => handleTimeRangeSelect('30 Days')}
                   >
                     <span className="text-xs">Last 30 Days</span>
@@ -414,7 +414,7 @@ export default function SearchFilters({
                   </button>
                   
                   <button 
-                    className="flex justify-between items-center w-full bg-zinc-900 hover:bg-zinc-800 px-3 py-1 rounded-md"
+                    className="flex justify-between items-center w-full bg-zinc-900 hover:bg-zinc-800 px-3 py-1 rounded-full"
                     onClick={() => handleTimeRangeSelect('90 Days')}
                   >
                     <span className="text-xs">Last 90 Days</span>
@@ -422,7 +422,7 @@ export default function SearchFilters({
                   </button>
                   
                   <button 
-                    className="flex justify-between items-center w-full bg-zinc-900 hover:bg-zinc-800 px-3 py-1 rounded-md"
+                    className="flex justify-between items-center w-full bg-zinc-900 hover:bg-zinc-800 px-3 py-1 rounded-full"
                     onClick={() => handleTimeRangeSelect('180 Days')}
                   >
                     <span className="text-xs">Last 180 Days</span>
@@ -430,7 +430,7 @@ export default function SearchFilters({
                   </button>
                   
                   <button 
-                    className="flex justify-between items-center w-full bg-zinc-900 hover:bg-zinc-800 px-3 py-1 rounded-md"
+                    className="flex justify-between items-center w-full bg-zinc-900 hover:bg-zinc-800 px-3 py-1 rounded-full"
                     onClick={() => handleTimeRangeSelect('365 Days')}
                   >
                     <span className="text-xs">Last 365 Days</span>
@@ -440,7 +440,7 @@ export default function SearchFilters({
                 
                 <div className="space-y-1">
                   <button 
-                    className="flex justify-between items-center w-full bg-zinc-900 hover:bg-zinc-800 px-3 py-1 rounded-md"
+                    className="flex justify-between items-center w-full bg-zinc-900 hover:bg-zinc-800 px-3 py-1 rounded-full"
                     onClick={() => handleTimeRangeSelect('3 Years')}
                   >
                     <span className="text-xs">Last 3 Years</span>
@@ -448,7 +448,7 @@ export default function SearchFilters({
                   </button>
                   
                   <button 
-                    className="flex justify-between items-center w-full bg-green-500 hover:bg-green-600 px-3 py-1 rounded-md"
+                    className="flex justify-between items-center w-full bg-red-600 hover:bg-red-700 px-3 py-1 rounded-full"
                     onClick={() => handleTimeRangeSelect('All Time')}
                   >
                     <span className="text-xs">All Time</span>
@@ -456,7 +456,7 @@ export default function SearchFilters({
                   </button>
                   
                   <button 
-                    className="flex justify-between items-center w-full bg-zinc-900 hover:bg-zinc-800 px-3 py-1 rounded-md"
+                    className="flex justify-between items-center w-full bg-zinc-900 hover:bg-zinc-800 px-3 py-1 rounded-full"
                     onClick={() => handleTimeRangeSelect('Custom')}
                   >
                     <span className="text-xs">Custom</span>
@@ -471,7 +471,7 @@ export default function SearchFilters({
                     type="text"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-xs"
+                    className="w-full bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-xs"
                     placeholder="Start date"
                   />
                 </div>
@@ -480,7 +480,7 @@ export default function SearchFilters({
                     type="text"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-xs"
+                    className="w-full bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-xs"
                     placeholder="End date"
                   />
                 </div>
@@ -519,24 +519,24 @@ export default function SearchFilters({
                     <div className="text-center py-0.5 text-xxs">11</div>
                     <div className="text-center py-0.5 text-xxs">12</div>
                     
-                    <div className="text-center py-0.5 text-xxs bg-green-500 rounded-sm">13</div>
-                    <div className="text-center py-0.5 text-xxs bg-green-500 rounded-sm">14</div>
-                    <div className="text-center py-0.5 text-xxs bg-green-500 rounded-sm">15</div>
-                    <div className="text-center py-0.5 text-xxs bg-green-500 rounded-sm">16</div>
-                    <div className="text-center py-0.5 text-xxs bg-green-500 rounded-sm">17</div>
-                    <div className="text-center py-0.5 text-xxs bg-green-500 rounded-sm">18</div>
-                    <div className="text-center py-0.5 text-xxs bg-green-500 rounded-sm">19</div>
+                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">13</div>
+                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">14</div>
+                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">15</div>
+                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">16</div>
+                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">17</div>
+                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">18</div>
+                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">19</div>
                     
-                    <div className="text-center py-0.5 text-xxs bg-green-500 rounded-sm">20</div>
-                    <div className="text-center py-0.5 text-xxs bg-green-500 rounded-sm">21</div>
-                    <div className="text-center py-0.5 text-xxs bg-green-500 rounded-sm">22</div>
-                    <div className="text-center py-0.5 text-xxs bg-green-500 rounded-sm">23</div>
-                    <div className="text-center py-0.5 text-xxs bg-green-500 rounded-sm">24</div>
-                    <div className="text-center py-0.5 text-xxs bg-green-500 rounded-sm">25</div>
-                    <div className="text-center py-0.5 text-xxs bg-green-500 rounded-sm">26</div>
+                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">20</div>
+                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">21</div>
+                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">22</div>
+                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">23</div>
+                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">24</div>
+                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">25</div>
+                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">26</div>
                     
-                    <div className="text-center py-0.5 text-xxs bg-green-500 rounded-sm">27</div>
-                    <div className="text-center py-0.5 text-xxs bg-green-500 rounded-sm">28</div>
+                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">27</div>
+                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">28</div>
                     <div className="text-center py-0.5 text-xxs">1</div>
                     <div className="text-center py-0.5 text-xxs">2</div>
                     <div className="text-center py-0.5 text-xxs">3</div>
@@ -555,7 +555,7 @@ export default function SearchFilters({
             <h3 className="text-sm font-normal">Advanced filters</h3>
             <button 
               onClick={() => setIsAdvancedFiltersOpen(!isAdvancedFiltersOpen)}
-              className="text-green-500 hover:underline flex items-center text-xs"
+              className="text-red-600 hover:underline flex items-center text-xs"
             >
               {isAdvancedFiltersOpen ? 'Hide' : 'Show'}
               <FaChevronDown 
@@ -594,7 +594,7 @@ export default function SearchFilters({
                         type="text"
                         value={viewsToSubsRatioMin}
                         onChange={(e) => setViewsToSubsRatioMin(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
                       />
                     </div>
                     <div className="flex items-center">
@@ -605,7 +605,7 @@ export default function SearchFilters({
                         type="text"
                         value={viewsToSubsRatioMax}
                         onChange={(e) => setViewsToSubsRatioMax(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
                       />
                     </div>
                   </div>
@@ -634,7 +634,7 @@ export default function SearchFilters({
                         type="text"
                         value={channelVideoCountMin}
                         onChange={(e) => setChannelVideoCountMin(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
                       />
                     </div>
                     <div className="flex items-center">
@@ -645,7 +645,7 @@ export default function SearchFilters({
                         type="text"
                         value={channelVideoCountMax}
                         onChange={(e) => setChannelVideoCountMax(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
                       />
                     </div>
                   </div>
@@ -677,7 +677,7 @@ export default function SearchFilters({
                         type="text"
                         value={medianViewsMin}
                         onChange={(e) => setMedianViewsMin(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
                       />
                     </div>
                     <div className="flex items-center">
@@ -688,7 +688,7 @@ export default function SearchFilters({
                         type="text"
                         value={medianViewsMax}
                         onChange={(e) => setMedianViewsMax(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
                       />
                     </div>
                   </div>
@@ -717,7 +717,7 @@ export default function SearchFilters({
                         type="text"
                         value={videoLikesMin}
                         onChange={(e) => setVideoLikesMin(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
                       />
                     </div>
                     <div className="flex items-center">
@@ -728,7 +728,7 @@ export default function SearchFilters({
                         type="text"
                         value={videoLikesMax}
                         onChange={(e) => setVideoLikesMax(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
                       />
                     </div>
                   </div>
@@ -760,7 +760,7 @@ export default function SearchFilters({
                         type="text"
                         value={channelTotalViewsMin}
                         onChange={(e) => setChannelTotalViewsMin(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
                       />
                     </div>
                     <div className="flex items-center">
@@ -771,7 +771,7 @@ export default function SearchFilters({
                         type="text"
                         value={channelTotalViewsMax}
                         onChange={(e) => setChannelTotalViewsMax(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
                       />
                     </div>
                   </div>
@@ -800,7 +800,7 @@ export default function SearchFilters({
                         type="text"
                         value={videoCommentsMin}
                         onChange={(e) => setVideoCommentsMin(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
                       />
                     </div>
                     <div className="flex items-center">
@@ -811,7 +811,7 @@ export default function SearchFilters({
                         type="text"
                         value={videoCommentsMax}
                         onChange={(e) => setVideoCommentsMax(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
                       />
                     </div>
                   </div>
@@ -843,7 +843,7 @@ export default function SearchFilters({
                         type="text"
                         value={engagementRateMin}
                         onChange={(e) => setEngagementRateMin(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
                       />
                     </div>
                     <div className="flex items-center">
@@ -854,7 +854,7 @@ export default function SearchFilters({
                         type="text"
                         value={engagementRateMax}
                         onChange={(e) => setEngagementRateMax(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
                       />
                     </div>
                   </div>
@@ -883,7 +883,7 @@ export default function SearchFilters({
                         type="text"
                         value={channelAgeMin}
                         onChange={(e) => setChannelAgeMin(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
                       />
                     </div>
                     <div className="flex items-center">
@@ -894,7 +894,7 @@ export default function SearchFilters({
                         type="text"
                         value={channelAgeMax}
                         onChange={(e) => setChannelAgeMax(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
                       />
                     </div>
                   </div>
@@ -917,7 +917,7 @@ export default function SearchFilters({
                     type="text"
                     value={includeChannels}
                     onChange={(e) => setIncludeChannels(e.target.value)}
-                    className="w-full bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-md text-white text-xs"
+                    className="w-full bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-xs"
                     placeholder="@Channels separated by space, comma or enter."
                   />
                 </div>
@@ -934,7 +934,7 @@ export default function SearchFilters({
                     type="text"
                     value={excludeChannels}
                     onChange={(e) => setExcludeChannels(e.target.value)}
-                    className="w-full bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-md text-white text-xs"
+                    className="w-full bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-xs"
                     placeholder="@Channels separated by space, comma or enter."
                   />
                 </div>
@@ -953,7 +953,7 @@ export default function SearchFilters({
                     type="text"
                     value={includeKeywords}
                     onChange={(e) => setIncludeKeywords(e.target.value)}
-                    className="w-full bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-md text-white text-xs"
+                    className="w-full bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-xs"
                     placeholder="Keywords separated by comma or enter."
                   />
                 </div>
@@ -970,7 +970,7 @@ export default function SearchFilters({
                     type="text"
                     value={excludeKeywords}
                     onChange={(e) => setExcludeKeywords(e.target.value)}
-                    className="w-full bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-md text-white text-xs"
+                    className="w-full bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-xs"
                     placeholder="Keywords separated by comma or enter."
                   />
                 </div>
@@ -984,14 +984,14 @@ export default function SearchFilters({
           <div className="flex space-x-3">  
             <button 
               onClick={onReset}
-              className="bg-zinc-800 hover:bg-zinc-700 text-white px-3 py-1 rounded-md text-xs"
+              className="bg-zinc-800 hover:bg-zinc-700 text-white px-3 py-1 rounded-full text-xs"
             >
               Reset
             </button>
             
             <button 
               onClick={handleApply}
-              className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md text-xs"
+              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-full text-xs"
             >
               Apply
             </button>
