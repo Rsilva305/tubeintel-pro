@@ -57,7 +57,8 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   ]);
 
   // Add new state for view multiplier
-  const [viewMultiplierThreshold, setViewMultiplierThreshold] = useState<number>(0); // Default to 0x
+  const [minViewMultiplierThreshold, setMinViewMultiplierThreshold] = useState<number>(0); // Default min to 0x
+  const [maxViewMultiplierThreshold, setMaxViewMultiplierThreshold] = useState<number>(500); // Default max to 500x (renamed from viewMultiplierThreshold)
 
   // State for advanced filters
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState<boolean>(false);
@@ -361,12 +362,13 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
     setIsFilterOpen(false);
   }
 
-  // Function to reset filters (updated for single values)
+  // Function to reset filters (updated for dual sliders)
   const resetFilter = () => {
     setViewsThreshold(0);
     setSubscribersThreshold(0);
     setVideoDurationThreshold(0);
-    setViewMultiplierThreshold(0);
+    setMinViewMultiplierThreshold(0);
+    setMaxViewMultiplierThreshold(500);
     setDateRange([
       new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       new Date().toISOString().split('T')[0]
@@ -430,10 +432,19 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
 
   // View multiplier step function
   const getViewMultiplierStep = (): number => {
-    if (viewMultiplierThreshold < 5) return 0.1;       // 0-5x: steps of 0.1
-    if (viewMultiplierThreshold < 20) return 0.5;      // 5-20x: steps of 0.5
-    if (viewMultiplierThreshold < 100) return 1;       // 20-100x: steps of 1
-    if (viewMultiplierThreshold < 200) return 5;       // 100-200x: steps of 5
+    if (maxViewMultiplierThreshold < 5) return 0.1;       // 0-5x: steps of 0.1
+    if (maxViewMultiplierThreshold < 20) return 0.5;      // 5-20x: steps of 0.5
+    if (maxViewMultiplierThreshold < 100) return 1;       // 20-100x: steps of 1
+    if (maxViewMultiplierThreshold < 200) return 5;       // 100-200x: steps of 5
+    return 10;                                         // 200x+: steps of 10
+  };
+
+  // Min view multiplier step function
+  const getMinViewMultiplierStep = (): number => {
+    if (minViewMultiplierThreshold < 5) return 0.1;       // 0-5x: steps of 0.1
+    if (minViewMultiplierThreshold < 20) return 0.5;      // 5-20x: steps of 0.5
+    if (minViewMultiplierThreshold < 100) return 1;       // 20-100x: steps of 1
+    if (minViewMultiplierThreshold < 200) return 5;       // 100-200x: steps of 5
     return 10;                                         // 200x+: steps of 10
   };
 
@@ -465,7 +476,9 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   const handleViewMultiplierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value);
     if (!isNaN(value)) {
-      setViewMultiplierThreshold(value);
+      // Rename to handleMaxViewMultiplierChange for clarity
+      // Make sure max is always >= min
+      setMaxViewMultiplierThreshold(Math.max(value, minViewMultiplierThreshold));
     }
   };
 
@@ -495,11 +508,28 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
     setVideoDurationThreshold(hours * 60 + Math.min(minutes, 59)); // Cap at 59m
   };
 
-  // Handler for view multiplier input
-  const handleViewMultiplierInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handler for view multiplier input - update to handle max value
+  const handleMaxViewMultiplierInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value);
     if (!isNaN(value)) {
-      setViewMultiplierThreshold(Math.max(0, Math.min(value, 500))); // Increased cap to 500x
+      setMaxViewMultiplierThreshold(Math.max(minViewMultiplierThreshold, Math.min(value, 500)));
+    }
+  };
+
+  // Add handler for min view multiplier input
+  const handleMinViewMultiplierInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value);
+    if (!isNaN(value)) {
+      setMinViewMultiplierThreshold(Math.min(maxViewMultiplierThreshold, Math.max(0, value)));
+    }
+  };
+
+  // Add handler for min view multiplier
+  const handleMinViewMultiplierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value);
+    if (!isNaN(value)) {
+      // Make sure min is always <= max
+      setMinViewMultiplierThreshold(Math.min(value, maxViewMultiplierThreshold));
     }
   };
 
@@ -997,10 +1027,10 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                   </div>
                 </div>
 
-                {/* Add View Multiplier slider after Video Duration slider */}
+                {/* Add View Multiplier dual slider after Video Duration slider */}
                 <div>
                   <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2 font-medium flex items-center">
-                    View Multiplier: {viewMultiplierThreshold < 10 ? viewMultiplierThreshold.toFixed(1) : viewMultiplierThreshold.toFixed(0)}x
+                    Multiplier
                     <div className="ml-1.5 text-xs text-gray-500 dark:text-gray-400 cursor-help group relative">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1013,38 +1043,75 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                   <div className="flex flex-col">
                     <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
                       <span>0x</span>
-                      <span className="text-center ml-12">10x</span>
-                      <span className="text-center ml-12">50x</span>
                       <span className="text-center ml-12">100x</span>
+                      <span className="text-center ml-12">250x</span>
                       <span>500x</span>
                     </div>
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="500" 
-                      step={getViewMultiplierStep()}
-                      value={viewMultiplierThreshold}
-                      onChange={handleViewMultiplierChange}
-                      className="slider-track mb-2"
-                    />
-                    <div className="text-xs text-center text-gray-500 dark:text-gray-400 mt-1 mb-2">
-                      Current: {viewMultiplierThreshold < 10 ? viewMultiplierThreshold.toFixed(1) : viewMultiplierThreshold.toFixed(0)}x median views
+                    
+                    {/* Slider Container */}
+                    <div className="relative mb-8">
+                      {/* Min multiplier slider */}
+                      <input 
+                        type="range" 
+                        min="0" 
+                        max="500" 
+                        step={getMinViewMultiplierStep()}
+                        value={minViewMultiplierThreshold}
+                        onChange={handleMinViewMultiplierChange}
+                        className="absolute w-full slider-track"
+                      />
+                      {/* Max multiplier slider */}
+                      <input 
+                        type="range" 
+                        min="0" 
+                        max="500" 
+                        step={getViewMultiplierStep()}
+                        value={maxViewMultiplierThreshold}
+                        onChange={handleViewMultiplierChange}
+                        className="absolute w-full slider-track"
+                      />
                     </div>
                     
-                    {/* Input field for direct value entry */}
-                    <div className="flex items-center mt-2">
-                      <label className="text-xs text-gray-500 dark:text-gray-400 mr-2">Custom value:</label>
+                    {/* Value display */}
+                    <div className="flex justify-between items-center mt-2 mb-4">
+                      <div className="bg-gray-800 dark:bg-gray-700 rounded-md px-4 py-2 text-white text-center w-24">
+                        {minViewMultiplierThreshold < 10 ? minViewMultiplierThreshold.toFixed(1) : minViewMultiplierThreshold.toFixed(0)}x
+                      </div>
+                      <div className="text-gray-500 dark:text-gray-400 font-medium">
+                        TO
+                      </div>
+                      <div className="bg-gray-800 dark:bg-gray-700 rounded-md px-4 py-2 text-white text-center w-24">
+                        {maxViewMultiplierThreshold < 10 ? maxViewMultiplierThreshold.toFixed(1) : maxViewMultiplierThreshold.toFixed(0)}x+
+                      </div>
+                    </div>
+                    
+                    {/* Custom inputs for direct value entry */}
+                    <div className="flex items-center justify-between mt-2 space-x-4">
                       <div className="flex items-center">
+                        <label className="text-xs text-gray-500 dark:text-gray-400 mr-2">Min:</label>
                         <input
                           type="number"
                           min="0"
                           max="500"
                           step="0.5"
-                          value={viewMultiplierThreshold}
-                          onChange={handleViewMultiplierInput}
+                          value={minViewMultiplierThreshold}
+                          onChange={handleMinViewMultiplierInput}
                           className="w-20 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-white"
                         />
-                        <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">x median</span>
+                        <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">x</span>
+                      </div>
+                      <div className="flex items-center">
+                        <label className="text-xs text-gray-500 dark:text-gray-400 mr-2">Max:</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="500"
+                          step="0.5"
+                          value={maxViewMultiplierThreshold}
+                          onChange={handleMaxViewMultiplierInput}
+                          className="w-20 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-800 dark:text-white"
+                        />
+                        <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">x</span>
                       </div>
                     </div>
                   </div>
