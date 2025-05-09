@@ -121,14 +121,37 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
       return ((acc << 5) - acc) + char.charCodeAt(0);
     }, 0);
     
-    // Generate minutes (typically 5-20 minutes for most videos)
-    const minutes = Math.abs(hash % 16) + 5;
+    // Use different parts of the hash for different components
+    // Some videos should be short (3-15 min), some medium (15-45 min), and a few longer (45min-2hr)
+    
+    // Determine video length category (0=short, 1=medium, 2=long)
+    const lengthCategory = Math.abs((hash >> 4) % 10);
+    
+    let totalMinutes;
+    if (lengthCategory < 6) {
+      // 60% chance of short video (3-15 min)
+      totalMinutes = 3 + Math.abs(hash % 13);
+    } else if (lengthCategory < 9) {
+      // 30% chance of medium video (15-45 min)
+      totalMinutes = 15 + Math.abs((hash >> 3) % 31);
+    } else {
+      // 10% chance of long video (45min-2hr)
+      totalMinutes = 45 + Math.abs((hash >> 6) % 76);
+    }
     
     // Generate seconds (0-59)
     const seconds = Math.abs((hash >> 8) % 60);
     
-    // Format as MM:SS
-    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    // Calculate hours and remaining minutes
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    
+    // Format properly (H:MM:SS for videos > 1hr, MM:SS for shorter videos)
+    if (hours > 0) {
+      return `${hours}:${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    } else {
+      return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    }
   };
 
   // Call the check on mount
