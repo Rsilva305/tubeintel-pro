@@ -50,7 +50,27 @@ export default function SearchFilters({
   
   // Advanced filters state
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
-
+  const [viewsToSubsRatioMin, setViewsToSubsRatioMin] = useState('0.0');
+  const [viewsToSubsRatioMax, setViewsToSubsRatioMax] = useState('500.0+');
+  const [medianViewsMin, setMedianViewsMin] = useState('0');
+  const [medianViewsMax, setMedianViewsMax] = useState('400M+');
+  const [channelTotalViewsMin, setChannelTotalViewsMin] = useState('0');
+  const [channelTotalViewsMax, setChannelTotalViewsMax] = useState('100B+');
+  const [channelVideoCountMin, setChannelVideoCountMin] = useState('0');
+  const [channelVideoCountMax, setChannelVideoCountMax] = useState('100k+');
+  const [videoLikesMin, setVideoLikesMin] = useState('0');
+  const [videoLikesMax, setVideoLikesMax] = useState('50M+');
+  const [videoCommentsMin, setVideoCommentsMin] = useState('0');
+  const [videoCommentsMax, setVideoCommentsMax] = useState('5M+');
+  const [engagementRateMin, setEngagementRateMin] = useState('0');
+  const [engagementRateMax, setEngagementRateMax] = useState('100+');
+  const [channelAgeMin, setChannelAgeMin] = useState('Brand new');
+  const [channelAgeMax, setChannelAgeMax] = useState('20 years ago+');
+  const [includeChannels, setIncludeChannels] = useState('');
+  const [excludeChannels, setExcludeChannels] = useState('');
+  const [includeKeywords, setIncludeKeywords] = useState('');
+  const [excludeKeywords, setExcludeKeywords] = useState('');
+  
   const handleTimeRangeSelect = (range: TimeRange) => {
     setTimeRange(range);
   };
@@ -71,7 +91,28 @@ export default function SearchFilters({
       videoDurationMin,
       videoDurationMax,
       whenPosted,
-      advancedFilters: {}
+      advancedFilters: {
+        viewsToSubsRatioMin,
+        viewsToSubsRatioMax,
+        medianViewsMin,
+        medianViewsMax,
+        channelTotalViewsMin,
+        channelTotalViewsMax,
+        channelVideoCountMin,
+        channelVideoCountMax,
+        videoLikesMin,
+        videoLikesMax,
+        videoCommentsMin,
+        videoCommentsMax,
+        engagementRateMin,
+        engagementRateMax,
+        channelAgeMin,
+        channelAgeMax,
+        includeChannels,
+        excludeChannels,
+        includeKeywords,
+        excludeKeywords
+      }
     };
     
     onApply(filters);
@@ -354,54 +395,6 @@ export default function SearchFilters({
                 <span className="ml-3 text-sm">When posted</span>
               </label>
             </div>
-            
-            {/* Advanced filters */}
-            <div className="mb-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-normal">Advanced filters</h3>
-                <button 
-                  onClick={() => setIsAdvancedFiltersOpen(!isAdvancedFiltersOpen)}
-                  className="text-green-500 hover:underline flex items-center text-xs"
-                >
-                  {isAdvancedFiltersOpen ? 'Hide' : 'Show'}
-                  <FaChevronDown 
-                    className={`ml-1 transform ${isAdvancedFiltersOpen ? 'rotate-180' : ''}`}
-                    size={10}
-                  />
-                </button>
-              </div>
-              
-              {isAdvancedFiltersOpen && (
-                <div className="mt-2 grid grid-cols-3 gap-4">
-                  <div>
-                    <div className="flex items-center mb-1">
-                      <h4 className="text-xs font-normal">Views : Subs ratio</h4>
-                      <div className="ml-2 text-gray-400 cursor-help">
-                        <FaInfoCircle size={10} />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <div className="flex items-center mb-1">
-                      <h4 className="text-xs font-normal">Median views</h4>
-                      <div className="ml-2 text-gray-400 cursor-help">
-                        <FaInfoCircle size={10} />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <div className="flex items-center mb-1">
-                      <h4 className="text-xs font-normal">Channel total views</h4>
-                      <div className="ml-2 text-gray-400 cursor-help">
-                        <FaInfoCircle size={10} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
           
           {/* RIGHT COLUMN - Time range and calendar */}
@@ -555,6 +548,436 @@ export default function SearchFilters({
             </div>
           </div>
         </div>
+        
+        {/* Advanced filters toggle - moved to bottom */}
+        <div className="mt-5">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-normal">Advanced filters</h3>
+            <button 
+              onClick={() => setIsAdvancedFiltersOpen(!isAdvancedFiltersOpen)}
+              className="text-green-500 hover:underline flex items-center text-xs"
+            >
+              {isAdvancedFiltersOpen ? 'Hide' : 'Show'}
+              <FaChevronDown 
+                className={`ml-1 transform ${isAdvancedFiltersOpen ? 'rotate-180' : ''}`}
+                size={10}
+              />
+            </button>
+          </div>
+        </div>
+        
+        {/* Advanced filters section - full width */}
+        {isAdvancedFiltersOpen && (
+          <div className="mb-5 border-t border-zinc-800 pt-3 mt-3">
+            <div className="grid grid-cols-4 gap-5">
+              {/* First column */}
+              <div>
+                {/* Views : Subs ratio */}
+                <div className="mb-4">
+                  <div className="flex items-center mb-1">
+                    <h4 className="text-xs font-normal">Views : Subs ratio</h4>
+                    <div className="ml-2 text-gray-400 cursor-help">
+                      <FaInfoCircle size={10} />
+                    </div>
+                  </div>
+                  <div className="mb-1">
+                    <input
+                      type="range"
+                      min="0"
+                      max="500"
+                      className="search-filter-range w-full"
+                    />
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    <div>
+                      <input
+                        type="text"
+                        value={viewsToSubsRatioMin}
+                        onChange={(e) => setViewsToSubsRatioMin(e.target.value)}
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                      />
+                    </div>
+                    <div className="flex items-center">
+                      <span className="mx-1 text-gray-400 text-xs">TO</span>
+                    </div>
+                    <div>
+                      <input
+                        type="text"
+                        value={viewsToSubsRatioMax}
+                        onChange={(e) => setViewsToSubsRatioMax(e.target.value)}
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Channel number of videos */}
+                <div className="mb-4">
+                  <div className="flex items-center mb-1">
+                    <h4 className="text-xs font-normal">Channel number of videos</h4>
+                    <div className="ml-2 text-gray-400 cursor-help">
+                      <FaInfoCircle size={10} />
+                    </div>
+                  </div>
+                  <div className="mb-1">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100000"
+                      step="100"
+                      className="search-filter-range w-full"
+                    />
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    <div>
+                      <input
+                        type="text"
+                        value={channelVideoCountMin}
+                        onChange={(e) => setChannelVideoCountMin(e.target.value)}
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                      />
+                    </div>
+                    <div className="flex items-center">
+                      <span className="mx-1 text-gray-400 text-xs">TO</span>
+                    </div>
+                    <div>
+                      <input
+                        type="text"
+                        value={channelVideoCountMax}
+                        onChange={(e) => setChannelVideoCountMax(e.target.value)}
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Second column */}
+              <div>
+                {/* Median views */}
+                <div className="mb-4">
+                  <div className="flex items-center mb-1">
+                    <h4 className="text-xs font-normal">Median views</h4>
+                    <div className="ml-2 text-gray-400 cursor-help">
+                      <FaInfoCircle size={10} />
+                    </div>
+                  </div>
+                  <div className="mb-1">
+                    <input
+                      type="range"
+                      min="0"
+                      max="400000000"
+                      step="1000"
+                      className="search-filter-range w-full"
+                    />
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    <div>
+                      <input
+                        type="text"
+                        value={medianViewsMin}
+                        onChange={(e) => setMedianViewsMin(e.target.value)}
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                      />
+                    </div>
+                    <div className="flex items-center">
+                      <span className="mx-1 text-gray-400 text-xs">TO</span>
+                    </div>
+                    <div>
+                      <input
+                        type="text"
+                        value={medianViewsMax}
+                        onChange={(e) => setMedianViewsMax(e.target.value)}
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Video likes */}
+                <div className="mb-4">
+                  <div className="flex items-center mb-1">
+                    <h4 className="text-xs font-normal">Video likes</h4>
+                    <div className="ml-2 text-gray-400 cursor-help">
+                      <FaInfoCircle size={10} />
+                    </div>
+                  </div>
+                  <div className="mb-1">
+                    <input
+                      type="range"
+                      min="0"
+                      max="50000000"
+                      step="1000"
+                      className="search-filter-range w-full"
+                    />
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    <div>
+                      <input
+                        type="text"
+                        value={videoLikesMin}
+                        onChange={(e) => setVideoLikesMin(e.target.value)}
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                      />
+                    </div>
+                    <div className="flex items-center">
+                      <span className="mx-1 text-gray-400 text-xs">TO</span>
+                    </div>
+                    <div>
+                      <input
+                        type="text"
+                        value={videoLikesMax}
+                        onChange={(e) => setVideoLikesMax(e.target.value)}
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Third column */}
+              <div>
+                {/* Channel total views */}
+                <div className="mb-4">
+                  <div className="flex items-center mb-1">
+                    <h4 className="text-xs font-normal">Channel total views</h4>
+                    <div className="ml-2 text-gray-400 cursor-help">
+                      <FaInfoCircle size={10} />
+                    </div>
+                  </div>
+                  <div className="mb-1">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100000000000"
+                      step="10000"
+                      className="search-filter-range w-full"
+                    />
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    <div>
+                      <input
+                        type="text"
+                        value={channelTotalViewsMin}
+                        onChange={(e) => setChannelTotalViewsMin(e.target.value)}
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                      />
+                    </div>
+                    <div className="flex items-center">
+                      <span className="mx-1 text-gray-400 text-xs">TO</span>
+                    </div>
+                    <div>
+                      <input
+                        type="text"
+                        value={channelTotalViewsMax}
+                        onChange={(e) => setChannelTotalViewsMax(e.target.value)}
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Video comments */}
+                <div className="mb-4">
+                  <div className="flex items-center mb-1">
+                    <h4 className="text-xs font-normal">Video comments</h4>
+                    <div className="ml-2 text-gray-400 cursor-help">
+                      <FaInfoCircle size={10} />
+                    </div>
+                  </div>
+                  <div className="mb-1">
+                    <input
+                      type="range"
+                      min="0"
+                      max="5000000"
+                      step="1000"
+                      className="search-filter-range w-full"
+                    />
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    <div>
+                      <input
+                        type="text"
+                        value={videoCommentsMin}
+                        onChange={(e) => setVideoCommentsMin(e.target.value)}
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                      />
+                    </div>
+                    <div className="flex items-center">
+                      <span className="mx-1 text-gray-400 text-xs">TO</span>
+                    </div>
+                    <div>
+                      <input
+                        type="text"
+                        value={videoCommentsMax}
+                        onChange={(e) => setVideoCommentsMax(e.target.value)}
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Fourth column */}
+              <div>
+                {/* Engagement rate */}
+                <div className="mb-4">
+                  <div className="flex items-center mb-1">
+                    <h4 className="text-xs font-normal">Engagement rate</h4>
+                    <div className="ml-2 text-gray-400 cursor-help">
+                      <FaInfoCircle size={10} />
+                    </div>
+                  </div>
+                  <div className="mb-1">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="1"
+                      className="search-filter-range w-full"
+                    />
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    <div>
+                      <input
+                        type="text"
+                        value={engagementRateMin}
+                        onChange={(e) => setEngagementRateMin(e.target.value)}
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                      />
+                    </div>
+                    <div className="flex items-center">
+                      <span className="mx-1 text-gray-400 text-xs">TO</span>
+                    </div>
+                    <div>
+                      <input
+                        type="text"
+                        value={engagementRateMax}
+                        onChange={(e) => setEngagementRateMax(e.target.value)}
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Channel age */}
+                <div className="mb-4">
+                  <div className="flex items-center mb-1">
+                    <h4 className="text-xs font-normal">Channel age</h4>
+                    <div className="ml-2 text-gray-400 cursor-help">
+                      <FaInfoCircle size={10} />
+                    </div>
+                  </div>
+                  <div className="mb-1">
+                    <input
+                      type="range"
+                      min="0"
+                      max="20"
+                      step="1"
+                      className="search-filter-range w-full"
+                    />
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    <div>
+                      <input
+                        type="text"
+                        value={channelAgeMin}
+                        onChange={(e) => setChannelAgeMin(e.target.value)}
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                      />
+                    </div>
+                    <div className="flex items-center">
+                      <span className="mx-1 text-gray-400 text-xs">TO</span>
+                    </div>
+                    <div>
+                      <input
+                        type="text"
+                        value={channelAgeMax}
+                        onChange={(e) => setChannelAgeMax(e.target.value)}
+                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-md text-white text-center text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Include/Exclude row - 2 columns */}
+            <div className="grid grid-cols-2 gap-5 mt-2">
+              <div>
+                {/* Include these channels */}
+                <div className="mb-4">
+                  <div className="flex items-center mb-1">
+                    <h4 className="text-xs font-normal">Include these channels</h4>
+                    <div className="ml-2 text-gray-400 cursor-help">
+                      <FaInfoCircle size={10} />
+                    </div>
+                  </div>
+                  <input
+                    type="text"
+                    value={includeChannels}
+                    onChange={(e) => setIncludeChannels(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-md text-white text-xs"
+                    placeholder="@Channels separated by space, comma or enter."
+                  />
+                </div>
+                
+                {/* Exclude channels */}
+                <div>
+                  <div className="flex items-center mb-1">
+                    <h4 className="text-xs font-normal">Exclude channels</h4>
+                    <div className="ml-2 text-gray-400 cursor-help">
+                      <FaInfoCircle size={10} />
+                    </div>
+                  </div>
+                  <input
+                    type="text"
+                    value={excludeChannels}
+                    onChange={(e) => setExcludeChannels(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-md text-white text-xs"
+                    placeholder="@Channels separated by space, comma or enter."
+                  />
+                </div>
+              </div>
+              
+              <div>
+                {/* Include these keywords */}
+                <div className="mb-4">
+                  <div className="flex items-center mb-1">
+                    <h4 className="text-xs font-normal">Include these keywords</h4>
+                    <div className="ml-2 text-gray-400 cursor-help">
+                      <FaInfoCircle size={10} />
+                    </div>
+                  </div>
+                  <input
+                    type="text"
+                    value={includeKeywords}
+                    onChange={(e) => setIncludeKeywords(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-md text-white text-xs"
+                    placeholder="Keywords separated by comma or enter."
+                  />
+                </div>
+                
+                {/* Exclude keywords */}
+                <div>
+                  <div className="flex items-center mb-1">
+                    <h4 className="text-xs font-normal">Exclude keywords</h4>
+                    <div className="ml-2 text-gray-400 cursor-help">
+                      <FaInfoCircle size={10} />
+                    </div>
+                  </div>
+                  <input
+                    type="text"
+                    value={excludeKeywords}
+                    onChange={(e) => setExcludeKeywords(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-md text-white text-xs"
+                    placeholder="Keywords separated by comma or enter."
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Footer with actions */}
         <div className="mt-3 flex justify-end items-center">
