@@ -126,7 +126,7 @@ export default function SearchFilters({
         className="fixed inset-0 bg-black bg-opacity-30" 
         onClick={onClose}
       ></div>
-      <div className="bg-black rounded-lg w-[1200px] relative text-white p-5 mx-4 my-4 z-10 max-h-[85vh] overflow-y-auto">
+      <div className="bg-black rounded-3xl w-[1200px] relative text-white p-5 mx-4 my-4 z-10 max-h-[85vh] overflow-y-auto">
         {/* Close button */}
         <button 
           onClick={onClose}
@@ -487,13 +487,13 @@ export default function SearchFilters({
               </div>
               
               {/* Calendar */}
-              <div className="mt-2 bg-zinc-900 p-2 rounded-md">
+              <div className="mt-2 bg-zinc-900 p-2 rounded-2xl">
                 <div className="text-xs">
                   {/* Month & Year Navigation */}
                   <div className="flex justify-between mb-1 text-xxs">
-                    <button className="text-gray-400">&lt;</button>
-                    <div className="text-gray-400">{selectedMonth}</div>
-                    <button className="text-gray-400">&gt;</button>
+                    <button className="text-gray-400 hover:text-red-600 rounded-full w-5 h-5 flex items-center justify-center">&lt;</button>
+                    <div className="text-gray-400 bg-zinc-800 px-2 py-0.5 rounded-full">{selectedMonth} {selectedYear}</div>
+                    <button className="text-gray-400 hover:text-red-600 rounded-full w-5 h-5 flex items-center justify-center">&gt;</button>
                   </div>
                   
                   {/* Day headers */}
@@ -568,7 +568,7 @@ export default function SearchFilters({
         
         {/* Advanced filters section - full width */}
         {isAdvancedFiltersOpen && (
-          <div className="mb-5 border-t border-zinc-800 pt-3 mt-3">
+          <div className="mb-5 border-t border-zinc-800 pt-3 mt-3 rounded-2xl">
             <div className="grid grid-cols-4 gap-5">
               {/* First column */}
               <div>
