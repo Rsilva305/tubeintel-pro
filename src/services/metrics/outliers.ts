@@ -56,4 +56,52 @@ export function calculateOutlierScore(video: Video, channelVideos: Video[]) {
     performanceLevel,
     xFactor // Add xFactor to the return value
   };
+}
+
+/**
+ * Calculate a comprehensive performance score for a video based on multiple metrics
+ * @param video The video to calculate performance score for
+ * @param channelVideos All videos from the same channel
+ * @returns Number representing overall performance (higher is better)
+ */
+export function calculatePerformanceScore(video: Video, channelVideos: Video[]) {
+  // Get the outlier score (0-100)
+  const outlierData = calculateOutlierScore(video, channelVideos);
+  
+  // Calculate engagement rate (likes + comments / views) * 100
+  const engagementRate = video.viewCount > 0 ? 
+    ((video.likeCount + video.commentCount) / video.viewCount) * 100 : 0;
+  
+  // Calculate recency factor (newer videos get a boost)
+  const ageInDays = (new Date().getTime() - new Date(video.publishedAt).getTime()) / (1000 * 60 * 60 * 24);
+  const recencyFactor = Math.max(0, 1 - (ageInDays / 30)); // Factor decreases over 30 days
+  
+  // Calculate final performance score (weighted combination)
+  return (
+    (outlierData.score * 0.5) +  // Outlier score: 50% weight
+    (engagementRate * 0.3) +     // Engagement: 30% weight
+    (video.vph * 0.1) +          // VPH: 10% weight
+    (recencyFactor * 10)         // Recency: 10% weight (0-10 points)
+  );
+}
+
+/**
+ * Get top performing videos based on comprehensive performance score
+ * @param videos Array of videos to rank
+ * @param limit Maximum number of videos to return
+ * @returns Array of top performing videos
+ */
+export function getTopPerformingVideos(videos: Video[], limit: number = 5): Video[] {
+  if (!videos || videos.length === 0) return [];
+  
+  // Calculate performance scores for all videos
+  const videosWithScores = videos.map(video => {
+    const performanceScore = calculatePerformanceScore(video, videos);
+    return { ...video, performanceScore };
+  });
+  
+  // Sort by performance score and return top videos
+  return videosWithScores
+    .sort((a, b) => b.performanceScore - a.performanceScore)
+    .slice(0, limit);
 } 
