@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FaTimes, FaInfoCircle, FaChevronDown } from 'react-icons/fa';
 
 type SearchPrecision = 'Specific' | 'Hybrid';
@@ -70,10 +70,12 @@ export default function SearchFilters({
   
   // Time range state
   const [timeRange, setTimeRange] = useState<TimeRange>('All Time');
-  const [startDate, setStartDate] = useState('Feb 13, 2005');
-  const [endDate, setEndDate] = useState('May 9, 2025');
-  const [selectedMonth, setSelectedMonth] = useState('February');
-  const [selectedYear, setSelectedYear] = useState('2023');
+  const [startDate, setStartDate] = useState('2005-02-13');
+  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedDates, setSelectedDates] = useState<number[]>([]);
+  const [calendarDays, setCalendarDays] = useState<{day: number, month: number, year: number, isCurrentMonth: boolean}[]>([]);
   
   // Range sliders state
   const [multiplierMin, setMultiplierMin] = useState('0.0x');
@@ -111,8 +113,239 @@ export default function SearchFilters({
   const [includeKeywords, setIncludeKeywords] = useState('');
   const [excludeKeywords, setExcludeKeywords] = useState('');
   
+  // Define the updateSelectedDatesForCurrentMonth function using useCallback
+  const updateSelectedDatesForCurrentMonth = useCallback(() => {
+    if (!startDate || !endDate) return;
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const startDay = start.getDate();
+    const endDay = end.getDate();
+    const startMonth = start.getMonth();
+    const endMonth = end.getMonth();
+    const startYear = start.getFullYear();
+    const endYear = end.getFullYear();
+    
+    // If the selected month/year matches either date, update the selectedDates
+    if ((startMonth === selectedMonth && startYear === selectedYear) || 
+        (endMonth === selectedMonth && endYear === selectedYear)) {
+      
+      // If both start and end dates are in the current month view
+      if (startMonth === selectedMonth && startYear === selectedYear && 
+          endMonth === selectedMonth && endYear === selectedYear) {
+        setSelectedDates([startDay, endDay]);
+      } 
+      // If only the start date is in the current month view
+      else if (startMonth === selectedMonth && startYear === selectedYear) {
+        setSelectedDates([startDay]);
+      }
+      // If only the end date is in the current month view
+      else if (endMonth === selectedMonth && endYear === selectedYear) {
+        setSelectedDates([endDay]);
+      }
+    } else {
+      // Neither date is in the current month view
+      setSelectedDates([]);
+    }
+  }, [startDate, endDate, selectedMonth, selectedYear, setSelectedDates]);
+  
+  // Generate calendar days array
+  useEffect(() => {
+    generateCalendarDays();
+  }, [selectedMonth, selectedYear]);
+  
+  // Update selected dates when month/year or date range changes
+  useEffect(() => {
+    updateSelectedDatesForCurrentMonth();
+  }, [updateSelectedDatesForCurrentMonth]);
+
+  const generateCalendarDays = () => {
+    const firstDayOfMonth = new Date(selectedYear, selectedMonth, 1);
+    const lastDayOfMonth = new Date(selectedYear, selectedMonth + 1, 0);
+    const daysInMonth = lastDayOfMonth.getDate();
+    const startingDayOfWeek = firstDayOfMonth.getDay(); // 0 = Sunday
+
+    const days = [];
+    
+    // Add days from previous month to fill in the first week
+    const prevMonth = selectedMonth === 0 ? 11 : selectedMonth - 1;
+    const prevMonthYear = selectedMonth === 0 ? selectedYear - 1 : selectedYear;
+    const lastDayOfPrevMonth = new Date(prevMonthYear, selectedMonth, 0).getDate();
+    
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      days.push({
+        day: lastDayOfPrevMonth - startingDayOfWeek + i + 1,
+        month: prevMonth,
+        year: prevMonthYear,
+        isCurrentMonth: false
+      });
+    }
+    
+    // Add days of current month
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push({
+        day: i,
+        month: selectedMonth,
+        year: selectedYear,
+        isCurrentMonth: true
+      });
+    }
+    
+    // Add days from next month to complete the grid (up to 42 total days for 6 rows)
+    const nextMonth = selectedMonth === 11 ? 0 : selectedMonth + 1;
+    const nextMonthYear = selectedMonth === 11 ? selectedYear + 1 : selectedYear;
+    const totalDaysAdded = days.length;
+    const daysNeeded = Math.ceil(totalDaysAdded / 7) * 7 - totalDaysAdded;
+    
+    for (let i = 1; i <= daysNeeded; i++) {
+      days.push({
+        day: i,
+        month: nextMonth,
+        year: nextMonthYear,
+        isCurrentMonth: false
+      });
+    }
+    
+    setCalendarDays(days);
+  };
+
+  const handlePrevMonth = () => {
+    if (selectedMonth === 0) {
+      setSelectedMonth(11);
+      setSelectedYear(selectedYear - 1);
+    } else {
+      setSelectedMonth(selectedMonth - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (selectedMonth === 11) {
+      setSelectedMonth(0);
+      setSelectedYear(selectedYear + 1);
+    } else {
+      setSelectedMonth(selectedMonth + 1);
+    }
+  };
+
+  const formatDateForDisplay = (date: string) => {
+    if (!date) return '';
+    const dateObj = new Date(date);
+    return dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  };
+
+  const handleDateClick = (day: number, month: number, year: number) => {
+    // Create a date string in ISO format (YYYY-MM-DD)
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    
+    // If timeRange is not 'Custom', set it to 'Custom' first
+    if (timeRange !== 'Custom') {
+      setTimeRange('Custom');
+    }
+    
+    // If no dates selected yet or both dates already selected, start a new selection
+    if (selectedDates.length === 0 || selectedDates.length === 2) {
+      setSelectedDates([day]);
+      setStartDate(dateStr);
+      setEndDate(dateStr);
+    } 
+    // If one date is selected, complete the range
+    else if (selectedDates.length === 1) {
+      const firstDate = new Date(startDate);
+      const clickedDate = new Date(dateStr);
+      
+      // Ensure start date is always before end date
+      if (clickedDate < firstDate) {
+        setStartDate(dateStr);
+        setEndDate(firstDate.toISOString().split('T')[0]);
+      } else {
+        setEndDate(dateStr);
+      }
+      
+      setSelectedDates([selectedDates[0], day]);
+    }
+  };
+
+  const isDateInRange = (day: number, month: number, year: number) => {
+    if (timeRange !== 'Custom' || !startDate || !endDate) return false;
+    
+    const date = new Date(year, month, day);
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    // Set times to beginning and end of day to include the full days
+    start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
+    
+    return date >= start && date <= end;
+  };
+
   const handleTimeRangeSelect = (range: TimeRange) => {
     setTimeRange(range);
+    
+    // If selecting a preset time range, calculate and set the appropriate date range
+    const now = new Date();
+    now.setHours(23, 59, 59, 999); // End of current day
+    
+    let start = new Date(now);
+    
+    switch (range) {
+      case '30 Days':
+        start.setDate(now.getDate() - 30);
+        break;
+      case '90 Days':
+        start.setDate(now.getDate() - 90);
+        break;
+      case '180 Days':
+        start.setDate(now.getDate() - 180);
+        break;
+      case '365 Days':
+        start.setDate(now.getDate() - 365);
+        break;
+      case '3 Years':
+        start.setFullYear(now.getFullYear() - 3);
+        break;
+      case 'All Time':
+        start = new Date('2005-02-14'); // YouTube's founding date
+        break;
+      case 'Custom':
+        // Don't change the dates when selecting "Custom"
+        return;
+    }
+    
+    start.setHours(0, 0, 0, 0); // Start of day
+    setStartDate(start.toISOString().split('T')[0]);
+    setEndDate(now.toISOString().split('T')[0]);
+    
+    // If the selected month/year contains either the start or end date,
+    // update the selected dates for proper highlighting
+    const startDay = start.getDate();
+    const endDay = now.getDate();
+    const startMonth = start.getMonth();
+    const endMonth = now.getMonth();
+    const startYear = start.getFullYear();
+    const endYear = now.getFullYear();
+    
+    // If the selected month/year matches either date, update the selectedDates
+    if ((startMonth === selectedMonth && startYear === selectedYear) || 
+        (endMonth === selectedMonth && endYear === selectedYear)) {
+      
+      // If both start and end dates are in the current month view
+      if (startMonth === selectedMonth && startYear === selectedYear && 
+          endMonth === selectedMonth && endYear === selectedYear) {
+        setSelectedDates([startDay, endDay]);
+      } 
+      // If only the start date is in the current month view
+      else if (startMonth === selectedMonth && startYear === selectedYear) {
+        setSelectedDates([startDay]);
+      }
+      // If only the end date is in the current month view
+      else if (endMonth === selectedMonth && endYear === selectedYear) {
+        setSelectedDates([endDay]);
+      }
+    } else {
+      // Neither date is in the current month view
+      setSelectedDates([]);
+    }
   };
 
   const handleApply = () => {
@@ -464,7 +697,7 @@ export default function SearchFilters({
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <button 
-                    className="flex justify-between items-center w-full bg-zinc-900 hover:bg-zinc-800 px-3 py-1 rounded-full"
+                    className={`flex justify-between items-center w-full ${timeRange === '30 Days' ? 'bg-red-600' : 'bg-zinc-900 hover:bg-zinc-800'} px-3 py-1 rounded-full`}
                     onClick={() => handleTimeRangeSelect('30 Days')}
                   >
                     <span className="text-xs">Last 30 Days</span>
@@ -472,7 +705,7 @@ export default function SearchFilters({
                   </button>
                   
                   <button 
-                    className="flex justify-between items-center w-full bg-zinc-900 hover:bg-zinc-800 px-3 py-1 rounded-full"
+                    className={`flex justify-between items-center w-full ${timeRange === '90 Days' ? 'bg-red-600' : 'bg-zinc-900 hover:bg-zinc-800'} px-3 py-1 rounded-full`}
                     onClick={() => handleTimeRangeSelect('90 Days')}
                   >
                     <span className="text-xs">Last 90 Days</span>
@@ -480,7 +713,7 @@ export default function SearchFilters({
                   </button>
                   
                   <button 
-                    className="flex justify-between items-center w-full bg-zinc-900 hover:bg-zinc-800 px-3 py-1 rounded-full"
+                    className={`flex justify-between items-center w-full ${timeRange === '180 Days' ? 'bg-red-600' : 'bg-zinc-900 hover:bg-zinc-800'} px-3 py-1 rounded-full`}
                     onClick={() => handleTimeRangeSelect('180 Days')}
                   >
                     <span className="text-xs">Last 180 Days</span>
@@ -488,7 +721,7 @@ export default function SearchFilters({
                   </button>
                   
                   <button 
-                    className="flex justify-between items-center w-full bg-zinc-900 hover:bg-zinc-800 px-3 py-1 rounded-full"
+                    className={`flex justify-between items-center w-full ${timeRange === '365 Days' ? 'bg-red-600' : 'bg-zinc-900 hover:bg-zinc-800'} px-3 py-1 rounded-full`}
                     onClick={() => handleTimeRangeSelect('365 Days')}
                   >
                     <span className="text-xs">Last 365 Days</span>
@@ -498,7 +731,7 @@ export default function SearchFilters({
                 
                 <div className="space-y-1">
                   <button 
-                    className="flex justify-between items-center w-full bg-zinc-900 hover:bg-zinc-800 px-3 py-1 rounded-full"
+                    className={`flex justify-between items-center w-full ${timeRange === '3 Years' ? 'bg-red-600' : 'bg-zinc-900 hover:bg-zinc-800'} px-3 py-1 rounded-full`}
                     onClick={() => handleTimeRangeSelect('3 Years')}
                   >
                     <span className="text-xs">Last 3 Years</span>
@@ -506,7 +739,7 @@ export default function SearchFilters({
                   </button>
                   
                   <button 
-                    className="flex justify-between items-center w-full bg-red-600 hover:bg-red-700 px-3 py-1 rounded-full"
+                    className={`flex justify-between items-center w-full ${timeRange === 'All Time' ? 'bg-red-600' : 'bg-zinc-900 hover:bg-zinc-800'} px-3 py-1 rounded-full`}
                     onClick={() => handleTimeRangeSelect('All Time')}
                   >
                     <span className="text-xs">All Time</span>
@@ -514,7 +747,7 @@ export default function SearchFilters({
                   </button>
                   
                   <button 
-                    className="flex justify-between items-center w-full bg-zinc-900 hover:bg-zinc-800 px-3 py-1 rounded-full"
+                    className={`flex justify-between items-center w-full ${timeRange === 'Custom' ? 'bg-red-600' : 'bg-zinc-900 hover:bg-zinc-800'} px-3 py-1 rounded-full`}
                     onClick={() => handleTimeRangeSelect('Custom')}
                   >
                     <span className="text-xs">Custom</span>
@@ -523,12 +756,26 @@ export default function SearchFilters({
                 </div>
               </div>
               
+              {/* Date input fields */}
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <div>
                   <input
                     type="text"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
+                    value={formatDateForDisplay(startDate)}
+                    onChange={(e) => {
+                      try {
+                        const date = new Date(e.target.value);
+                        if (!isNaN(date.getTime())) {
+                          setStartDate(date.toISOString().split('T')[0]);
+                          // If we're not already in Custom mode, switch to it
+                          if (timeRange !== 'Custom') {
+                            setTimeRange('Custom');
+                          }
+                        }
+                      } catch (e) {
+                        // Invalid date format, keep the existing value
+                      }
+                    }}
                     className="w-full bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-xs"
                     placeholder="Start date"
                   />
@@ -536,8 +783,21 @@ export default function SearchFilters({
                 <div>
                   <input
                     type="text"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
+                    value={formatDateForDisplay(endDate)}
+                    onChange={(e) => {
+                      try {
+                        const date = new Date(e.target.value);
+                        if (!isNaN(date.getTime())) {
+                          setEndDate(date.toISOString().split('T')[0]);
+                          // If we're not already in Custom mode, switch to it
+                          if (timeRange !== 'Custom') {
+                            setTimeRange('Custom');
+                          }
+                        }
+                      } catch (e) {
+                        // Invalid date format, keep the existing value
+                      }
+                    }}
                     className="w-full bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-xs"
                     placeholder="End date"
                   />
@@ -549,9 +809,21 @@ export default function SearchFilters({
                 <div className="text-xs">
                   {/* Month & Year Navigation */}
                   <div className="flex justify-between mb-1 text-xxs">
-                    <button className="text-gray-400 hover:text-red-600 rounded-full w-5 h-5 flex items-center justify-center">&lt;</button>
-                    <div className="text-gray-400 bg-zinc-800 px-2 py-0.5 rounded-full">{selectedMonth} {selectedYear}</div>
-                    <button className="text-gray-400 hover:text-red-600 rounded-full w-5 h-5 flex items-center justify-center">&gt;</button>
+                    <button 
+                      className="text-gray-400 hover:text-red-600 rounded-full w-5 h-5 flex items-center justify-center"
+                      onClick={handlePrevMonth}
+                    >
+                      &lt;
+                    </button>
+                    <div className="text-gray-400 bg-zinc-800 px-2 py-0.5 rounded-full">
+                      {new Date(selectedYear, selectedMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    </div>
+                    <button 
+                      className="text-gray-400 hover:text-red-600 rounded-full w-5 h-5 flex items-center justify-center"
+                      onClick={handleNextMonth}
+                    >
+                      &gt;
+                    </button>
                   </div>
                   
                   {/* Day headers */}
@@ -560,46 +832,19 @@ export default function SearchFilters({
                       <div key={day} className="text-center text-xxs text-gray-400">{day}</div>
                     ))}
                     
-                    {/* Calendar days - reduced size for compactness */}
-                    <div className="text-center py-0.5 text-xxs text-gray-400">30</div>
-                    <div className="text-center py-0.5 text-xxs text-gray-400">31</div>
-                    <div className="text-center py-0.5 text-xxs">1</div>
-                    <div className="text-center py-0.5 text-xxs">2</div>
-                    <div className="text-center py-0.5 text-xxs">3</div>
-                    <div className="text-center py-0.5 text-xxs">4</div>
-                    <div className="text-center py-0.5 text-xxs">5</div>
-                    
-                    <div className="text-center py-0.5 text-xxs">6</div>
-                    <div className="text-center py-0.5 text-xxs">7</div>
-                    <div className="text-center py-0.5 text-xxs">8</div>
-                    <div className="text-center py-0.5 text-xxs">9</div>
-                    <div className="text-center py-0.5 text-xxs">10</div>
-                    <div className="text-center py-0.5 text-xxs">11</div>
-                    <div className="text-center py-0.5 text-xxs">12</div>
-                    
-                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">13</div>
-                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">14</div>
-                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">15</div>
-                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">16</div>
-                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">17</div>
-                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">18</div>
-                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">19</div>
-                    
-                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">20</div>
-                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">21</div>
-                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">22</div>
-                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">23</div>
-                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">24</div>
-                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">25</div>
-                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">26</div>
-                    
-                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">27</div>
-                    <div className="text-center py-0.5 text-xxs bg-red-600 rounded-full">28</div>
-                    <div className="text-center py-0.5 text-xxs">1</div>
-                    <div className="text-center py-0.5 text-xxs">2</div>
-                    <div className="text-center py-0.5 text-xxs">3</div>
-                    <div className="text-center py-0.5 text-xxs">4</div>
-                    <div className="text-center py-0.5 text-xxs">5</div>
+                    {/* Calendar days - more dynamic based on the actual month */}
+                    {calendarDays.map((dateObj, i) => (
+                      <div 
+                        key={i}
+                        onClick={() => handleDateClick(dateObj.day, dateObj.month, dateObj.year)}
+                        className={`text-center py-0.5 text-xxs cursor-pointer hover:bg-red-600/50 rounded-full
+                          ${!dateObj.isCurrentMonth ? 'text-gray-400' : ''}
+                          ${isDateInRange(dateObj.day, dateObj.month, dateObj.year) ? 'bg-red-600' : ''}
+                        `}
+                      >
+                        {dateObj.day}
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
