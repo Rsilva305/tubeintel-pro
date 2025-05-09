@@ -972,13 +972,13 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                     
                     {/* Value display */}
                     <div className="flex justify-between items-center mt-2 mb-4">
-                      <div className="bg-gray-800 dark:bg-gray-700 rounded-md px-4 py-2 text-white text-center w-24">
+                      <div className="bg-gray-800 dark:bg-gray-700 rounded-full px-4 py-2 text-white text-center w-24">
                         {formatNumber(minViewsThreshold)}
                       </div>
                       <div className="text-gray-500 dark:text-gray-400 font-medium">
                         TO
                       </div>
-                      <div className="bg-gray-800 dark:bg-gray-700 rounded-md px-4 py-2 text-white text-center w-24">
+                      <div className="bg-gray-800 dark:bg-gray-700 rounded-full px-4 py-2 text-white text-center w-24">
                         {formatNumber(maxViewsThreshold)}+
                       </div>
                     </div>
@@ -1032,13 +1032,13 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                     
                     {/* Value display */}
                     <div className="flex justify-between items-center mt-2 mb-4">
-                      <div className="bg-gray-800 dark:bg-gray-700 rounded-md px-4 py-2 text-white text-center w-24">
+                      <div className="bg-gray-800 dark:bg-gray-700 rounded-full px-4 py-2 text-white text-center w-24">
                         {formatNumber(minSubscribersThreshold)}
                       </div>
                       <div className="text-gray-500 dark:text-gray-400 font-medium">
                         TO
                       </div>
-                      <div className="bg-gray-800 dark:bg-gray-700 rounded-md px-4 py-2 text-white text-center w-24">
+                      <div className="bg-gray-800 dark:bg-gray-700 rounded-full px-4 py-2 text-white text-center w-24">
                         {formatNumber(maxSubscribersThreshold)}+
                       </div>
                     </div>
@@ -1092,13 +1092,13 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                     
                     {/* Value display */}
                     <div className="flex justify-between items-center mt-2 mb-4">
-                      <div className="bg-gray-800 dark:bg-gray-700 rounded-md px-4 py-2 text-white text-center w-24">
+                      <div className="bg-gray-800 dark:bg-gray-700 rounded-full px-4 py-2 text-white text-center w-24">
                         {Math.floor(minVideoDurationThreshold / 60)}h {minVideoDurationThreshold % 60}m
                       </div>
                       <div className="text-gray-500 dark:text-gray-400 font-medium">
                         TO
                       </div>
-                      <div className="bg-gray-800 dark:bg-gray-700 rounded-md px-4 py-2 text-white text-center w-24">
+                      <div className="bg-gray-800 dark:bg-gray-700 rounded-full px-4 py-2 text-white text-center w-24">
                         {Math.floor(maxVideoDurationThreshold / 60)}h {maxVideoDurationThreshold % 60}m+
                       </div>
                     </div>
@@ -1152,13 +1152,13 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                     
                     {/* Value display */}
                     <div className="flex justify-between items-center mt-2 mb-4">
-                      <div className="bg-gray-800 dark:bg-gray-700 rounded-md px-4 py-2 text-white text-center w-24">
+                      <div className="bg-gray-800 dark:bg-gray-700 rounded-full px-4 py-2 text-white text-center w-24">
                         {minViewMultiplierThreshold < 10 ? minViewMultiplierThreshold.toFixed(1) : minViewMultiplierThreshold.toFixed(0)}x
                       </div>
                       <div className="text-gray-500 dark:text-gray-400 font-medium">
                         TO
                       </div>
-                      <div className="bg-gray-800 dark:bg-gray-700 rounded-md px-4 py-2 text-white text-center w-24">
+                      <div className="bg-gray-800 dark:bg-gray-700 rounded-full px-4 py-2 text-white text-center w-24">
                         {maxViewMultiplierThreshold < 10 ? maxViewMultiplierThreshold.toFixed(1) : maxViewMultiplierThreshold.toFixed(0)}x+
                       </div>
                     </div>
