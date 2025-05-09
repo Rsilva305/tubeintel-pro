@@ -73,6 +73,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
 
   // Add new state variables for similar videos section
   const [competitorVideos, setCompetitorVideos] = useState<Video[]>([]);
+  const [originalVideos, setOriginalVideos] = useState<Video[]>([]); // Store the original unfiltered videos
   const [similarVideos, setSimilarVideos] = useState<Video[]>([]);
   const [videoGridColumns, setVideoGridColumns] = useState<number>(6); // Default to 6 columns for video grid
   const [showVideoInfo, setShowVideoInfo] = useState<boolean>(true);
@@ -212,6 +213,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
       );
       
       setCompetitorVideos(sortedVideos);
+      setOriginalVideos(sortedVideos); // Store the original unfiltered videos
       setIsVideoLoading(false);
       setIsLoading(false);
     } catch (error) {
@@ -345,26 +347,57 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
 
   // Function to handle filter apply
   const applyFilter = () => {
-    // In a real app, this would filter based on the selected criteria
-    // Here's how we might filter the competitors based on the thresholds:
+    // First filter competitors based on the selected criteria
     const filteredCompetitors = competitors.filter(competitor => {
       const meetsViewsThreshold = competitor.viewCount >= minViewsThreshold && competitor.viewCount <= maxViewsThreshold;
       const meetsSubscribersThreshold = competitor.subscriberCount >= minSubscribersThreshold && competitor.subscriberCount <= maxSubscribersThreshold;
       
-      // For view multiplier we'd need data on median views per channel
-      // const hasHighMultiplier = competitor.viewMultiplier >= viewMultiplierThreshold;
-      
-      // For video duration we would need actual data about average video length
-      
-      // Check if within date range - would need actual data on when added
-      // const addedDate = new Date(competitor.addedAt);
-      // const isWithinDateRange = addedDate >= new Date(dateRange[0]) && addedDate <= new Date(dateRange[1]);
-      
-      return meetsViewsThreshold && meetsSubscribersThreshold; // && hasHighMultiplier;
+      return meetsViewsThreshold && meetsSubscribersThreshold;
     });
     
-    console.log(`Filter applied: Competitors matching criteria: ${filteredCompetitors.length}`);
-    // For demo purposes, we're not actually changing the displayed list
+    // Then filter videos based on competitor and video criteria
+    const filteredVideosResult = competitorVideos.filter(video => {
+      // Only include videos from filtered competitors
+      const fromFilteredCompetitor = filteredCompetitors.some(comp => comp.youtubeId === video.channelId);
+      
+      // Check video view count against thresholds
+      const meetsViewsThreshold = video.viewCount >= minViewsThreshold && video.viewCount <= maxViewsThreshold;
+      
+      // Check video duration threshold
+      // Since we don't have duration data in the Video interface, we'll assume all videos meet this criteria
+      // In a real implementation, we would fetch and store duration data
+      const meetsVideoDurationThreshold = true;
+      
+      // Check view multiplier if applicable (viewCount relative to channel average)
+      // This is an approximation since we don't have the actual median views for each channel
+      let meetsViewMultiplierThreshold = true;
+      const matchingCompetitor = competitors.find(comp => comp.youtubeId === video.channelId);
+      if (matchingCompetitor) {
+        const avgViews = matchingCompetitor.viewCount / Math.max(1, matchingCompetitor.videoCount);
+        const multiplier = video.viewCount / Math.max(1, avgViews);
+        meetsViewMultiplierThreshold = multiplier >= minViewMultiplierThreshold && multiplier <= maxViewMultiplierThreshold;
+      }
+      
+      // Check if within date range
+      const publishDate = new Date(video.publishedAt);
+      const isWithinDateRange = 
+        publishDate >= new Date(dateRange[0]) && 
+        publishDate <= new Date(dateRange[1]);
+      
+      return fromFilteredCompetitor && 
+             meetsViewsThreshold && 
+             meetsVideoDurationThreshold && 
+             meetsViewMultiplierThreshold &&
+             isWithinDateRange;
+    });
+    
+    // Display a message about how many videos were filtered
+    console.log(`Filter applied: ${filteredVideosResult.length} videos match the criteria out of ${competitorVideos.length} total videos`);
+    console.log(`Filter applied: ${filteredCompetitors.length} competitors match the criteria out of ${competitors.length} total competitors`);
+    
+    // Update the displayed videos
+    setCompetitorVideos(filteredVideosResult);
+    
     setIsFilterOpen(false);
   }
 
@@ -391,6 +424,11 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
     setTotalChannelViewsThreshold(0);
     setIncludeKeywords("");
     setExcludeKeywords("");
+    
+    // Restore original videos
+    setCompetitorVideos(originalVideos);
+    
+    console.log("Filters reset - restored all original videos");
   }
 
   // Helper function to safely parse input values
