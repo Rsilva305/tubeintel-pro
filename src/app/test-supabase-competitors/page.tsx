@@ -169,6 +169,43 @@ export default function TestSupabaseCompetitorsPage() {
         </p>
       </div>
       
+      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <h2 className="text-lg font-medium mb-2">Authentication Status</h2>
+        <div className="text-sm">
+          <p className="mb-2">
+            Authentication is critical for saving competitor lists due to Row Level Security (RLS) policies. 
+            If you see errors like <code className="bg-red-50 px-1 py-0.5 rounded">violates row-level security policy</code>, 
+            you need proper Supabase authentication.
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-2 bg-white p-3 rounded">
+            <div className="font-medium">Supabase Auth Status:</div>
+            <div id="supabase-auth-status">Checking...</div>
+            
+            <div className="font-medium">localStorage User:</div>
+            <div id="local-storage-status">Checking...</div>
+          </div>
+          <script dangerouslySetInnerHTML={{ __html: `
+            // Check authentication status
+            (async function() {
+              try {
+                // Check Supabase authentication directly
+                const supabaseAuth = await fetch('/api/auth/check');
+                const authData = await supabaseAuth.json();
+                document.getElementById('supabase-auth-status').innerText = 
+                  authData.authenticated ? '✅ Authenticated' : '❌ Not authenticated';
+                
+                // Check localStorage
+                const localUser = localStorage.getItem('user');
+                document.getElementById('local-storage-status').innerText = 
+                  localUser ? '✅ Present' : '❌ Not present';
+              } catch (e) {
+                console.error('Auth check failed:', e);
+              }
+            })();
+          `}} />
+        </div>
+      </div>
+      
       <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
         <h2 className="text-lg font-medium mb-2">Test Creating Competitor List</h2>
         <div className="mb-3">

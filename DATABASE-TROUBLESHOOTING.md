@@ -36,11 +36,21 @@ You can test this functionality by visiting `/test-supabase-competitors` which a
 
 ### 3. Authentication Issues
 
-If you're having authentication issues:
+If you encounter the error "new row violates row-level security policy for table competitor_lists", this indicates an authentication issue:
 
-1. Visit the test page mentioned above to check your authentication status
-2. If you're not authenticated, try logging out and back in
-3. Check the browser console for any authentication errors
+1. The competitor lists table is protected by Row Level Security (RLS) policies
+2. These policies require you to be properly authenticated with Supabase
+3. Having only localStorage data is not sufficient for these security policies
+
+**How to Fix Authentication Issues**:
+- A debugging panel will appear on the competitors page if authentication issues are detected
+- Use the "Fix Authentication" button to sign in directly with Supabase
+- After signing in, you should be able to create competitor lists
+
+**Technical Details**:
+- Recent changes now prioritize direct Supabase authentication over localStorage data
+- This ensures proper RLS policy compliance 
+- If you see this error, it usually means you're logged in with localStorage data only, not with Supabase
 
 ### 4. Local Development Solution
 
