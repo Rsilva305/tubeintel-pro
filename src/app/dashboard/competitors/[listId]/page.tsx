@@ -1008,16 +1008,44 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                       />
                     </div>
                     
-                    {/* Value display */}
+                    {/* Value display with editable inputs */}
                     <div className="flex justify-between items-center mt-2 mb-4">
-                      <div className="bg-gray-800 dark:bg-gray-700 rounded-full px-4 py-2 text-white text-center w-24">
-                        {formatNumber(minViewsThreshold)}
+                      <div className="bg-gray-800 dark:bg-gray-700 rounded-full px-4 py-2 text-white text-center w-24 relative">
+                        <input
+                          type="text"
+                          value={formatNumber(minViewsThreshold)}
+                          onChange={(e) => {
+                            // Try to parse the formatted value
+                            const rawValue = e.target.value.replace(/[KkMm]/g, '');
+                            const multiplier = e.target.value.toUpperCase().includes('K') ? 1000 : 
+                                              e.target.value.toUpperCase().includes('M') ? 1000000 : 1;
+                            const value = parseFloat(rawValue) * multiplier;
+                            if (!isNaN(value)) {
+                              setMinViewsThreshold(Math.min(value, maxViewsThreshold));
+                            }
+                          }}
+                          className="w-full bg-transparent text-center focus:outline-none"
+                        />
                       </div>
                       <div className="text-gray-500 dark:text-gray-400 font-medium">
                         TO
                       </div>
-                      <div className="bg-gray-800 dark:bg-gray-700 rounded-full px-4 py-2 text-white text-center w-24">
-                        {formatNumber(maxViewsThreshold)}+
+                      <div className="bg-gray-800 dark:bg-gray-700 rounded-full px-4 py-2 text-white text-center w-24 relative">
+                        <input
+                          type="text"
+                          value={formatNumber(maxViewsThreshold) + "+"}
+                          onChange={(e) => {
+                            // Remove the "+" and try to parse the formatted value
+                            const rawValue = e.target.value.replace(/[KkMm+]/g, '');
+                            const multiplier = e.target.value.toUpperCase().includes('K') ? 1000 : 
+                                              e.target.value.toUpperCase().includes('M') ? 1000000 : 1;
+                            const value = parseFloat(rawValue) * multiplier;
+                            if (!isNaN(value)) {
+                              setMaxViewsThreshold(Math.max(value, minViewsThreshold));
+                            }
+                          }}
+                          className="w-full bg-transparent text-center focus:outline-none"
+                        />
                       </div>
                     </div>
                   </div>
@@ -1068,16 +1096,44 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                       />
                     </div>
                     
-                    {/* Value display */}
+                    {/* Value display with editable inputs */}
                     <div className="flex justify-between items-center mt-2 mb-4">
-                      <div className="bg-gray-800 dark:bg-gray-700 rounded-full px-4 py-2 text-white text-center w-24">
-                        {formatNumber(minSubscribersThreshold)}
+                      <div className="bg-gray-800 dark:bg-gray-700 rounded-full px-4 py-2 text-white text-center w-24 relative">
+                        <input
+                          type="text"
+                          value={formatNumber(minSubscribersThreshold)}
+                          onChange={(e) => {
+                            // Try to parse the formatted value
+                            const rawValue = e.target.value.replace(/[KkMm]/g, '');
+                            const multiplier = e.target.value.toUpperCase().includes('K') ? 1000 : 
+                                              e.target.value.toUpperCase().includes('M') ? 1000000 : 1;
+                            const value = parseFloat(rawValue) * multiplier;
+                            if (!isNaN(value)) {
+                              setMinSubscribersThreshold(Math.min(value, maxSubscribersThreshold));
+                            }
+                          }}
+                          className="w-full bg-transparent text-center focus:outline-none"
+                        />
                       </div>
                       <div className="text-gray-500 dark:text-gray-400 font-medium">
                         TO
                       </div>
-                      <div className="bg-gray-800 dark:bg-gray-700 rounded-full px-4 py-2 text-white text-center w-24">
-                        {formatNumber(maxSubscribersThreshold)}+
+                      <div className="bg-gray-800 dark:bg-gray-700 rounded-full px-4 py-2 text-white text-center w-24 relative">
+                        <input
+                          type="text"
+                          value={formatNumber(maxSubscribersThreshold) + "+"}
+                          onChange={(e) => {
+                            // Remove the "+" and try to parse the formatted value
+                            const rawValue = e.target.value.replace(/[KkMm+]/g, '');
+                            const multiplier = e.target.value.toUpperCase().includes('K') ? 1000 : 
+                                              e.target.value.toUpperCase().includes('M') ? 1000000 : 1;
+                            const value = parseFloat(rawValue) * multiplier;
+                            if (!isNaN(value)) {
+                              setMaxSubscribersThreshold(Math.max(value, minSubscribersThreshold));
+                            }
+                          }}
+                          className="w-full bg-transparent text-center focus:outline-none"
+                        />
                       </div>
                     </div>
                   </div>
@@ -1128,16 +1184,44 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                       />
                     </div>
                     
-                    {/* Value display */}
+                    {/* Value display with editable inputs */}
                     <div className="flex justify-between items-center mt-2 mb-4">
-                      <div className="bg-gray-800 dark:bg-gray-700 rounded-full px-4 py-2 text-white text-center w-24">
-                        {Math.floor(minVideoDurationThreshold / 60)}h {minVideoDurationThreshold % 60}m
+                      <div className="bg-gray-800 dark:bg-gray-700 rounded-full px-4 py-2 text-white text-center w-24 relative">
+                        <input
+                          type="text"
+                          value={`${Math.floor(minVideoDurationThreshold / 60)}h ${minVideoDurationThreshold % 60}m`}
+                          onChange={(e) => {
+                            // Try to parse the hours and minutes from the formatted string
+                            const match = e.target.value.match(/(\d+)h\s*(\d*)m?/);
+                            if (match) {
+                              const hours = parseInt(match[1]) || 0;
+                              const minutes = parseInt(match[2]) || 0;
+                              const totalMinutes = hours * 60 + minutes;
+                              setMinVideoDurationThreshold(Math.min(totalMinutes, maxVideoDurationThreshold));
+                            }
+                          }}
+                          className="w-full bg-transparent text-center focus:outline-none"
+                        />
                       </div>
                       <div className="text-gray-500 dark:text-gray-400 font-medium">
                         TO
                       </div>
-                      <div className="bg-gray-800 dark:bg-gray-700 rounded-full px-4 py-2 text-white text-center w-24">
-                        {Math.floor(maxVideoDurationThreshold / 60)}h {maxVideoDurationThreshold % 60}m+
+                      <div className="bg-gray-800 dark:bg-gray-700 rounded-full px-4 py-2 text-white text-center w-24 relative">
+                        <input
+                          type="text"
+                          value={`${Math.floor(maxVideoDurationThreshold / 60)}h ${maxVideoDurationThreshold % 60}m+`}
+                          onChange={(e) => {
+                            // Try to parse the hours and minutes from the formatted string
+                            const match = e.target.value.match(/(\d+)h\s*(\d*)m?/);
+                            if (match) {
+                              const hours = parseInt(match[1]) || 0;
+                              const minutes = parseInt(match[2]) || 0;
+                              const totalMinutes = hours * 60 + minutes;
+                              setMaxVideoDurationThreshold(Math.max(totalMinutes, minVideoDurationThreshold));
+                            }
+                          }}
+                          className="w-full bg-transparent text-center focus:outline-none"
+                        />
                       </div>
                     </div>
                   </div>
@@ -1188,16 +1272,40 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                       />
                     </div>
                     
-                    {/* Value display */}
+                    {/* Value display with editable inputs */}
                     <div className="flex justify-between items-center mt-2 mb-4">
-                      <div className="bg-gray-800 dark:bg-gray-700 rounded-full px-4 py-2 text-white text-center w-24">
-                        {minViewMultiplierThreshold < 10 ? minViewMultiplierThreshold.toFixed(1) : minViewMultiplierThreshold.toFixed(0)}x
+                      <div className="bg-gray-800 dark:bg-gray-700 rounded-full px-4 py-2 text-white text-center w-24 relative">
+                        <input
+                          type="text"
+                          value={minViewMultiplierThreshold < 10 ? minViewMultiplierThreshold.toFixed(1) + "x" : minViewMultiplierThreshold.toFixed(0) + "x"}
+                          onChange={(e) => {
+                            // Try to parse the formatted value
+                            const rawValue = e.target.value.replace("x", "");
+                            const value = parseFloat(rawValue);
+                            if (!isNaN(value)) {
+                              setMinViewMultiplierThreshold(Math.min(value, maxViewMultiplierThreshold));
+                            }
+                          }}
+                          className="w-full bg-transparent text-center focus:outline-none"
+                        />
                       </div>
                       <div className="text-gray-500 dark:text-gray-400 font-medium">
                         TO
                       </div>
-                      <div className="bg-gray-800 dark:bg-gray-700 rounded-full px-4 py-2 text-white text-center w-24">
-                        {maxViewMultiplierThreshold < 10 ? maxViewMultiplierThreshold.toFixed(1) : maxViewMultiplierThreshold.toFixed(0)}x+
+                      <div className="bg-gray-800 dark:bg-gray-700 rounded-full px-4 py-2 text-white text-center w-24 relative">
+                        <input
+                          type="text"
+                          value={(maxViewMultiplierThreshold < 10 ? maxViewMultiplierThreshold.toFixed(1) : maxViewMultiplierThreshold.toFixed(0)) + "x+"}
+                          onChange={(e) => {
+                            // Try to parse the formatted value
+                            const rawValue = e.target.value.replace(/[x+]/g, "");
+                            const value = parseFloat(rawValue);
+                            if (!isNaN(value)) {
+                              setMaxViewMultiplierThreshold(Math.max(value, minViewMultiplierThreshold));
+                            }
+                          }}
+                          className="w-full bg-transparent text-center focus:outline-none"
+                        />
                       </div>
                     </div>
                   </div>
