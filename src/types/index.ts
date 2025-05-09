@@ -48,6 +48,7 @@ export interface Video {
   likeCount: number;
   commentCount: number;
   vph: number; // Views Per Hour
+  performanceScore?: number;
 }
 
 // Alert types
