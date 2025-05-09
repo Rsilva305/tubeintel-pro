@@ -1321,7 +1321,10 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                         {channelSearchResults.map((channel) => (
                           <li 
                             key={channel.id}
-                            onClick={() => selectChannel(channel)}
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevent event from bubbling up
+                              selectChannel(channel);
+                            }}
                             className="flex items-center p-3 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer"
                           >
                             <img 

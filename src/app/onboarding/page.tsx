@@ -328,7 +328,10 @@ export default function OnboardingPage() {
                       {searchResults.map((channel) => (
                         <li 
                           key={channel.id}
-                          onClick={() => selectChannel(channel)}
+                          onClick={(e: React.MouseEvent<HTMLLIElement>) => {
+                            e.stopPropagation();
+                            selectChannel(channel);
+                          }}
                           className="flex items-center p-3 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer"
                         >
                           <img 
