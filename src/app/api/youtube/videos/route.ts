@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const id = searchParams.get('id');
     const channelId = searchParams.get('channelId');
     const maxResults = searchParams.get('maxResults') || '10';
-    const part = searchParams.get('part') || 'snippet,statistics';
+    const part = searchParams.get('part') || 'snippet,statistics,contentDetails';
     
     // Different API endpoints based on parameters
     if (id) {

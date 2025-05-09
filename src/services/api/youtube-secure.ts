@@ -3,7 +3,7 @@ import { IYouTubeService } from './interfaces';
 
 // Format a YouTube video API response to our app's Video type
 const formatVideo = (item: any): Video => {
-  const { id, snippet, statistics } = item;
+  const { id, snippet, statistics, contentDetails } = item;
   
   return {
     id: id,
@@ -16,7 +16,8 @@ const formatVideo = (item: any): Video => {
     viewCount: parseInt(statistics.viewCount) || 0,
     likeCount: parseInt(statistics.likeCount) || 0,
     commentCount: parseInt(statistics.commentCount) || 0,
-    vph: calculateVPH(parseInt(statistics.viewCount), snippet.publishedAt)
+    vph: calculateVPH(parseInt(statistics.viewCount), snippet.publishedAt),
+    duration: contentDetails?.duration
   };
 };
 

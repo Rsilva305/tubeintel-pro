@@ -26,6 +26,25 @@ interface ChannelSearchResult {
   subscriberCount?: string;
 }
 
+// Function to format duration from ISO 8601 format (PT1H2M3S) to HH:MM:SS format
+const formatDuration = (isoDuration: string): string => {
+  if (!isoDuration) return "0:00";
+  
+  // Match hours, minutes, and seconds
+  const matches = isoDuration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!matches) return "0:00";
+  
+  const hours = parseInt(matches[1] || '0');
+  const minutes = parseInt(matches[2] || '0');
+  const seconds = parseInt(matches[3] || '0');
+  
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  } else {
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }
+};
+
 export default function CompetitorListDetail({ params }: { params: { listId: string } }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -114,7 +133,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
     return value.toFixed(precision);
   };
 
-  // Function to generate a realistic duration string based on video ID
+  // Function to generate a realistic duration string based on video ID - used as fallback when no duration data is available
   const getVideoDuration = (videoId: string) => {
     // Convert video ID to a deterministic number
     const hash = videoId.split('').reduce((acc, char) => {
@@ -244,6 +263,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
     }
   };
   
+  // Modify fetchCompetitorVideos function to fetch video details including duration
   const fetchCompetitorVideos = async (competitorsList: Competitor[]) => {
     try {
       setIsVideoLoading(true);
@@ -257,6 +277,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
         try {
           console.log(`Fetching videos for channel ${competitor.name} (${competitor.youtubeId})...`);
           const videos = await secureYoutubeService.getVideosByChannelId(competitor.youtubeId, 10);
+          
           allVideos.push(...videos);
           console.log(`Found ${videos.length} videos for channel ${competitor.name}`);
         } catch (error) {
@@ -1817,7 +1838,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                           <FaPlay className="text-white text-4xl" />
                         </div>
                         <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
-                          {getVideoDuration(video.youtubeId)}
+                          {video.duration ? formatDuration(video.duration) : getVideoDuration(video.youtubeId)}
                         </div>
                       </div>
                       
@@ -1867,7 +1888,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                     <FaPlay className="text-white text-4xl" />
                   </div>
                   <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
-                    {getVideoDuration(video.youtubeId)}
+                    {video.duration ? formatDuration(video.duration) : getVideoDuration(video.youtubeId)}
                   </div>
                 </div>
                 
