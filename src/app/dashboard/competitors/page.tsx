@@ -26,6 +26,8 @@ export default function CompetitorsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [listCategory, setListCategory] = useState('default');
   const menuRef = useRef<HTMLDivElement>(null);
+  const [isCreatingList, setIsCreatingList] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -245,6 +247,8 @@ export default function CompetitorsPage() {
     if (!listName.trim()) return;
     
     try {
+      setIsCreatingList(true); // Add loading state
+      
       if (editingListId !== null) {
         // Edit existing list
         console.log(`Updating list ${editingListId} with name: ${listName}`);
@@ -290,28 +294,29 @@ export default function CompetitorsPage() {
             
             // Save to localStorage for pinned status
             const savedLists = localStorage.getItem('competitorLists');
-            if (savedLists) {
-              const parsedLists = JSON.parse(savedLists) as CompetitorList[];
-              localStorage.setItem('competitorLists', JSON.stringify([...parsedLists, newList]));
-            } else {
-              localStorage.setItem('competitorLists', JSON.stringify([newList]));
-            }
+            const lists = savedLists ? JSON.parse(savedLists) : [];
+            lists.push(newList);
+            localStorage.setItem('competitorLists', JSON.stringify(lists));
+            
+            closeModal();
           } catch (innerError) {
-            console.error("Detailed error creating list:", innerError);
+            console.error("Inner error creating list:", innerError);
             // Show error message to user
-            alert(`Error creating list: ${innerError instanceof Error ? innerError.message : 'Unknown error'}`);
+            setError(innerError instanceof Error ? innerError.message : 'Unknown error creating list');
+            
+            // Don't close modal if there was an error
           }
-        } catch (error) {
-          console.error('Error creating list:', error);
-          alert(`Failed to create list. Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        } catch (createError) {
+          console.error("Error creating list:", createError);
+          setError(createError instanceof Error ? createError.message : 'Unknown error');
         }
       }
     } catch (error) {
-      console.error('Error saving competitor list:', error);
-      alert("An error occurred while saving. Please try again.");
+      console.error("Outer error saving list:", error);
+      setError(error instanceof Error ? error.message : 'Failed to save list');
+    } finally {
+      setIsCreatingList(false);
     }
-    
-    closeModal();
   };
 
   const toggleMenu = (id: string, e: React.MouseEvent) => {
@@ -548,49 +553,51 @@ export default function CompetitorsPage() {
       {/* Modal Dialog */}
       {isModalOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-          onClick={(e) => e.stopPropagation()}
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40"
+          onClick={(e) => e.target === e.currentTarget && closeModal()}
         >
-          <div 
-            className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md p-6 relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button 
-              onClick={closeModal} 
-              className="absolute top-4 right-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
-            >
-              <FaTimes size={20} />
-            </button>
-            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">
-              {editingListId !== null ? 'Rename competitor list' : 'Create competitor list'}
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-xl font-bold mb-4 dark:text-white">
+              {editingListId ? 'Edit List' : 'Create New List'}
             </h3>
+            
             <div className="mb-4">
-              <label className="block text-gray-600 dark:text-gray-300 text-sm mb-2">Name</label>
-              <input 
-                type="text" 
+              <label htmlFor="listName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                List Name
+              </label>
+              <input
+                type="text"
+                id="listName"
                 value={listName}
                 onChange={(e) => setListName(e.target.value)}
-                className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Enter list name"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
+                placeholder="My Competitors"
                 autoFocus
               />
-              <p className="mt-1 text-xs text-gray-500">
-                Use keywords like 'Gaming', 'Tech', 'Music', etc. to automatically assign an icon
-              </p>
             </div>
-            <div className="flex justify-end">
-              <button 
+
+            {/* Add error display */}
+            {error && (
+              <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-md text-sm">
+                {error}
+              </div>
+            )}
+            
+            <div className="flex justify-end space-x-3">
+              <button
+                type="button"
                 onClick={closeModal}
-                className="bg-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 px-4 py-2 rounded-xl mr-2"
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
               >
                 Cancel
               </button>
-              <button 
+              <button
+                type="button"
                 onClick={handleSave}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl"
-                disabled={!listName.trim()}
+                disabled={!listName.trim() || isCreatingList}
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {editingListId !== null ? 'Save' : 'Create'}
+                {isCreatingList ? 'Saving...' : (editingListId ? 'Update' : 'Create')}
               </button>
             </div>
           </div>
