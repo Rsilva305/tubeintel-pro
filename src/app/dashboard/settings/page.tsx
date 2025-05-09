@@ -5,6 +5,7 @@ import { channelsApi } from '@/services/api';
 import { Channel, Profile } from '@/types';
 import { supabase } from '@/lib/supabase';
 import { getCurrentUser } from '@/lib/supabase';
+import ProfileDebugger from '@/components/ProfileDebugger';
 
 // Define the search result type
 interface ChannelSearchResult {
@@ -33,19 +34,55 @@ export default function SettingsPage() {
           throw new Error('User not authenticated');
         }
 
-        // Get channel ID from Supabase
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('youtube_channel_id')
-          .eq('id', user.id)
-          .single<Pick<Profile, 'youtube_channel_id'>>();
-
-        if (error) {
-          throw new Error('Failed to load profile: ' + error.message);
+        // Get channel ID from Supabase with more robust error handling
+        let profile = null;
+        try {
+          // First try with .single()
+          const { data: singleProfile, error: singleError } = await supabase
+            .from('profiles')
+            .select('youtube_channel_id')
+            .eq('id', user.id)
+            .single<Pick<Profile, 'youtube_channel_id'>>();
+          
+          if (!singleError) {
+            profile = singleProfile;
+          } else {
+            console.warn('Error with single profile query:', singleError.message);
+            
+            // If single fails, try to get all profiles for the user
+            const { data: profiles, error: profilesError } = await supabase
+              .from('profiles')
+              .select('youtube_channel_id')
+              .eq('id', user.id);
+              
+            if (profilesError) {
+              throw new Error('Failed to load profile: ' + profilesError.message);
+            }
+            
+            // If we have exactly one profile, use it
+            if (profiles && profiles.length === 1) {
+              profile = profiles[0];
+            } else if (profiles && profiles.length > 1) {
+              // Multiple profiles found - use the first one with a channel ID
+              const profileWithChannel = profiles.find(p => p.youtube_channel_id);
+              if (profileWithChannel) {
+                profile = profileWithChannel;
+                console.warn('Multiple profiles found for user, using the first one with a channel ID');
+              } else {
+                // No profiles with channel ID, use the first one
+                profile = profiles[0];
+                console.warn('Multiple profiles found for user, using the first one (no channel ID found)');
+              }
+            }
+            // We don't create a profile here because that's handled by the signup process
+          }
+        } catch (profileError) {
+          console.error('Profile retrieval error:', profileError);
+          throw new Error('Failed to load profile: ' + (profileError instanceof Error ? profileError.message : String(profileError)));
         }
 
         if (profile?.youtube_channel_id) {
-          setChannelId(profile.youtube_channel_id);
+          setChannelId(profile.youtube_channel_id as string);
           setIsLoading(true);
           const channel = await channelsApi.getMyChannel();
           setConnectedChannel(channel);
@@ -54,7 +91,7 @@ export default function SettingsPage() {
         console.error('Error loading channel:', error);
         setMessage({
           type: 'error',
-          text: 'Error loading channel. Please reconnect your channel.'
+          text: error instanceof Error ? error.message : 'Error loading channel. Please reconnect your channel.'
         });
       } finally {
         setIsLoading(false);
@@ -158,19 +195,86 @@ export default function SettingsPage() {
         throw new Error('User not authenticated');
       }
 
-      // Update the profile in Supabase
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ 
-          youtube_channel_id: extractedChannelId
-        })
-        .eq('id', user.id);
-        
-      if (updateError) {
-        throw new Error('Failed to update profile: ' + updateError.message);
+      // TEMPORARY WORKAROUND:
+      // First import the profile manager
+      const { storeChannelId } = await import('@/lib/profile-manager');
+      let updateSucceeded = false;
+      
+      try {
+        // Try to find the profile first to handle possible duplicates
+        const { data: profiles, error: findError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', user.id);
+          
+        if (findError) {
+          console.warn('Failed to check profile:', findError.message);
+        } else {
+          let updateError = null;
+          
+          if (!profiles || profiles.length === 0) {
+            // No profile exists, create one
+            const { error: insertError } = await supabase
+              .from('profiles')
+              .insert({ 
+                id: user.id,
+                email: user.email,
+                username: user.email?.split('@')[0] || null,
+                youtube_channel_id: extractedChannelId
+              });
+              
+            updateError = insertError;
+          } else if (profiles.length === 1) {
+            // One profile exists, update it
+            const { error: singleUpdateError } = await supabase
+              .from('profiles')
+              .update({ 
+                youtube_channel_id: extractedChannelId
+              })
+              .eq('id', user.id);
+              
+            updateError = singleUpdateError;
+          } else {
+            // Multiple profiles exist, update all of them
+            // Note: This is a rare edge case but good to handle
+            console.warn(`Found ${profiles.length} profiles for user ${user.id}, updating all`);
+            
+            for (const profile of profiles) {
+              const { error: multiUpdateError } = await supabase
+                .from('profiles')
+                .update({ 
+                  youtube_channel_id: extractedChannelId
+                })
+                .eq('id', profile.id);
+                
+              if (multiUpdateError) {
+                console.error(`Error updating profile ${profile.id}:`, multiUpdateError);
+                updateError = multiUpdateError;
+                break;
+              }
+            }
+          }
+          
+          // Check if update was successful
+          updateSucceeded = !updateError;
+          
+          if (updateError) {
+            console.warn('Supabase update failed:', updateError.message);
+          }
+        }
+      } catch (error) {
+        console.warn('Error during Supabase update attempt:', error);
+      }
+      
+      // If Supabase update failed, use localStorage fallback
+      if (!updateSucceeded) {
+        // Store in localStorage as a workaround
+        await storeChannelId(extractedChannelId as string);
+        console.log('Successfully stored channel ID in localStorage as fallback');
       }
 
       // Fetch channel info to verify and display
+      // The channelsApi is already set up to use localStorage as a fallback
       const channel = await channelsApi.getMyChannel();
       setConnectedChannel(channel);
       setChannelId(extractedChannelId); // Update input with the actual channel ID
@@ -409,6 +513,11 @@ export default function SettingsPage() {
             </a>
           </p>
         </div>
+      </div>
+      
+      {/* Add ProfileDebugger component for troubleshooting */}
+      <div className="mt-6 text-center">
+        <ProfileDebugger />
       </div>
     </div>
   );
