@@ -9,11 +9,18 @@ import { getUseRealApi } from './config';
 // Cache for list name to ID mapping
 const listIdCache: Record<string, string> = {};
 
+// Always use real API for competitor lists
+const useRealApiForCompetitors = () => {
+  // Force true for competitor lists, regardless of API toggle state
+  return true;
+};
+
 export const competitorsAdapter = {
   // Get all competitors from a specific list (or default list)
   getAllCompetitors: async (): Promise<Competitor[]> => {
     try {
-      if (!getUseRealApi()) {
+      // Always use real API for competitor lists
+      if (!useRealApiForCompetitors()) {
         // Use the original mock implementation when in demo mode
         return (await import('./index')).competitorsApi.getAllCompetitors();
       }
@@ -52,7 +59,8 @@ export const competitorsAdapter = {
       }));
     } catch (error) {
       console.error('Error in competitorsAdapter.getAllCompetitors:', error);
-      // Fallback to original implementation
+      
+      // Fallback to original implementation if there's an error
       return (await import('./index')).competitorsApi.getAllCompetitors();
     }
   },
@@ -97,7 +105,7 @@ export const competitorsAdapter = {
   // Add a new competitor
   addCompetitor: async (data: Omit<Competitor, 'id'>): Promise<Competitor> => {
     try {
-      if (!getUseRealApi()) {
+      if (!useRealApiForCompetitors()) {
         // Use the original mock implementation when in demo mode
         return (await import('./index')).competitorsApi.addCompetitor(data);
       }
@@ -155,12 +163,12 @@ export const competitorsAdapter = {
   // Remove a competitor
   removeCompetitor: async (id: string): Promise<void> => {
     try {
-      if (!getUseRealApi()) {
+      if (!useRealApiForCompetitors()) {
         // Use the original mock implementation when in demo mode
         return (await import('./index')).competitorsApi.removeCompetitor(id);
       }
       
-      // Remove the competitor using our new API
+      // Just remove the tracked competitor
       await competitorListsApi.removeCompetitorFromList(id);
     } catch (error) {
       console.error('Error in competitorsAdapter.removeCompetitor:', error);
@@ -172,7 +180,7 @@ export const competitorsAdapter = {
   // Get competitors for a specific named list
   getCompetitorsForList: async (listName: string): Promise<Competitor[]> => {
     try {
-      if (!getUseRealApi()) {
+      if (!useRealApiForCompetitors()) {
         // In demo mode, just return all competitors
         return (await import('./index')).competitorsApi.getAllCompetitors();
       }

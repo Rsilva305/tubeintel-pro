@@ -16,7 +16,20 @@ We've added a diagnostic page to help identify and fix database issues:
 
 3. If any issues are detected, the page provides a "Fix Missing Tables" button to create the required tables.
 
-### 2. Authentication Issues
+### 2. API Mode Settings
+
+**IMPORTANT UPDATE**: We've modified the application to always use Supabase for competitor lists, regardless of the API mode toggle setting. This ensures that:
+
+1. Your competitor lists are always saved to the database
+2. The API mode toggle (which appears in the bottom right corner of some pages) doesn't affect competitor list saving
+3. Your data is consistently persisted
+
+You can test this functionality by visiting `/test-supabase-competitors` which allows you to:
+- Check if competitor lists are being saved properly
+- Test direct Supabase queries
+- See detailed diagnostic information
+
+### 3. Authentication Issues
 
 If you're having authentication issues:
 
@@ -24,13 +37,13 @@ If you're having authentication issues:
 2. If you're not authenticated, try logging out and back in
 3. Check the browser console for any authentication errors
 
-### 3. Local Development Solution
+### 4. Local Development Solution
 
 We've implemented a fallback mechanism that stores competitor lists in localStorage when the database is unavailable. This allows you to continue working even if there are database issues.
 
 When the database becomes available again, lists created locally will be automatically synced to the database.
 
-### 4. Manual Database Setup
+### 5. Manual Database Setup
 
 If you need to manually set up the database tables:
 
