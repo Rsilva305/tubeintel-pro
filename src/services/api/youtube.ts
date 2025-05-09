@@ -34,22 +34,42 @@ const youtubeApi = axios.create({
 const cache = {
   channels: new Map<string, { data: any, timestamp: number }>(),
   videos: new Map<string, { data: any, timestamp: number }>(),
-  // Cache duration set to 4 hours (14400000 ms) to conserve API credits during development
-  // This can be adjusted based on needs and API quota availability
-  CACHE_DURATION: 4 * 60 * 60 * 1000, // 4 hours in milliseconds
+  search: new Map<string, { data: any, timestamp: number }>(),
+  
+  // Tiered cache durations for different data types
+  CACHE_DURATIONS: {
+    // Channel data changes infrequently - 24 hours
+    CHANNEL: 24 * 60 * 60 * 1000,
+    // Video metadata (stats) update more frequently - 4 hours
+    VIDEO: 4 * 60 * 60 * 1000,
+    // Search results may change more frequently - 2 hours
+    SEARCH: 2 * 60 * 60 * 1000,
+    // Video performance data is most volatile - 1 hour
+    VIDEO_STATS: 1 * 60 * 60 * 1000
+  },
 
-  set(key: string, data: any, type: 'channels' | 'videos') {
+  set(key: string, data: any, type: 'channels' | 'videos' | 'search') {
     this[type].set(key, {
       data,
       timestamp: Date.now()
     });
   },
 
-  get(key: string, type: 'channels' | 'videos') {
+  get(key: string, type: 'channels' | 'videos' | 'search', cacheType?: 'CHANNEL' | 'VIDEO' | 'SEARCH' | 'VIDEO_STATS') {
     const item = this[type].get(key);
     if (!item) return null;
     
-    if (Date.now() - item.timestamp > this.CACHE_DURATION) {
+    // Determine the appropriate cache duration based on data type
+    const cacheDuration = cacheType 
+      ? this.CACHE_DURATIONS[cacheType]
+      : type === 'channels' 
+        ? this.CACHE_DURATIONS.CHANNEL 
+        : type === 'videos' 
+          ? this.CACHE_DURATIONS.VIDEO
+          : this.CACHE_DURATIONS.SEARCH;
+    
+    // Check if the cache has expired
+    if (Date.now() - item.timestamp > cacheDuration) {
       this[type].delete(key);
       return null;
     }
@@ -60,6 +80,7 @@ const cache = {
   clear() {
     this.channels.clear();
     this.videos.clear();
+    this.search.clear();
   }
 };
 
@@ -200,7 +221,7 @@ export const youtubeService: IYouTubeService = {
   getChannelById: async (channelId: string): Promise<Channel> => {
     try {
       // Check cache first
-      const cachedChannel = cache.get(channelId, 'channels');
+      const cachedChannel = cache.get(channelId, 'channels', 'CHANNEL');
       if (cachedChannel) {
         console.log('Using cached channel data for:', channelId);
         return cachedChannel;
@@ -231,7 +252,7 @@ export const youtubeService: IYouTubeService = {
     try {
       // Check cache first
       const cacheKey = `username:${username}`;
-      const cachedId = cache.get(cacheKey, 'channels');
+      const cachedId = cache.get(cacheKey, 'channels', 'CHANNEL');
       if (cachedId) {
         console.log('Using cached channel ID for username:', username);
         return cachedId;
@@ -282,7 +303,7 @@ export const youtubeService: IYouTubeService = {
     try {
       // Check cache first
       const cacheKey = `search:${query}`;
-      const cachedResults = cache.get(cacheKey, 'channels');
+      const cachedResults = cache.get(cacheKey, 'search', 'SEARCH');
       if (cachedResults) {
         console.log('Using cached search results for:', query);
         return cachedResults;
@@ -324,7 +345,7 @@ export const youtubeService: IYouTubeService = {
         const channels = channelsResponse.data.items.map(formatChannel);
         console.log('Formatted channels:', channels);
         // Cache the results
-        cache.set(cacheKey, channels, 'channels');
+        cache.set(cacheKey, channels, 'search');
         return channels;
       }
 
@@ -344,7 +365,7 @@ export const youtubeService: IYouTubeService = {
   getVideoById: async (videoId: string): Promise<Video> => {
     try {
       // Check cache first
-      const cachedVideo = cache.get(videoId, 'videos');
+      const cachedVideo = cache.get(videoId, 'videos', 'VIDEO');
       if (cachedVideo) {
         console.log('Using cached video data for:', videoId);
         return cachedVideo;
@@ -374,7 +395,7 @@ export const youtubeService: IYouTubeService = {
     try {
       // Check cache first
       const cacheKey = `channel:${channelId}:videos:${maxResults}`;
-      const cachedVideos = cache.get(cacheKey, 'videos');
+      const cachedVideos = cache.get(cacheKey, 'videos', 'VIDEO');
       if (cachedVideos) {
         console.log('Using cached videos for channel:', channelId);
         return cachedVideos;
@@ -408,7 +429,7 @@ export const youtubeService: IYouTubeService = {
       
       if (videosResponse.data.items && videosResponse.data.items.length > 0) {
         const videos = videosResponse.data.items.map(formatVideo);
-        // Cache the results
+        // Cache the results - use appropriate cache type for channel videos
         cache.set(cacheKey, videos, 'videos');
         return videos;
       }
@@ -422,9 +443,9 @@ export const youtubeService: IYouTubeService = {
   
   getTopVideos: async (maxResults = 10): Promise<Video[]> => {
     try {
-      // Check cache first
+      // Check cache first - trending data changes more frequently
       const cacheKey = `top:${maxResults}`;
-      const cachedVideos = cache.get(cacheKey, 'videos');
+      const cachedVideos = cache.get(cacheKey, 'videos', 'VIDEO_STATS');
       if (cachedVideos) {
         console.log('Using cached top videos');
         return cachedVideos;
@@ -456,9 +477,9 @@ export const youtubeService: IYouTubeService = {
   
   searchVideos: async (query: string, maxResults = 10): Promise<Video[]> => {
     try {
-      // Check cache first
+      // Check cache first - search results
       const cacheKey = `search:${query}:${maxResults}`;
-      const cachedVideos = cache.get(cacheKey, 'videos');
+      const cachedVideos = cache.get(cacheKey, 'search', 'SEARCH');
       if (cachedVideos) {
         console.log('Using cached search results for:', query);
         return cachedVideos;
@@ -491,8 +512,8 @@ export const youtubeService: IYouTubeService = {
       
       if (videosResponse.data.items && videosResponse.data.items.length > 0) {
         const videos = videosResponse.data.items.map(formatVideo);
-        // Cache the results
-        cache.set(cacheKey, videos, 'videos');
+        // Cache the results in search cache
+        cache.set(cacheKey, videos, 'search');
         return videos;
       }
       
