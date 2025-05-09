@@ -242,6 +242,11 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
         console.log(`Fetching channel data for ${newCompetitorId}...`);
         channelData = await secureYoutubeService.getChannelById(newCompetitorId);
         console.log('Channel data retrieved:', channelData);
+        
+        // Verify all required fields are present
+        if (!channelData || !channelData.youtubeId || !channelData.name) {
+          throw new Error('Invalid channel data received from YouTube. Missing required fields.');
+        }
       } catch (channelError) {
         console.error('Error fetching channel data from YouTube:', channelError);
         setError('Could not fetch channel information. Please check the channel ID and try again.');
@@ -250,46 +255,55 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
       }
       
       // Now use the data from YouTube to add to the competitor list
+      // Ensure all required fields are properly defined with fallbacks
       const competitorData = {
         youtubeId: channelData.youtubeId,
         name: channelData.name,
-        thumbnailUrl: channelData.thumbnailUrl,
-        subscriberCount: channelData.subscriberCount,
-        videoCount: channelData.videoCount,
-        viewCount: channelData.viewCount
+        thumbnailUrl: channelData.thumbnailUrl || '',
+        subscriberCount: typeof channelData.subscriberCount === 'number' ? channelData.subscriberCount : 0,
+        videoCount: typeof channelData.videoCount === 'number' ? channelData.videoCount : 0,
+        viewCount: typeof channelData.viewCount === 'number' ? channelData.viewCount : 0
       };
       
-      // Add to competitor list in Supabase
-      const competitor = await competitorListsApi.addCompetitorToList(
-        params.listId,
-        competitorData
-      );
+      console.log('Prepared competitor data:', competitorData);
       
-      // Convert from the TrackedCompetitor type to Competitor type for UI
-      const newCompetitor: Competitor = {
-        id: competitor.id,
-        youtubeId: competitor.youtubeId,
-        name: competitor.name,
-        thumbnailUrl: competitor.thumbnailUrl || '',
-        subscriberCount: competitor.subscriberCount || 0,
-        videoCount: competitor.videoCount || 0,
-        viewCount: competitor.viewCount || 0
-      };
-      
-      setCompetitors(prev => [...prev, newCompetitor]);
-      
-      // Fetch videos for the new competitor
       try {
-        const videos = await secureYoutubeService.getVideosByChannelId(newCompetitor.youtubeId, 10);
-        setCompetitorVideos(prev => [...videos, ...prev]);
-      } catch (videoError) {
-        console.error('Error fetching videos for new competitor:', videoError);
+        // Add to competitor list in Supabase
+        const competitor = await competitorListsApi.addCompetitorToList(
+          params.listId,
+          competitorData
+        );
+        
+        // Convert from the TrackedCompetitor type to Competitor type for UI
+        const newCompetitor: Competitor = {
+          id: competitor.id,
+          youtubeId: competitor.youtubeId,
+          name: competitor.name,
+          thumbnailUrl: competitor.thumbnailUrl || '',
+          subscriberCount: competitor.subscriberCount || 0,
+          videoCount: competitor.videoCount || 0,
+          viewCount: competitor.viewCount || 0
+        };
+        
+        setCompetitors(prev => [...prev, newCompetitor]);
+        
+        // Fetch videos for the new competitor
+        try {
+          const videos = await secureYoutubeService.getVideosByChannelId(newCompetitor.youtubeId, 10);
+          setCompetitorVideos(prev => [...videos, ...prev]);
+        } catch (videoError) {
+          console.error('Error fetching videos for new competitor:', videoError);
+          // Continue even if we can't fetch videos - we've already added the competitor
+        }
+        
+        setNewCompetitorId('');
+        setIsModalOpen(false);
+      } catch (apiError) {
+        console.error('Error adding competitor to Supabase:', apiError);
+        setError(`Failed to save competitor: ${apiError instanceof Error ? apiError.message : 'Unknown error'}`);
       }
-      
-      setNewCompetitorId('');
-      setIsModalOpen(false);
     } catch (error) {
-      console.error('Error adding competitor:', error);
+      console.error('Error in handleAddCompetitor:', error);
       setError('Could not add this channel. Please check the ID and try again.');
     } finally {
       setIsAdding(false);

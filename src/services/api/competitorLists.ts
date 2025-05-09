@@ -301,18 +301,32 @@ export const competitorListsApi = {
       throw new Error('List not found or access denied');
     }
     
+    // Validate and prepare data
+    if (!competitor.youtubeId) {
+      throw new Error('YouTube ID is required');
+    }
+    
+    if (!competitor.name) {
+      throw new Error('Channel name is required');
+    }
+    
+    // Make sure all optional fields have appropriate default values
+    const dataToInsert = {
+      list_id: listId,
+      youtube_id: competitor.youtubeId,
+      name: competitor.name,
+      thumbnail_url: competitor.thumbnailUrl || null,
+      subscriber_count: typeof competitor.subscriberCount === 'number' ? competitor.subscriberCount : 0,
+      video_count: typeof competitor.videoCount === 'number' ? competitor.videoCount : 0,
+      view_count: typeof competitor.viewCount === 'number' ? competitor.viewCount : 0
+    };
+    
+    console.log('Inserting competitor data into Supabase:', dataToInsert);
+    
     // Add the competitor
     const { data, error } = await supabase
       .from('tracked_competitors')
-      .insert([{
-        list_id: listId,
-        youtube_id: competitor.youtubeId,
-        name: competitor.name,
-        thumbnail_url: competitor.thumbnailUrl,
-        subscriber_count: competitor.subscriberCount,
-        video_count: competitor.videoCount,
-        view_count: competitor.viewCount
-      }])
+      .insert([dataToInsert])
       .select()
       .single();
       
