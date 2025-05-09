@@ -2,53 +2,36 @@
 
 /**
  * Theme Context for TubeIntel Pro
- * Provides dark/light mode functionality throughout the application
- * Uses localStorage to persist user preference between sessions
- * Also respects system preferences by default
- * This is the final version for deployment
+ * Provides dark mode functionality throughout the application
+ * This version enforces permanent dark mode across the entire site
  */
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useEffect, ReactNode } from 'react';
 
-type Theme = 'light' | 'dark';
+type Theme = 'dark';
 
 interface ThemeContextType {
   theme: Theme;
-  toggleTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  // Check if user has a theme preference in localStorage, otherwise default to light
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem('theme') as Theme;
-      return savedTheme || 'light';
-    }
-    return 'light';
-  });
+  // Always use dark theme
+  const theme: Theme = 'dark';
 
-  // Apply theme class to document when theme changes
+  // Apply dark theme class to document on component mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('theme', theme);
-      
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
+      // Always set theme to dark in localStorage
+      localStorage.setItem('theme', 'dark');
+      // Always add dark class to document
+      document.documentElement.classList.add('dark');
     }
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme(prevTheme => (prevTheme === 'light' ? 'dark' : 'light'));
-  };
+  }, []);
 
   const value = {
     theme,
-    toggleTheme,
   };
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
