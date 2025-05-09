@@ -16,6 +16,7 @@ import {
   Legend
 } from 'chart.js';
 import { getChannelTrendData } from '@/services/metrics/history';
+import { calculateOutlierScore, getTopPerformingVideos } from '@/services/metrics/outliers';
 
 // Register ChartJS components
 ChartJS.register(
@@ -115,13 +116,17 @@ export default function DashboardPage() {
         });
       }
       
-      // Get top performing videos from the recent videos based on VPH
-      const topPerformingVideos = [...recentVideosData]
-        .sort((a, b) => b.vph - a.vph)
-        .slice(0, 3);
+      // Get top performing videos using the new comprehensive ranking algorithm
+      const topVids = getTopPerformingVideos(recentVideosData, 4);
+      console.log("Top videos with performance scores:", topVids.map(v => ({
+        title: v.title.substring(0, 20),
+        performanceScore: v.performanceScore,
+        vph: v.vph,
+        views: v.viewCount
+      })));
       
+      setTopVideos(topVids);
       setRecentVideos(recentVideosData);
-      setTopVideos(topPerformingVideos);
       setAlerts(alertsData);
       setLastUpdated(new Date());
       setShowUpdateNotification(true);
@@ -544,8 +549,41 @@ export default function DashboardPage() {
           )}
         </section>
 
-        {/* Videos Sections - two column grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Videos Sections - vertical stack */}
+        <div className="space-y-10">
+          {/* Top Performing Videos */}
+          <section>
+            <h2 className="text-2xl font-semibold mb-4 dark:text-white flex items-center">
+              Your Top Performing Videos
+              <span className="ml-2 text-sm bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded-full px-2 py-1 relative group cursor-help">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded-xl p-2 w-64 shadow-lg z-10">
+                  <div className="relative">
+                    <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
+                    <p>Videos are ranked using a multi-metric algorithm that considers:</p>
+                    <ul className="mt-1 list-disc list-inside">
+                      <li>Outlier score (compared to channel median)</li>
+                      <li>Engagement rate (likes and comments)</li>
+                      <li>Views per hour (VPH)</li>
+                      <li>Video recency</li>
+                    </ul>
+                  </div>
+                </div>
+              </span>
+            </h2>
+            {topVideos.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {topVideos.slice(0, 4).map((video) => (
+                  <VideoGridCard key={video.id} video={video} showVph allVideos={recentVideos} />
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-600 dark:text-gray-400">No videos found.</p>
+            )}
+          </section>
+
           {/* Recent Videos */}
           <section>
             <div className="flex justify-between items-center mb-4">
@@ -582,41 +620,11 @@ export default function DashboardPage() {
               </div>
             </div>
             {sortedRecentVideos.length > 0 ? (
-              viewMode === 'list' ? (
-                <div className="space-y-4">
-                  {sortedRecentVideos.map((video) => (
-                    <VideoCard key={video.id} video={video} showVph />
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {sortedRecentVideos.map((video) => (
-                    <VideoGridCard key={video.id} video={video} showVph />
-                  ))}
-                </div>
-              )
-            ) : (
-              <p className="text-gray-600 dark:text-gray-400">No videos found.</p>
-            )}
-          </section>
-
-          {/* Top Performing Videos */}
-          <section>
-            <h2 className="text-2xl font-semibold mb-4 dark:text-white">Your Top Performing Videos</h2>
-            {topVideos.length > 0 ? (
-              viewMode === 'list' ? (
-                <div className="space-y-4">
-                  {topVideos.map((video) => (
-                    <VideoCard key={video.id} video={video} showVph />
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {topVideos.map((video) => (
-                    <VideoGridCard key={video.id} video={video} showVph />
-                  ))}
-                </div>
-              )
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {sortedRecentVideos.map((video) => (
+                  <VideoGridCard key={video.id} video={video} showVph allVideos={recentVideos} />
+                ))}
+              </div>
             ) : (
               <p className="text-gray-600 dark:text-gray-400">No videos found.</p>
             )}
@@ -630,37 +638,55 @@ export default function DashboardPage() {
 interface VideoCardProps {
   video: Video;
   showVph?: boolean;
+  allVideos: Video[];
 }
 
-function VideoCard({ video, showVph = false }: VideoCardProps) {
-  // Determine if VPH is considered high (for example, over 100)
+function VideoCard({ video, showVph = false, allVideos }: VideoCardProps) {
   const isHighVph = video.vph > 100;
   
-  // Simulate VPH trend (in a real app, this would be calculated from historical data)
-  // For demo purposes, we'll create a random trend for now
-  const vphTrend = Math.random() > 0.5 ? 'up' : 'down';
-  const trendPercent = Math.floor(Math.random() * 20) + 1; // 1-20%
+  // Calculate outlier score for this video
+  const outlierData = calculateOutlierScore(video, allVideos);
+  
+  // Get performance level from outlier data or calculate if needed
+  const performanceLevel = outlierData.performanceLevel;
+  
+  // Format the score as a whole number
+  const score = Math.round(outlierData.score);
+  
+  // Determine xFactor badge color
+  let xColor = 'bg-gray-200 text-gray-800';
+  if (outlierData.xFactor > 1.2) xColor = 'bg-blue-200 text-blue-800';
+  else if (outlierData.xFactor < 0.8) xColor = 'bg-red-200 text-red-800';
   
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border ${isHighVph && showVph ? 'border-green-300 dark:border-green-700' : 'border-gray-200 dark:border-gray-700'} hover:shadow-md transition-shadow duration-200`}>
-      <div className="flex">
-        <div className="w-32 h-24 bg-gray-200 dark:bg-gray-700 flex-shrink-0">
-          <img src={video.thumbnailUrl} alt={video.title} className="w-full h-full object-cover" />
-        </div>
-        <div className="p-4 flex-1">
-          <h3 className="font-medium text-gray-900 dark:text-white truncate">{video.title}</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{new Date(video.publishedAt).toLocaleDateString()}</p>
-          <div className="flex flex-wrap gap-2 mt-2">
-            <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
-              {video.viewCount.toLocaleString()} views
-            </span>
-            <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
-              {video.likeCount.toLocaleString()} likes
-            </span>
-            {showVph && (
-              <span className={`text-xs ${isHighVph ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300' : 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'} rounded-xl px-2 py-1 font-medium relative group cursor-help`}>
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden flex flex-col h-full border border-gray-200 dark:border-gray-700">
+      <div className="relative w-full pt-[56.25%]"> {/* 16:9 aspect ratio */}
+        <img 
+          src={video.thumbnailUrl} 
+          alt={video.title}
+          className="absolute top-0 left-0 w-full h-full object-cover"
+        />
+      </div>
+      <div className="p-4 flex-1">
+        <h3 className="font-medium text-gray-900 dark:text-white truncate">{video.title}</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{new Date(video.publishedAt).toLocaleDateString()}</p>
+        <div className="flex flex-wrap gap-2 mt-2">
+          <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
+            {video.viewCount.toLocaleString()} views
+          </span>
+          <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
+            {video.likeCount.toLocaleString()} likes
+          </span>
+          {showVph && (
+            <>
+              <span className={`text-xs ${
+                performanceLevel === 'low' ? 'bg-gray-100 dark:bg-gray-900/50 text-gray-800 dark:text-gray-300' : 
+                performanceLevel === 'high' ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300' : 
+                performanceLevel === 'exceptional' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300' : 
+                'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'
+              } rounded-xl px-2 py-1 font-medium relative group cursor-help`}>
                 {video.vph.toLocaleString()} VPH
-                {isHighVph && <span className="ml-1">🔥</span>}
+                {performanceLevel === 'exceptional' && <span className="ml-1">🔥</span>}
                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded-xl p-2 w-48 shadow-lg z-10">
                   <div className="relative">
                     <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
@@ -669,17 +695,39 @@ function VideoCard({ video, showVph = false }: VideoCardProps) {
                   </div>
                 </div>
               </span>
-            )}
-            {showVph && (
-              <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
-                {vphTrend === 'up' ? (
-                  <span className="text-green-600 dark:text-green-400">↑ {trendPercent}%</span>
-                ) : (
-                  <span className="text-red-600 dark:text-red-400">↓ {trendPercent}%</span>
-                )}
+              
+              {/* Outlier Score Badge */}
+              <span className={`text-xs font-bold rounded-xl px-2 py-1 ${xColor} relative group cursor-help`} title={`This video has ${(outlierData.xFactor).toFixed(1)}x the views of your channel's median video (${outlierData.medianViews.toLocaleString()} views).`}>
+                {outlierData.xFactor.toFixed(1)}x
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded-xl p-2 w-48 shadow-lg z-10">
+                  <div className="relative">
+                    <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
+                    <p>This video has <b>{outlierData.xFactor.toFixed(1)}x</b> the views of your channel's median video ({outlierData.medianViews.toLocaleString()} views).</p>
+                  </div>
+                </div>
               </span>
-            )}
-          </div>
+              
+              {/* Performance Score Badge - shown only for top videos */}
+              {video.performanceScore && (
+                <span className="text-xs font-bold rounded-xl px-2 py-1 bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300 relative group cursor-help">
+                  {Math.round(video.performanceScore)} Score
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded-xl p-2 w-56 shadow-lg z-10">
+                    <div className="relative">
+                      <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
+                      <p>Performance Score: {Math.round(video.performanceScore)}/100</p>
+                      <p className="mt-1">A comprehensive ranking that combines multiple metrics:</p>
+                      <ul className="list-disc list-inside">
+                        <li>Outlier score (50%)</li>
+                        <li>Engagement rate (30%)</li>
+                        <li>VPH (10%)</li>
+                        <li>Recency (10%)</li>
+                      </ul>
+                    </div>
+                  </div>
+                </span>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -687,44 +735,93 @@ function VideoCard({ video, showVph = false }: VideoCardProps) {
 }
 
 // New Grid Card Component for the grid view
-function VideoGridCard({ video, showVph = false }: VideoCardProps) {
+function VideoGridCard({ video, showVph = false, allVideos }: VideoCardProps) {
   const isHighVph = video.vph > 100;
-  const vphTrend = Math.random() > 0.5 ? 'up' : 'down';
-  const trendPercent = Math.floor(Math.random() * 20) + 1;
+  
+  // Calculate outlier score for this video
+  const outlierData = calculateOutlierScore(video, allVideos);
+  
+  // Get performance level from outlier data
+  const performanceLevel = outlierData.performanceLevel;
+  
+  // Format the score as a whole number
+  const score = Math.round(outlierData.score);
+  
+  // Determine xFactor badge color
+  let xColor = 'bg-gray-200 text-gray-800';
+  if (outlierData.xFactor > 1.2) xColor = 'bg-blue-200 text-blue-800';
+  else if (outlierData.xFactor < 0.8) xColor = 'bg-red-200 text-red-800';
   
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border ${isHighVph && showVph ? 'border-green-300 dark:border-green-700' : 'border-gray-200 dark:border-gray-700'} hover:shadow-md transition-shadow duration-200 flex flex-col h-full`}>
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden flex flex-col h-full border border-gray-200 dark:border-gray-700">
       <div className="relative w-full pt-[56.25%]"> {/* 16:9 aspect ratio */}
         <img 
           src={video.thumbnailUrl} 
-          alt={video.title} 
+          alt={video.title}
           className="absolute top-0 left-0 w-full h-full object-cover"
         />
       </div>
-      <div className="p-4 flex-1 flex flex-col">
-        <h3 className="font-medium text-gray-900 dark:text-white line-clamp-2 mb-2">{video.title}</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">{new Date(video.publishedAt).toLocaleDateString()}</p>
-        
-        <div className="mt-auto pt-3">
-          <div className="flex flex-wrap gap-2">
-            <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
-              {video.viewCount.toLocaleString()} views
-            </span>
-            {showVph && (
-              <span className={`text-xs ${isHighVph ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300' : 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'} rounded-xl px-2 py-1 font-medium`}>
-                {video.vph.toLocaleString()} VPH {isHighVph && '🔥'}
+      <div className="p-4 flex-1">
+        <h3 className="font-medium text-gray-900 dark:text-white truncate">{video.title}</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{new Date(video.publishedAt).toLocaleDateString()}</p>
+        <div className="flex flex-wrap gap-2 mt-2">
+          <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
+            {video.viewCount.toLocaleString()} views
+          </span>
+          <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
+            {video.likeCount.toLocaleString()} likes
+          </span>
+          {showVph && (
+            <>
+              <span className={`text-xs ${
+                performanceLevel === 'low' ? 'bg-gray-100 dark:bg-gray-900/50 text-gray-800 dark:text-gray-300' : 
+                performanceLevel === 'high' ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300' : 
+                performanceLevel === 'exceptional' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300' : 
+                'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'
+              } rounded-xl px-2 py-1 font-medium relative group cursor-help`}>
+                {video.vph.toLocaleString()} VPH
+                {performanceLevel === 'exceptional' && <span className="ml-1">🔥</span>}
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded-xl p-2 w-48 shadow-lg z-10">
+                  <div className="relative">
+                    <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
+                    <p>Views Per Hour (VPH) - A metric showing how quickly this video is gaining views.</p>
+                    {isHighVph && <p className="mt-1 text-green-300">This video is performing exceptionally well!</p>}
+                  </div>
+                </div>
               </span>
-            )}
-            {showVph && (
-              <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
-                {vphTrend === 'up' ? (
-                  <span className="text-green-600 dark:text-green-400">↑ {trendPercent}%</span>
-                ) : (
-                  <span className="text-red-600 dark:text-red-400">↓ {trendPercent}%</span>
-                )}
+              
+              {/* Outlier Score Badge */}
+              <span className={`text-xs font-bold rounded-xl px-2 py-1 ${xColor} relative group cursor-help`} title={`This video has ${(outlierData.xFactor).toFixed(1)}x the views of your channel's median video (${outlierData.medianViews.toLocaleString()} views).`}>
+                {outlierData.xFactor.toFixed(1)}x
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded-xl p-2 w-48 shadow-lg z-10">
+                  <div className="relative">
+                    <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
+                    <p>This video has <b>{outlierData.xFactor.toFixed(1)}x</b> the views of your channel's median video ({outlierData.medianViews.toLocaleString()} views).</p>
+                  </div>
+                </div>
               </span>
-            )}
-          </div>
+              
+              {/* Performance Score Badge - shown only for top videos */}
+              {video.performanceScore && (
+                <span className="text-xs font-bold rounded-xl px-2 py-1 bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300 relative group cursor-help">
+                  {Math.round(video.performanceScore)} Score
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded-xl p-2 w-56 shadow-lg z-10">
+                    <div className="relative">
+                      <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
+                      <p>Performance Score: {Math.round(video.performanceScore)}/100</p>
+                      <p className="mt-1">A comprehensive ranking that combines multiple metrics:</p>
+                      <ul className="list-disc list-inside">
+                        <li>Outlier score (50%)</li>
+                        <li>Engagement rate (30%)</li>
+                        <li>VPH (10%)</li>
+                        <li>Recency (10%)</li>
+                      </ul>
+                    </div>
+                  </div>
+                </span>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>

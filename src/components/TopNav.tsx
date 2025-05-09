@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FaYoutube, FaUser, FaCog, FaSun, FaMoon } from 'react-icons/fa';
+import { FaYoutube, FaUser, FaCog } from 'react-icons/fa';
 import { Zap } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { signOut } from '@/lib/supabase';
@@ -17,7 +17,7 @@ interface TopNavProps {
 export default function TopNav({ username = 'User' }: TopNavProps): JSX.Element {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const router = useRouter();
   
   // Close dropdown when clicking outside
@@ -84,22 +84,6 @@ export default function TopNav({ username = 'User' }: TopNavProps): JSX.Element 
         >
           <Zap className="h-4 w-4" />
           <span className="text-sm font-medium">Extension</span>
-        </button>
-        
-        {/* Dark Mode Toggle */}
-        <button 
-          onClick={toggleTheme}
-          className={`p-2 rounded-full ${theme === 'dark' 
-            ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' 
-            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'} 
-            transition-colors duration-200`}
-          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-        >
-          {theme === 'dark' ? (
-            <FaSun className="text-yellow-400 h-5 w-5" />
-          ) : (
-            <FaMoon className="text-indigo-600 h-5 w-5" />
-          )}
         </button>
         
         {/* User profile dropdown */}

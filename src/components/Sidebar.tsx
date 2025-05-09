@@ -53,16 +53,16 @@ export default function Sidebar({ collapsed, toggleSidebar }: SidebarProps): JSX
     return pathname === path || pathname.startsWith(`${path}/`);
   };
   
-  const bgColor = theme === 'dark' ? 'bg-gray-800' : 'bg-white';
-  const borderColor = theme === 'dark' ? 'border-gray-700' : 'border-gray-200';
-  const textColor = theme === 'dark' ? 'text-white' : 'text-gray-900';
+  const bgColor = 'bg-gray-800';
+  const borderColor = 'border-gray-700';
+  const textColor = 'text-white';
   
   return (
     <div 
       className={`${
         collapsed ? 'w-[70px]' : 'w-[240px]'
       } h-screen flex-shrink-0 ${bgColor} border-r ${borderColor} py-6 flex flex-col transition-all duration-300 ease-in-out`}
-      style={{ boxShadow: theme === 'dark' ? '0 0 10px 5px rgba(0,0,0,0.3)' : 'none' }}
+      style={{ boxShadow: '0 0 10px 5px rgba(0,0,0,0.3)' }}
     >
       {collapsed ? (
         <>
