@@ -1413,7 +1413,8 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                     </div>
                   )}
                   
-                  {channelSearchResults.length > 0 && (
+                  {/* Only show search results if there are results AND user hasn't selected a channel yet */}
+                  {channelSearchResults.length > 0 && !newCompetitorId && (
                     <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg">
                       <ul className="max-h-60 overflow-y-auto">
                         {channelSearchResults.map((channel) => (
