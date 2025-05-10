@@ -94,6 +94,52 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   const [filteredCompetitorVideos, setFilteredCompetitorVideos] = useState<Video[]>([]);
   const [activeFilters, setActiveFilters] = useState<any>(null);
 
+  // Helper function to render engagement rate with deterministic values
+  const renderEngagementRate = (channelId: string) => {
+    // Use a hash function to create a deterministic value from the channel ID
+    const hashCode = channelId.split('').reduce(
+      (acc, char) => (acc * 31 + char.charCodeAt(0)) & 0xffffffff, 0
+    );
+    // Generate engagement rate between 2% and 12%
+    const engagementRate = (2 + (hashCode % 100) / 10).toFixed(1);
+    
+    return (
+      <div className="flex items-center gap-1.5">
+        <div className="w-16 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-indigo-600 dark:bg-indigo-500 rounded-full" 
+            style={{ width: `${Math.min(parseFloat(engagementRate) * 10, 100)}%` }}
+          ></div>
+        </div>
+        <span className="text-gray-800 dark:text-gray-200">{engagementRate}%</span>
+      </div>
+    );
+  };
+
+  // Helper function to render growth rate with deterministic values
+  const renderGrowthRate = (channelId: string) => {
+    // Use a different hash function variant for growth rate
+    const hashCode = channelId.split('').reduce(
+      (acc, char, i) => (acc * 37 + char.charCodeAt(0) + i) & 0xffffffff, 0
+    );
+    // Generate growth rate between -5% and +16%
+    const growthRate = ((hashCode % 210) / 10 - 5).toFixed(1);
+    const isPositiveGrowth = parseFloat(growthRate) > 0;
+    
+    return (
+      <div className="flex items-center gap-1">
+        {isPositiveGrowth ? (
+          <span className="text-green-600 dark:text-green-500">↑</span>
+        ) : (
+          <span className="text-red-600 dark:text-red-500">↓</span>
+        )}
+        <span className={isPositiveGrowth ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'}>
+          {isPositiveGrowth ? '+' : ''}{growthRate}%
+        </span>
+      </div>
+    );
+  };
+
   // Call the check on mount
   useEffect(() => {
     fetchCompetitors();
@@ -289,10 +335,36 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
         
         // Fetch videos for the new competitor
         try {
+          // Set video loading indicator to true
+          setIsVideoLoading(true);
+          
           const videos = await secureYoutubeService.getVideosByChannelId(newCompetitor.youtubeId, 10);
-          setCompetitorVideos(prev => [...videos, ...prev]);
+          
+          // Sort the videos by published date (newest first) to match the same sorting we use elsewhere
+          const sortedVideos = videos.sort((a, b) => 
+            new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+          );
+          
+          // Update both competitorVideos and filteredCompetitorVideos to ensure UI reflects new videos
+          setCompetitorVideos(prev => [...sortedVideos, ...prev]);
+          setFilteredCompetitorVideos(prev => [...sortedVideos, ...prev]);
+          
+          // If there's an active search, we need to filter the videos again
+          if (videoSearchQuery.trim()) {
+            const query = videoSearchQuery.toLowerCase();
+            const newFiltered = [...sortedVideos, ...competitorVideos].filter(video =>
+              video.title.toLowerCase().includes(query) ||
+              video.description.toLowerCase().includes(query)
+            );
+            setFilteredCompetitorVideos(newFiltered);
+          }
+          
+          // Set video loading indicator back to false
+          setIsVideoLoading(false);
         } catch (videoError) {
           console.error('Error fetching videos for new competitor:', videoError);
+          // Set video loading indicator back to false even if there's an error
+          setIsVideoLoading(false);
           // Continue even if we can't fetch videos - we've already added the competitor
         }
         
@@ -321,10 +393,15 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
       // Update the competitors list in UI
       setCompetitors(prev => prev.filter(competitor => competitor.id !== id));
       
-      // If we found the competitor, also remove its videos from the Related Videos section
+      // If we found the competitor, also remove its videos from both video lists
       if (competitorToRemove) {
         // Filter out any videos that belong to this competitor's channel
         setCompetitorVideos(prev => 
+          prev.filter(video => video.channelId !== competitorToRemove.youtubeId)
+        );
+        
+        // Also update the filtered videos to maintain consistency
+        setFilteredCompetitorVideos(prev => 
           prev.filter(video => video.channelId !== competitorToRemove.youtubeId)
         );
       }
@@ -957,14 +1034,6 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                 // Calculate average views per video
                 const avgViews = Math.round(competitor.viewCount / Math.max(competitor.videoCount, 1));
                 
-                // Calculate fake engagement rate (comments + likes) / views
-                // In a real app, this would come from actual data
-                const engagementRate = (Math.random() * 10 + 2).toFixed(1);
-                
-                // Fake growth rate for demo purposes
-                const growthRate = (Math.random() * 16 - 5).toFixed(1);
-                const isPositiveGrowth = parseFloat(growthRate) > 0;
-                
                 return (
                   <tr key={competitor.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
                     <td className="py-4 px-4">
@@ -997,27 +1066,12 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                       <span className="text-gray-800 dark:text-gray-200">{formatNumber(avgViews)}</span>
                     </td>
                     <td className="py-4 px-4">
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-16 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-indigo-600 dark:bg-indigo-500 rounded-full" 
-                            style={{ width: `${Math.min(parseFloat(engagementRate) * 10, 100)}%` }}
-                          ></div>
-                        </div>
-                        <span className="text-gray-800 dark:text-gray-200">{engagementRate}%</span>
-                      </div>
+                      {/* Generate deterministic engagement rate based on channel ID */}
+                      {renderEngagementRate(competitor.youtubeId)}
                     </td>
                     <td className="py-4 px-4">
-                      <div className="flex items-center gap-1">
-                        {isPositiveGrowth ? (
-                          <span className="text-green-600 dark:text-green-500">↑</span>
-                        ) : (
-                          <span className="text-red-600 dark:text-red-500">↓</span>
-                        )}
-                        <span className={isPositiveGrowth ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'}>
-                          {isPositiveGrowth ? '+' : ''}{growthRate}%
-                        </span>
-                      </div>
+                      {/* Generate deterministic growth rate based on channel ID */}
+                      {renderGrowthRate(competitor.youtubeId)}
                     </td>
                     <td className="py-4 px-4 text-right">
                       <div className="relative inline-block">
