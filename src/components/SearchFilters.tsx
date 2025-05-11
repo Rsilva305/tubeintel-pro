@@ -77,8 +77,6 @@ const DualSlider: React.FC<DualSliderProps> = ({
   );
 };
 
-type SearchPrecision = 'Specific' | 'Hybrid';
-type ContentFormat = 'Videos' | 'Shorts';
 type TimeRange = '30 Days' | '90 Days' | '180 Days' | '365 Days' | '3 Years' | 'All Time' | 'Custom';
 
 interface SearchFiltersProps {
@@ -136,12 +134,6 @@ export default function SearchFilters({
     return parseFloat(value);
   };
 
-  // Search precision state
-  const [searchPrecision, setSearchPrecision] = useState<SearchPrecision>('Hybrid');
-  
-  // Content format state
-  const [contentFormat, setContentFormat] = useState<ContentFormat>('Videos');
-  
   // Time range state
   const [timeRange, setTimeRange] = useState<TimeRange>('All Time');
   const [startDate, setStartDate] = useState('2005-02-13');
@@ -424,8 +416,6 @@ export default function SearchFilters({
 
   const handleApply = () => {
     const filters = {
-      searchPrecision,
-      contentFormat,
       timeRange,
       startDate,
       endDate,
@@ -489,71 +479,6 @@ export default function SearchFilters({
         <div className="grid grid-cols-2 gap-x-10 gap-y-3">
           {/* LEFT COLUMN - All slider options */}
           <div>
-            {/* Search precision and Content format in one row */}
-            <div className="flex mb-3 gap-5">
-              {/* Search precision */}
-              <div className="flex-1">
-                <div className="flex items-center mb-1">
-                  <h3 className="text-sm font-normal">Search precision</h3>
-                  <div className="ml-2 text-gray-400 cursor-help">
-                    <FaInfoCircle size={12} />
-                  </div>
-                </div>
-                <div className="flex bg-zinc-900 rounded-full p-1 w-fit">
-                  <button
-                    className={`px-4 py-1 rounded-full text-xs ${
-                      searchPrecision === 'Specific' ? 'bg-red-600 text-white' : 'text-white'
-                    }`}
-                    onClick={() => setSearchPrecision('Specific')}
-                  >
-                    Specific
-                  </button>
-                  <button
-                    className={`px-4 py-1 rounded-full text-xs ${
-                      searchPrecision === 'Hybrid' ? 'bg-red-600 text-white' : 'text-white'
-                    }`}
-                    onClick={() => setSearchPrecision('Hybrid')}
-                  >
-                    Hybrid
-                  </button>
-                </div>
-              </div>
-              
-              {/* Content format */}
-              <div className="flex-1">
-                <div className="flex items-center mb-1">
-                  <h3 className="text-sm font-normal">Content format</h3>
-                  <div className="ml-2 text-gray-400 cursor-help">
-                    <FaInfoCircle size={12} />
-                  </div>
-                </div>
-                <div className="flex bg-zinc-900 rounded-full p-1 w-fit">
-                  <button
-                    className={`px-4 py-1 rounded-full text-xs flex items-center ${
-                      contentFormat === 'Videos' ? 'bg-red-600 text-white' : 'text-white'
-                    }`}
-                    onClick={() => setContentFormat('Videos')}
-                  >
-                    <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="currentColor">
-                      <rect x="2" y="4" width="20" height="16" rx="2" />
-                    </svg>
-                    Videos
-                  </button>
-                  <button
-                    className={`px-4 py-1 rounded-full text-xs flex items-center ${
-                      contentFormat === 'Shorts' ? 'bg-red-600 text-white' : 'text-white'
-                    }`}
-                    onClick={() => setContentFormat('Shorts')}
-                  >
-                    <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
-                    </svg>
-                    Shorts
-                  </button>
-                </div>
-              </div>
-            </div>
-            
             {/* Multiplier */}
             <div className="mb-3">
               <div className="flex items-center mb-1">
