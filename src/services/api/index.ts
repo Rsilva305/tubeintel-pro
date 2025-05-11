@@ -9,15 +9,10 @@ import {
   mockMetadata,
   mockInsights 
 } from './mockData';
-import { youtubeService } from './youtube';
-import { secureYoutubeService } from './youtube-secure';
+import { secureYoutubeService as youtubeApiService } from './youtube-secure';
 import { competitorListsApi } from './competitorLists';
 import { getCurrentUser } from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
-
-// Use the secure YouTube service by default, fall back to direct API calls if needed
-// This allows for a smooth transition to the secure API
-const youtubeApiService = secureYoutubeService;
 
 // Auth API
 const authApi = {
@@ -50,22 +45,102 @@ const channelsApi = {
         throw new Error('User not authenticated');
       }
 
-      // Get channel ID from Supabase
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('youtube_channel_id')
-        .eq('id', user.id)
-        .single<Pick<Profile, 'youtube_channel_id'>>();
-
-      if (error) {
-        throw new Error('Failed to load profile: ' + error.message);
+      // First, try to get the channel ID from localStorage as a fallback
+      let channelId = null;
+      if (typeof window !== 'undefined') {
+        channelId = localStorage.getItem('youtubeChannelId');
       }
 
-      if (!profile?.youtube_channel_id) {
+      // If we didn't find it in localStorage, try to get it from Supabase
+      if (!channelId) {
+        try {
+          // Get channel ID from Supabase with more robust error handling
+          let profile = null;
+          try {
+            // First try with .single()
+            const { data: singleProfile, error: singleError } = await supabase
+              .from('profiles')
+              .select('youtube_channel_id')
+              .eq('id', user.id)
+              .single<Pick<Profile, 'youtube_channel_id'>>();
+            
+            if (!singleError) {
+              profile = singleProfile;
+            } else {
+              console.warn('Error with single profile query:', singleError.message);
+              
+              // If single fails, try to get all profiles for the user
+              const { data: profiles, error: profilesError } = await supabase
+                .from('profiles')
+                .select('youtube_channel_id')
+                .eq('id', user.id);
+                
+              if (profilesError) {
+                throw new Error('Failed to load profile: ' + profilesError.message);
+              }
+              
+              // If we have exactly one profile, use it
+              if (profiles && profiles.length === 1) {
+                profile = profiles[0];
+              } else if (profiles && profiles.length > 1) {
+                // Multiple profiles found - use the first one with a channel ID
+                const profileWithChannel = profiles.find(p => p.youtube_channel_id);
+                if (profileWithChannel) {
+                  profile = profileWithChannel;
+                  
+                  console.warn('Multiple profiles found for user, using the first one with a channel ID');
+                } else {
+                  // No profiles with channel ID, use the first one
+                  profile = profiles[0];
+                  console.warn('Multiple profiles found for user, using the first one (no channel ID found)');
+                }
+              } else {
+                // No profiles found, create one
+                const { data: newProfile, error: insertError } = await supabase
+                  .from('profiles')
+                  .insert({
+                    id: user.id,
+                    email: user.email,
+                    username: user.email?.split('@')[0] || null
+                  })
+                  .select()
+                  .single();
+                  
+                if (insertError) {
+                  throw new Error('Failed to create profile: ' + insertError.message);
+                }
+                
+                profile = newProfile;
+                console.log('Created new profile for user');
+              }
+            }
+          } catch (profileError) {
+            console.error('Profile retrieval error:', profileError);
+            // Don't throw here, we'll check localStorage next
+          }
+
+          // If we found a profile with a channel ID, use that
+          if (profile?.youtube_channel_id) {
+            channelId = profile.youtube_channel_id as string; // Type assertion to fix linter error
+            
+            // Also store it in localStorage for future use
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('youtubeChannelId', channelId);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching channel ID from Supabase:', error);
+          // Continue to try localStorage or default as a fallback
+        }
+      }
+
+      // If we still don't have a channel ID, throw an error
+      if (!channelId) {
         throw new Error('No channel ID found. Please connect your YouTube channel first.');
       }
       
-      return await youtubeApiService.getChannelById(profile.youtube_channel_id);
+      // Get channel info from the YouTube API
+      return await youtubeApiService.getChannelById(channelId);
     } catch (error) {
       console.error('Error fetching channel from YouTube API:', error);
       throw error;

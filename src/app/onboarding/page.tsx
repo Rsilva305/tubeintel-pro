@@ -322,13 +322,17 @@ export default function OnboardingPage() {
                   </div>
                 )}
                 
-                {searchResults.length > 0 && (
+                {/* Only show search results if there are results AND user hasn't selected a channel yet */}
+                {searchResults.length > 0 && !channelId && (
                   <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg">
                     <ul className="max-h-60 overflow-y-auto">
                       {searchResults.map((channel) => (
                         <li 
                           key={channel.id}
-                          onClick={() => selectChannel(channel)}
+                          onClick={(e: React.MouseEvent<HTMLLIElement>) => {
+                            e.stopPropagation();
+                            selectChannel(channel);
+                          }}
                           className="flex items-center p-3 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer"
                         >
                           <img 

@@ -22,6 +22,13 @@ export async function fetchFromYouTubeApi(endpoint: string, params: Record<strin
   try {
     // Check if API key is configured
     if (!hasServerYouTubeApiKey) {
+      console.error('YouTube API key missing or invalid:', {
+        keyLength: SERVER_YOUTUBE_API_KEY?.length || 0,
+        hasKey: !!SERVER_YOUTUBE_API_KEY,
+        environment: process.env.NODE_ENV,
+        keyPrefix: SERVER_YOUTUBE_API_KEY?.substring(0, 5) || 'none',
+        keySuffix: SERVER_YOUTUBE_API_KEY?.substring(SERVER_YOUTUBE_API_KEY.length - 5) || 'none'
+      });
       return NextResponse.json(
         { error: 'YouTube API key is not configured properly' },
         { status: 500 }
@@ -58,7 +65,11 @@ export async function fetchFromYouTubeApi(endpoint: string, params: Record<strin
     const url = `${BASE_URL}/${endpoint}?${searchParams.toString()}`;
     
     // Make the request
-    console.log('Fetching from YouTube API:', endpoint);
+    console.log('Fetching from YouTube API:', {
+      endpoint,
+      url: url.replace(SERVER_YOUTUBE_API_KEY, 'REDACTED'),
+      params: { ...params, key: 'REDACTED' }
+    });
     const response = await fetch(url);
     
     if (!response.ok) {
@@ -66,7 +77,9 @@ export async function fetchFromYouTubeApi(endpoint: string, params: Record<strin
       console.error('YouTube API Error:', {
         status: response.status,
         statusText: response.statusText,
-        error: errorData
+        error: errorData,
+        endpoint,
+        params: { ...params, key: 'REDACTED' }
       });
       
       return NextResponse.json(
