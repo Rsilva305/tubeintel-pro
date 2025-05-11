@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { youtubeService } from '@/services/api/youtube';
+import { secureYoutubeService as youtubeService } from '@/services/api/youtube-secure';
 import { SERVER_YOUTUBE_API_KEY } from '@/lib/env';
 import Link from 'next/link';
 
