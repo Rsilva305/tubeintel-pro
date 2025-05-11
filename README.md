@@ -83,4 +83,63 @@ You can use the app without a Supabase account or YouTube API key by toggling "D
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Environment Variables
+
+Create a `.env.local` file in the root directory with the following variables:
+
+```env
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# YouTube API Configuration
+YOUTUBE_API_KEY=your_youtube_api_key
+```
+
+For production deployment on Vercel, add these environment variables in your project settings.
+
+## Development
+
+1. Install dependencies:
+```bash
+npm install
+```
+
+2. Start the development server:
+```bash
+npm run dev
+```
+
+3. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## Production
+
+1. Build the application:
+```bash
+npm run build
+```
+
+2. Start the production server:
+```bash
+npm start
+```
+
+## Features
+
+- YouTube channel analytics
+- Video performance tracking
+- Competitor analysis
+- Custom alerts and notifications
+- Data visualization
+- Export capabilities
+
+## Tech Stack
+
+- Next.js 13+ (App Router)
+- TypeScript
+- Tailwind CSS
+- Supabase
+- YouTube Data API v3
+- Chart.js 

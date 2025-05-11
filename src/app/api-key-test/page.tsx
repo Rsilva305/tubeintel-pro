@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { youtubeService } from '@/services/api/youtube';
-import { YOUTUBE_API_KEY } from '@/lib/env';
+import { secureYoutubeService as youtubeService } from '@/services/api/youtube-secure';
+import { SERVER_YOUTUBE_API_KEY } from '@/lib/env';
 import Link from 'next/link';
 
 // SVG components to avoid JSX escaping issues
@@ -22,8 +22,8 @@ export default function ApiKeyTestPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [testSuccess, setTestSuccess] = useState<boolean | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [apiKey, setApiKey] = useState(YOUTUBE_API_KEY);
-  const [testingWithKey, setTestingWithKey] = useState(YOUTUBE_API_KEY);
+  const [apiKey, setApiKey] = useState(SERVER_YOUTUBE_API_KEY);
+  const [testingWithKey, setTestingWithKey] = useState(SERVER_YOUTUBE_API_KEY);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const testApiKey = async (key: string) => {
@@ -92,7 +92,7 @@ export default function ApiKeyTestPage() {
 
   useEffect(() => {
     // Auto-test the API key when the page loads
-    testApiKey(YOUTUBE_API_KEY);
+    testApiKey(SERVER_YOUTUBE_API_KEY);
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -101,7 +101,16 @@ export default function ApiKeyTestPage() {
   };
 
   return (
-    <div className="container mx-auto p-4 max-w-3xl">
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-6">API Key Test</h1>
+      
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-6">
+        <h2 className="text-xl font-semibold mb-4">Environment Variables</h2>
+        <ul className="list-disc list-inside space-y-2">
+          <li>Environment variable <code className="bg-gray-200 px-1 rounded">SERVER_YOUTUBE_API_KEY</code></li>
+        </ul>
+      </div>
+      
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">YouTube API Key Test</h1>
         <div>
@@ -120,7 +129,7 @@ export default function ApiKeyTestPage() {
         <div className="mb-4">
           <p className="mb-2"><strong>Current API Key:</strong></p>
           <div className="bg-gray-100 p-3 rounded font-mono text-sm break-all">
-            {YOUTUBE_API_KEY || '(No API key set)'}
+            {SERVER_YOUTUBE_API_KEY || '(No API key set)'}
           </div>
         </div>
         

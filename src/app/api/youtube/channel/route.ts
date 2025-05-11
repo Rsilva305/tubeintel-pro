@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { youtubeService } from '@/services/api/youtube';
+import { secureYoutubeService as youtubeService } from '@/services/api/youtube-secure';
 
 // Helper function to extract username from URL
 function extractUsername(input: string): string {

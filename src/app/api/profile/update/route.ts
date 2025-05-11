@@ -1,17 +1,14 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-
-// Get Supabase URL and anon key from environment variables
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/env';
 
 // Check if environment variables are set
-if (!supabaseUrl || !supabaseKey) {
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   throw new Error('Missing Supabase environment variables');
 }
 
 // Initialize Supabase client
-const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
+const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export async function POST(request: Request) {
   try {

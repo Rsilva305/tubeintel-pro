@@ -9,7 +9,7 @@ import {
   mockMetadata,
   mockInsights 
 } from './mockData';
-import { youtubeService } from './youtube';
+import { secureYoutubeService as youtubeService } from './youtube-secure';
 import { getUseRealApi, simulateDelay as apiDelay } from './config';
 
 // Import competitorListsApi
