@@ -9,15 +9,10 @@ import {
   mockMetadata,
   mockInsights 
 } from './mockData';
-import { youtubeService } from './youtube';
-import { secureYoutubeService } from './youtube-secure';
+import { secureYoutubeService as youtubeApiService } from './youtube-secure';
 import { competitorListsApi } from './competitorLists';
 import { getCurrentUser } from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
-
-// Use the secure YouTube service by default, fall back to direct API calls if needed
-// This allows for a smooth transition to the secure API
-const youtubeApiService = secureYoutubeService;
 
 // Auth API
 const authApi = {
