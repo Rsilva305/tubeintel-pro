@@ -1,9 +1,5 @@
 // API Configuration file
 
-// The YouTube API key 
-// For production, use environment variables instead
-export const YOUTUBE_API_KEY = 'AIzaSyBTNCNWyklQlWyDOYKGgJxfiaspBv4W-CM';
-
 // Application settings
 let USE_YOUTUBE_API = true; // Default to using YouTube API
 let API_SETTINGS = {
