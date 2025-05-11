@@ -47,7 +47,7 @@ export async function storeVideoMetrics(videos: Video[]): Promise<boolean> {
     console.log('storeVideoMetrics: Sending upsert to Supabase...');
     const { error } = await supabase
       .from('video_metrics_history')
-      .upsert(metricsData);
+      .upsert(metricsData, { onConflict: 'video_id,user_id,recorded_date' });
     
     if (error) {
       console.error('Error storing video metrics:', error, JSON.stringify(error, null, 2));
@@ -93,7 +93,7 @@ export async function storeChannelMetrics(channel: Channel): Promise<boolean> {
     console.log('storeChannelMetrics: Sending upsert to Supabase...');
     const { error } = await supabase
       .from('channel_metrics_history')
-      .upsert(metricsData);
+      .upsert([metricsData], { onConflict: 'channel_id,user_id,recorded_date' });
     
     if (error) {
       console.error('Error storing channel metrics:', error, JSON.stringify(error, null, 2));
