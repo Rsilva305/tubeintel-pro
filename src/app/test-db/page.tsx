@@ -73,18 +73,28 @@ export default function TestDatabasePage() {
             
             // If creation was successful, try to delete it
             if (!createError && createData && createData.length > 0) {
-              const { error: deleteError } = await supabase
-                .from('competitor_lists')
-                .delete()
-                .eq('id', createData[0].id);
-                
-              results.delete_list = {
-                status: deleteError ? 'error' : 'success',
-                details: deleteError 
-                  ? `Error deleting test list: ${deleteError.message}`
-                  : `Successfully deleted test list`,
-                error: deleteError
-              };
+              const listId = createData[0].id;
+              if (typeof listId !== 'string' && typeof listId !== 'number') {
+                console.error('Invalid list ID:', listId);
+                results.delete_list = {
+                  status: 'error',
+                  details: 'Invalid list ID type',
+                  error: new Error('Invalid list ID type')
+                };
+              } else {
+                const { error: deleteError } = await supabase
+                  .from('competitor_lists')
+                  .delete()
+                  .eq('id', listId);
+                  
+                results.delete_list = {
+                  status: deleteError ? 'error' : 'success',
+                  details: deleteError 
+                    ? `Error deleting test list: ${deleteError.message}`
+                    : `Successfully deleted test list`,
+                  error: deleteError
+                };
+              }
             }
           }
         } catch (listError) {
