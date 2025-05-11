@@ -50,7 +50,7 @@ export async function storeVideoMetrics(videos: Video[]): Promise<boolean> {
       .upsert(metricsData);
     
     if (error) {
-      console.error('Error storing video metrics:', error);
+      console.error('Error storing video metrics:', error, JSON.stringify(error, null, 2));
       return false;
     }
     
@@ -96,7 +96,7 @@ export async function storeChannelMetrics(channel: Channel): Promise<boolean> {
       .upsert(metricsData);
     
     if (error) {
-      console.error('Error storing channel metrics:', error);
+      console.error('Error storing channel metrics:', error, JSON.stringify(error, null, 2));
       return false;
     }
     
