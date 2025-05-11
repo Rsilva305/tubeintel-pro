@@ -28,33 +28,25 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
   const [lastCollectionDate, setLastCollectionDate] = useState<string | null>(null);
   const [isCollecting, setIsCollecting] = useState(false);
   const [hasError, setHasError] = useState(false);
-  
-  // Initialize metrics collection on app start
+  const [user, setUser] = useState<any>(null);
+
+  // Watch for authentication changes and initialize metrics scheduler
   useEffect(() => {
-    async function initialize() {
-      try {
-        // Make sure the user is authenticated before initializing metrics collection
-        const user = await getCurrentUser();
-        if (!user) {
-          console.log('Metrics scheduler not initialized: User not authenticated');
-          return;
-        }
-        
-        // Initialize the metrics scheduler
-        console.log('Initializing metrics scheduler...');
+    async function checkAndInit() {
+      const currentUser = await getCurrentUser();
+      setUser(currentUser);
+      if (currentUser && !isInitialized) {
+        console.log('Initializing metrics scheduler after authentication...');
         initializeMetricsScheduler();
-        
-        // Update state
         setIsInitialized(true);
         setLastCollectionDate(new Date().toISOString().split('T')[0]);
-      } catch (error) {
-        console.error('Error initializing metrics scheduler:', error);
-        setHasError(true);
       }
     }
-    
-    initialize();
-  }, []);
+    checkAndInit();
+    // Optionally, set up an interval to re-check authentication every few seconds
+    const interval = setInterval(checkAndInit, 3000);
+    return () => clearInterval(interval);
+  }, [isInitialized]);
   
   // Function to manually collect metrics
   const collectMetricsNow = async (): Promise<boolean> => {
