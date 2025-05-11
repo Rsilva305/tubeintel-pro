@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
         part: 'snippet,statistics'  // Add statistics to the parts we request
       });
       return fetchFromYouTubeApi('search', {
-        part: 'snippet',
+        part: 'snippet,statistics',
         channelId,
         maxResults,
         order: 'date',
