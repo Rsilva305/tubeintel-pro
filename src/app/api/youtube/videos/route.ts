@@ -34,42 +34,13 @@ export async function GET(request: NextRequest) {
         id,
       });
     } else if (channelId) {
-      // First get video IDs from search
-      const searchEndpoint = 'search';
-      const searchParams = {
+      // Get videos directly using the search endpoint
+      return fetchFromYouTubeApi('search', {
         part: 'snippet',
         channelId,
         maxResults,
         order: 'date',
         type: 'video'
-      };
-      
-      // Use absolute URL for fetch call
-      const searchUrl = `${baseUrl}/api/youtube/search?${new URLSearchParams(searchParams)}`;
-      const searchResponse = await fetch(searchUrl);
-      
-      if (!searchResponse.ok) {
-        return NextResponse.json(
-          { error: 'Failed to fetch videos by channel ID' },
-          { status: searchResponse.status }
-        );
-      }
-      
-      const searchData = await searchResponse.json();
-      
-      if (!searchData.items || searchData.items.length === 0) {
-        return NextResponse.json({ items: [] });
-      }
-      
-      // Extract video IDs
-      const videoIds = searchData.items
-        .map((item: any) => item.id.videoId)
-        .join(',');
-      
-      // Then get detailed video information
-      return fetchFromYouTubeApi('videos', {
-        part,
-        id: videoIds
       });
     } else {
       // Get popular videos

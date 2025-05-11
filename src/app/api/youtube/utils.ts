@@ -25,7 +25,9 @@ export async function fetchFromYouTubeApi(endpoint: string, params: Record<strin
       console.error('YouTube API key missing or invalid:', {
         keyLength: SERVER_YOUTUBE_API_KEY?.length || 0,
         hasKey: !!SERVER_YOUTUBE_API_KEY,
-        environment: process.env.NODE_ENV
+        environment: process.env.NODE_ENV,
+        keyPrefix: SERVER_YOUTUBE_API_KEY?.substring(0, 5) || 'none',
+        keySuffix: SERVER_YOUTUBE_API_KEY?.substring(SERVER_YOUTUBE_API_KEY.length - 5) || 'none'
       });
       return NextResponse.json(
         { error: 'YouTube API key is not configured properly' },
