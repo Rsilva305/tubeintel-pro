@@ -2,6 +2,80 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { FaTimes, FaInfoCircle, FaChevronDown } from 'react-icons/fa';
+import '@/styles/dualSlider.css';
+
+// Dual Slider Component
+interface DualSliderProps {
+  min: number;
+  max: number;
+  step: number | string;
+  minValue: number;
+  maxValue: number;
+  onMinChange: (value: number) => void;
+  onMaxChange: (value: number) => void;
+  className?: string;
+}
+
+const DualSlider: React.FC<DualSliderProps> = ({
+  min,
+  max,
+  step,
+  minValue,
+  maxValue,
+  onMinChange,
+  onMaxChange,
+  className = ''
+}) => {
+  // Ensure minValue doesn't exceed maxValue
+  const handleMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = Number(e.target.value);
+    if (newValue <= maxValue) {
+      onMinChange(newValue);
+    }
+  };
+
+  // Ensure maxValue doesn't fall below minValue
+  const handleMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = Number(e.target.value);
+    if (newValue >= minValue) {
+      onMaxChange(newValue);
+    }
+  };
+
+  return (
+    <div className={`relative w-full h-6 ${className}`}>
+      {/* Custom track */}
+      <div 
+        className="absolute w-full h-1 bg-zinc-700 top-1/2 transform -translate-y-1/2 rounded" 
+        style={{ zIndex: -10 }}
+      ></div>
+      
+      {/* Min value slider */}
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={minValue}
+        onChange={handleMinChange}
+        className="absolute w-full thumb-left search-filter-range"
+        style={{ height: '100%' }}
+      />
+      
+      {/* Max value slider */}
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={maxValue}
+        onChange={handleMaxChange}
+        className="absolute w-full thumb-right search-filter-range"
+        style={{ height: '100%' }}
+      />
+    </div>
+  );
+};
 
 type SearchPrecision = 'Specific' | 'Hybrid';
 type ContentFormat = 'Videos' | 'Shorts';
@@ -489,13 +563,14 @@ export default function SearchFilters({
                 </div>
               </div>
               <div className="mb-1">
-                <input
-                  type="range"
-                  min="0"
-                  max="500"
-                  step="0.1"
-                  value={parseFloat(multiplierMin) || 0}
-                  onChange={(e) => setMultiplierMin(e.target.value + 'x')}
+                <DualSlider
+                  min={0}
+                  max={500}
+                  step={0.1}
+                  minValue={parseNumberValue(multiplierMin.replace('x', '')) || 0}
+                  maxValue={parseNumberValue(multiplierMax.replace('x', '').replace('+', '')) || 500}
+                  onMinChange={(value) => setMultiplierMin(`${value.toFixed(1)}x`)}
+                  onMaxChange={(value) => setMultiplierMax(value >= 500 ? '500.0x+' : `${value.toFixed(1)}x`)}
                   className="search-filter-range w-full"
                 />
                 <div className="flex justify-between text-xs text-gray-400 mt-1">
@@ -536,13 +611,14 @@ export default function SearchFilters({
                 </div>
               </div>
               <div className="mb-1">
-                <input
-                  type="range"
-                  min="0"
-                  max="1000000000"
-                  step="10000"
-                  value={parseNumberValue(viewsMin) || 0}
-                  onChange={(e) => setViewsMin(e.target.value)}
+                <DualSlider
+                  min={0}
+                  max={1000000000}
+                  step={10000}
+                  minValue={parseNumberValue(viewsMin) || 0}
+                  maxValue={parseNumberValue(viewsMax.replace('+', '')) || 1000000000}
+                  onMinChange={(value) => setViewsMin(value.toString())}
+                  onMaxChange={(value) => setViewsMax(value >= 1000000000 ? '1B+' : value.toString())}
                   className="search-filter-range w-full"
                 />
                 <div className="flex justify-between text-xs text-gray-400 mt-1">
@@ -583,13 +659,14 @@ export default function SearchFilters({
                 </div>
               </div>
               <div className="mb-1">
-                <input
-                  type="range"
-                  min="0"
-                  max="500000000"
-                  step="10000"
-                  value={parseNumberValue(subscribersMin) || 0}
-                  onChange={(e) => setSubscribersMin(e.target.value)}
+                <DualSlider
+                  min={0}
+                  max={500000000}
+                  step={10000}
+                  minValue={parseNumberValue(subscribersMin) || 0}
+                  maxValue={parseNumberValue(subscribersMax.replace('+', '')) || 500000000}
+                  onMinChange={(value) => setSubscribersMin(value.toString())}
+                  onMaxChange={(value) => setSubscribersMax(value >= 500000000 ? '500M+' : value.toString())}
                   className="search-filter-range w-full"
                 />
                 <div className="flex justify-between text-xs text-gray-400 mt-1">
@@ -630,17 +707,25 @@ export default function SearchFilters({
                 </div>
               </div>
               <div className="mb-1">
-                <input
-                  type="range"
-                  min="0"
-                  max="420"
-                  step="1"
-                  value={parseDurationValue(videoDurationMin) || 0}
-                  onChange={(e) => {
-                    const minutes = parseInt(e.target.value);
-                    const hours = Math.floor(minutes / 60);
-                    const mins = minutes % 60;
+                <DualSlider
+                  min={0}
+                  max={420}
+                  step={1}
+                  minValue={parseDurationValue(videoDurationMin) || 0}
+                  maxValue={parseDurationValue(videoDurationMax.replace('+', '')) || 420}
+                  onMinChange={(value) => {
+                    const hours = Math.floor(value / 60);
+                    const mins = value % 60;
                     setVideoDurationMin(`${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:00`);
+                  }}
+                  onMaxChange={(value) => {
+                    if (value >= 420) {
+                      setVideoDurationMax('07:00:00+');
+                    } else {
+                      const hours = Math.floor(value / 60);
+                      const mins = value % 60;
+                      setVideoDurationMax(`${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:00`);
+                    }
                   }}
                   className="search-filter-range w-full"
                 />
@@ -884,13 +969,14 @@ export default function SearchFilters({
                     </div>
                   </div>
                   <div className="mb-1">
-                    <input
-                      type="range"
-                      min="0"
-                      max="500"
-                      step="0.1"
-                      value={parseNumberValue(viewsToSubsRatioMin) || 0}
-                      onChange={(e) => setViewsToSubsRatioMin(e.target.value)}
+                    <DualSlider
+                      min={0}
+                      max={500}
+                      step={0.1}
+                      minValue={parseNumberValue(viewsToSubsRatioMin) || 0}
+                      maxValue={parseNumberValue(viewsToSubsRatioMax.replace('+', '')) || 500}
+                      onMinChange={(value) => setViewsToSubsRatioMin(value.toString())}
+                      onMaxChange={(value) => setViewsToSubsRatioMax(value >= 500 ? '500.0+' : value.toString())}
                       className="search-filter-range w-full"
                     />
                   </div>
@@ -926,11 +1012,14 @@ export default function SearchFilters({
                     </div>
                   </div>
                   <div className="mb-1">
-                    <input
-                      type="range"
-                      min="0"
-                      max="100000"
-                      step="100"
+                    <DualSlider
+                      min={0}
+                      max={100000}
+                      step={100}
+                      minValue={parseNumberValue(channelVideoCountMin) || 0}
+                      maxValue={parseNumberValue(channelVideoCountMax.replace('+', '').replace('k', '000')) || 100000}
+                      onMinChange={(value) => setChannelVideoCountMin(value.toString())}
+                      onMaxChange={(value) => setChannelVideoCountMax(value >= 100000 ? '100k+' : value.toString())}
                       className="search-filter-range w-full"
                     />
                   </div>
@@ -969,13 +1058,14 @@ export default function SearchFilters({
                     </div>
                   </div>
                   <div className="mb-1">
-                    <input
-                      type="range"
-                      min="0"
-                      max="400000000"
-                      step="1000"
-                      value={parseNumberValue(medianViewsMin) || 0}
-                      onChange={(e) => setMedianViewsMin(e.target.value)}
+                    <DualSlider
+                      min={0}
+                      max={400000000}
+                      step={1000}
+                      minValue={parseNumberValue(medianViewsMin) || 0}
+                      maxValue={parseNumberValue(medianViewsMax.replace('+', '')) || 400000000}
+                      onMinChange={(value) => setMedianViewsMin(value.toString())}
+                      onMaxChange={(value) => setMedianViewsMax(value >= 400000000 ? '400M+' : value.toString())}
                       className="search-filter-range w-full"
                     />
                   </div>
@@ -1011,13 +1101,14 @@ export default function SearchFilters({
                     </div>
                   </div>
                   <div className="mb-1">
-                    <input
-                      type="range"
-                      min="0"
-                      max="50000000"
-                      step="1000"
-                      value={parseNumberValue(videoLikesMin) || 0}
-                      onChange={(e) => setVideoLikesMin(e.target.value)}
+                    <DualSlider
+                      min={0}
+                      max={50000000}
+                      step={1000}
+                      minValue={parseNumberValue(videoLikesMin) || 0}
+                      maxValue={parseNumberValue(videoLikesMax.replace('+', '')) || 50000000}
+                      onMinChange={(value) => setVideoLikesMin(value.toString())}
+                      onMaxChange={(value) => setVideoLikesMax(value >= 50000000 ? '50M+' : value.toString())}
                       className="search-filter-range w-full"
                     />
                   </div>
@@ -1056,11 +1147,14 @@ export default function SearchFilters({
                     </div>
                   </div>
                   <div className="mb-1">
-                    <input
-                      type="range"
-                      min="0"
-                      max="100000000000"
-                      step="10000"
+                    <DualSlider
+                      min={0}
+                      max={100000000000}
+                      step={10000}
+                      minValue={parseNumberValue(channelTotalViewsMin) || 0}
+                      maxValue={parseNumberValue(channelTotalViewsMax.replace('+', '').replace('B', '000000000')) || 100000000000}
+                      onMinChange={(value) => setChannelTotalViewsMin(value.toString())}
+                      onMaxChange={(value) => setChannelTotalViewsMax(value >= 100000000000 ? '100B+' : value.toString())}
                       className="search-filter-range w-full"
                     />
                   </div>
@@ -1096,13 +1190,14 @@ export default function SearchFilters({
                     </div>
                   </div>
                   <div className="mb-1">
-                    <input
-                      type="range"
-                      min="0"
-                      max="5000000"
-                      step="100"
-                      value={parseNumberValue(videoCommentsMin) || 0}
-                      onChange={(e) => setVideoCommentsMin(e.target.value)}
+                    <DualSlider
+                      min={0}
+                      max={5000000}
+                      step={100}
+                      minValue={parseNumberValue(videoCommentsMin) || 0}
+                      maxValue={parseNumberValue(videoCommentsMax.replace('+', '')) || 5000000}
+                      onMinChange={(value) => setVideoCommentsMin(value.toString())}
+                      onMaxChange={(value) => setVideoCommentsMax(value >= 5000000 ? '5M+' : value.toString())}
                       className="search-filter-range w-full"
                     />
                   </div>
@@ -1141,11 +1236,14 @@ export default function SearchFilters({
                     </div>
                   </div>
                   <div className="mb-1">
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      step="1"
+                    <DualSlider
+                      min={0}
+                      max={100}
+                      step={1}
+                      minValue={parseNumberValue(engagementRateMin) || 0}
+                      maxValue={parseNumberValue(engagementRateMax.replace('+', '')) || 100}
+                      onMinChange={(value) => setEngagementRateMin(value.toString())}
+                      onMaxChange={(value) => setEngagementRateMax(value >= 100 ? '100+' : value.toString())}
                       className="search-filter-range w-full"
                     />
                   </div>
@@ -1181,11 +1279,14 @@ export default function SearchFilters({
                     </div>
                   </div>
                   <div className="mb-1">
-                    <input
-                      type="range"
-                      min="0"
-                      max="20"
-                      step="1"
+                    <DualSlider
+                      min={0}
+                      max={20}
+                      step={1}
+                      minValue={channelAgeMin === 'Brand new' ? 0 : parseNumberValue(channelAgeMin) || 0}
+                      maxValue={parseNumberValue(channelAgeMax.replace('+', '').replace(' years ago', '')) || 20}
+                      onMinChange={(value) => setChannelAgeMin(value === 0 ? 'Brand new' : value.toString())}
+                      onMaxChange={(value) => setChannelAgeMax(value >= 20 ? '20 years ago+' : `${value} years ago`)}
                       className="search-filter-range w-full"
                     />
                   </div>
