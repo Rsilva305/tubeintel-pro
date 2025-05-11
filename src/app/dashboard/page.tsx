@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Video, Alert } from '@/types';
-import { videosApi, alertsApi } from '@/services/api';
+import { Video } from '@/types';
+import { videosApi } from '@/services/api';
 import { FaTable, FaThLarge, FaChartLine, FaArrowUp, FaArrowDown } from 'react-icons/fa';
 import { Line } from 'react-chartjs-2';
 import {
@@ -44,7 +44,6 @@ export default function DashboardPage() {
   const [user, setUser] = useState<{ username: string } | null>(null);
   const [recentVideos, setRecentVideos] = useState<Video[]>([]);
   const [topVideos, setTopVideos] = useState<Video[]>([]);
-  const [alerts, setAlerts] = useState<Alert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sortOption, setSortOption] = useState<SortOption>('date');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -98,10 +97,7 @@ export default function DashboardPage() {
   // Function to fetch data
   const fetchData = async () => {
     try {
-      const [recentVideosData, alertsData] = await Promise.all([
-        videosApi.getRecentVideos(100), // Increased to get more historical data for 30d trends
-        alertsApi.getUnreadAlerts()
-      ]);
+      const recentVideosData = await videosApi.getRecentVideos(100); // Increased to get more historical data for 30d trends
       
       console.log("Fetched videos count:", recentVideosData.length);
       // Log date ranges of videos to help with debugging
@@ -127,7 +123,6 @@ export default function DashboardPage() {
       
       setTopVideos(topVids);
       setRecentVideos(recentVideosData);
-      setAlerts(alertsData);
       setLastUpdated(new Date());
       setShowUpdateNotification(true);
       
@@ -525,28 +520,6 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
-        </section>
-
-        {/* Recent Alerts - full width */}
-        <section className="mb-10">
-          <h2 className="text-2xl font-semibold mb-4 dark:text-white">Recent Alerts</h2>
-          {alerts.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4">
-              {alerts.map((alert) => (
-                <div key={alert.id} className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-blue-200 dark:border-blue-900 hover:shadow-md transition-shadow duration-200">
-                  <span className="inline-block rounded-xl bg-blue-100 dark:bg-blue-900 px-3 py-1 text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">
-                    {alert.type.toUpperCase()} Alert
-                  </span>
-                  <p className="text-gray-800 dark:text-gray-200">{alert.message}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                    {new Date(alert.createdAt).toLocaleDateString()} at {new Date(alert.createdAt).toLocaleTimeString()}
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-600 dark:text-gray-400">No new alerts.</p>
-          )}
         </section>
 
         {/* Videos Sections - vertical stack */}

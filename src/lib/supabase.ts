@@ -79,7 +79,7 @@ export const signIn = async (email: string, password: string): Promise<SignInRes
         if (!profileError && profileData && profileData.youtube_channel_id) {
           hasCompletedOnboarding = true;
           // Store the channel ID in localStorage for easier access
-          localStorage.setItem('youtubeChannelId', profileData.youtube_channel_id.toString());
+          localStorage.setItem('youtubeChannelId', String(profileData.youtube_channel_id));
         }
       } catch (profileError) {
         console.error('Error checking profile:', profileError);
@@ -124,48 +124,61 @@ export const signOut = async () => {
 
 export const getCurrentUser = async () => {
   try {
-    // Check localStorage first
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      return JSON.parse(storedUser);
-    }
+    // First check with Supabase directly if the user is authenticated
+    const { data: { user: supabaseUser } } = await supabase.auth.getUser();
     
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    // If user exists in Supabase but not in localStorage, store it
-    if (user && !storedUser) {
+    // If we have a Supabase authenticated user, use that
+    if (supabaseUser) {
+      // Get profile data if needed
       let hasCompletedOnboarding = false;
       
       try {
         // Check if there's a profile with a YouTube channel ID
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('youtube_channel_id')
-          .eq('id', user.id)
+          .select('youtube_channel_id, has_completed_onboarding')
+          .eq('id', supabaseUser.id)
           .single();
           
-        if (!profileError && profileData && profileData.youtube_channel_id) {
-          hasCompletedOnboarding = true;
-          // Store the channel ID in localStorage for easier access
-          localStorage.setItem('youtubeChannelId', profileData.youtube_channel_id.toString());
+        if (!profileError && profileData) {
+          if (profileData.youtube_channel_id) {
+            hasCompletedOnboarding = true;
+            // Store the channel ID in localStorage for easier access
+            localStorage.setItem('youtubeChannelId', String(profileData.youtube_channel_id));
+          }
+          
+          if (profileData.has_completed_onboarding) {
+            hasCompletedOnboarding = true;
+          }
         }
       } catch (profileError) {
         console.error('Error checking profile:', profileError);
       }
       
+      // Format user data
       const userData = {
-        id: user.id,
-        email: user.email,
-        username: user.email?.split('@')[0] || 'user',
-        createdAt: user.created_at || new Date().toISOString(),
+        id: supabaseUser.id,
+        email: supabaseUser.email,
+        username: supabaseUser.email?.split('@')[0] || 'user',
+        createdAt: supabaseUser.created_at || new Date().toISOString(),
         hasCompletedOnboarding: hasCompletedOnboarding
       };
       
+      // Store in localStorage for easier access
       localStorage.setItem('user', JSON.stringify(userData));
+      
+      console.log("Using authenticated Supabase user:", supabaseUser.id);
       return userData;
     }
     
-    return user;
+    // If no Supabase auth, check localStorage as fallback
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      console.warn("WARNING: Using localStorage user without Supabase authentication. RLS policies may block database operations.");
+      return JSON.parse(storedUser);
+    }
+    
+    return null;
   } catch (error) {
     console.error('Get current user error:', error);
     return null;
