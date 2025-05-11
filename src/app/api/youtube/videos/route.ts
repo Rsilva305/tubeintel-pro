@@ -35,6 +35,13 @@ export async function GET(request: NextRequest) {
       });
     } else if (channelId) {
       // Get videos directly using the search endpoint
+      const searchParams = new URLSearchParams({
+        channelId,
+        maxResults: maxResults.toString(),
+        order: 'date',
+        type: 'video',
+        part: 'snippet,statistics'  // Add statistics to the parts we request
+      });
       return fetchFromYouTubeApi('search', {
         part: 'snippet',
         channelId,
