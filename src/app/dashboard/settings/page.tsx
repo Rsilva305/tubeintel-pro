@@ -240,6 +240,11 @@ export default function SettingsPage() {
             console.warn(`Found ${profiles.length} profiles for user ${user.id}, updating all`);
             
             for (const profile of profiles) {
+              if (!profile || typeof profile.id !== 'string') {
+                console.error('Invalid profile object:', profile);
+                continue;
+              }
+              
               const { error: multiUpdateError } = await supabase
                 .from('profiles')
                 .update({ 
