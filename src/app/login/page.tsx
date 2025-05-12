@@ -28,23 +28,32 @@ export default function LoginPage() {
       const authenticated = await isAuthenticated();
       if (authenticated) {
         // User is already logged in, check if they need onboarding
-        const userJson = localStorage.getItem('user');
-        if (userJson) {
-          try {
-            const userData = JSON.parse(userJson);
-            // If the user has completed onboarding or has a YouTube channel ID, go to dashboard
-            if (userData.hasCompletedOnboarding || localStorage.getItem('youtubeChannelId')) {
-              router.push('/dashboard');
-            } else {
+        const currentUserId = localStorage.getItem('currentUserId');
+        if (currentUserId) {
+          const userJson = localStorage.getItem(`user_${currentUserId}`);
+          if (userJson) {
+            try {
+              const userData = JSON.parse(userJson);
+              // Check for user-specific channel ID
+              const hasChannel = !!localStorage.getItem(`user_${currentUserId}_youtubeChannelId`);
+              
+              // If the user has completed onboarding or has a YouTube channel ID, go to dashboard
+              if (userData.hasCompletedOnboarding || hasChannel) {
+                router.push('/dashboard');
+              } else {
+                router.push('/onboarding');
+              }
+            } catch (e) {
+              console.error('Error parsing user data:', e);
+              // If there's an error, direct to onboarding to be safe
               router.push('/onboarding');
             }
-          } catch (e) {
-            console.error('Error parsing user data:', e);
-            // If there's an error, direct to onboarding to be safe
+          } else {
+            // No user data but authenticated, go to onboarding
             router.push('/onboarding');
           }
         } else {
-          // No user data but authenticated, go to onboarding
+          // No current user ID, go to onboarding
           router.push('/onboarding');
         }
       }
@@ -74,7 +83,8 @@ export default function LoginPage() {
       console.log('Login successful:', result.user, 'Onboarding completed:', result.hasCompletedOnboarding);
       
       // Check if user has completed onboarding based on return value or localStorage
-      if (result.hasCompletedOnboarding || localStorage.getItem('youtubeChannelId')) {
+      const hasChannel = !!localStorage.getItem(`user_${result.user.id}_youtubeChannelId`);
+      if (result.hasCompletedOnboarding || hasChannel) {
         router.push('/dashboard');
       } else {
         router.push('/onboarding');
