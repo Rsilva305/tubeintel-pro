@@ -1,10 +1,82 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { FaTimes, FaInfoCircle, FaChevronDown } from 'react-icons/fa';
+import { FaTimes, FaInfoCircle, FaChevronDown, FaCalendarAlt } from 'react-icons/fa';
+import '@/styles/dualSlider.css';
 
-type SearchPrecision = 'Specific' | 'Hybrid';
-type ContentFormat = 'Videos' | 'Shorts';
+// Dual Slider Component
+interface DualSliderProps {
+  min: number;
+  max: number;
+  step: number | string;
+  minValue: number;
+  maxValue: number;
+  onMinChange: (value: number) => void;
+  onMaxChange: (value: number) => void;
+  className?: string;
+}
+
+const DualSlider: React.FC<DualSliderProps> = ({
+  min,
+  max,
+  step,
+  minValue,
+  maxValue,
+  onMinChange,
+  onMaxChange,
+  className = ''
+}) => {
+  // Ensure minValue doesn't exceed maxValue
+  const handleMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = Number(e.target.value);
+    if (newValue <= maxValue) {
+      onMinChange(newValue);
+    }
+  };
+
+  // Ensure maxValue doesn't fall below minValue
+  const handleMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = Number(e.target.value);
+    if (newValue >= minValue) {
+      onMaxChange(newValue);
+    }
+  };
+
+  return (
+    <div className={`relative w-full h-6 ${className}`}>
+      {/* Custom track */}
+      <div 
+        className="absolute w-full h-1 bg-zinc-700 top-1/2 transform -translate-y-1/2 rounded" 
+        style={{ zIndex: -10 }}
+      ></div>
+      
+      {/* Min value slider */}
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={minValue}
+        onChange={handleMinChange}
+        className="absolute w-full thumb-left search-filter-range"
+        style={{ height: '100%' }}
+      />
+      
+      {/* Max value slider */}
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={maxValue}
+        onChange={handleMaxChange}
+        className="absolute w-full thumb-right search-filter-range"
+        style={{ height: '100%' }}
+      />
+    </div>
+  );
+};
+
 type TimeRange = '30 Days' | '90 Days' | '180 Days' | '365 Days' | '3 Years' | 'All Time' | 'Custom';
 
 interface SearchFiltersProps {
@@ -62,12 +134,6 @@ export default function SearchFilters({
     return parseFloat(value);
   };
 
-  // Search precision state
-  const [searchPrecision, setSearchPrecision] = useState<SearchPrecision>('Hybrid');
-  
-  // Content format state
-  const [contentFormat, setContentFormat] = useState<ContentFormat>('Videos');
-  
   // Time range state
   const [timeRange, setTimeRange] = useState<TimeRange>('All Time');
   const [startDate, setStartDate] = useState('2005-02-13');
@@ -76,6 +142,8 @@ export default function SearchFilters({
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedDates, setSelectedDates] = useState<number[]>([]);
   const [calendarDays, setCalendarDays] = useState<{day: number, month: number, year: number, isCurrentMonth: boolean}[]>([]);
+  const [isCalendarVisible, setIsCalendarVisible] = useState(false);
+  const [activeField, setActiveField] = useState<'start' | 'end' | null>(null);
   
   // Range sliders state
   const [multiplierMin, setMultiplierMin] = useState('0.0x');
@@ -242,31 +310,40 @@ export default function SearchFilters({
       setTimeRange('Custom');
     }
     
-    // If no dates selected yet or both dates already selected, start a new selection
-    if (selectedDates.length === 0 || selectedDates.length === 2) {
-      setSelectedDates([day]);
+    // Set the date based on which field is active
+    if (activeField === 'start') {
       setStartDate(dateStr);
-      setEndDate(dateStr);
-    } 
-    // If one date is selected, complete the range
-    else if (selectedDates.length === 1) {
-      const firstDate = new Date(startDate);
-      const clickedDate = new Date(dateStr);
-      
-      // Ensure start date is always before end date
-      if (clickedDate < firstDate) {
+      // If the new start date is after the current end date, update end date too
+      const newStart = new Date(dateStr);
+      const currentEnd = new Date(endDate);
+      if (newStart > currentEnd) {
+        setEndDate(dateStr);
+      }
+      // Move focus to the end field after selecting start date
+      setActiveField('end');
+      // Update selected dates for highlighting
+      const startDay = new Date(dateStr).getDate();
+      setSelectedDates([startDay]);
+    } else if (activeField === 'end') {
+      // If the selected end date is before the start date, update the start date instead
+      const currentStart = new Date(startDate);
+      const newEnd = new Date(dateStr);
+      if (newEnd < currentStart) {
         setStartDate(dateStr);
-        setEndDate(firstDate.toISOString().split('T')[0]);
       } else {
         setEndDate(dateStr);
       }
-      
-      setSelectedDates([selectedDates[0], day]);
+      // Close the calendar after selecting the end date
+      setIsCalendarVisible(false);
+      setActiveField(null);
+      // Update selected dates for highlighting
+      const endDay = new Date(dateStr).getDate();
+      setSelectedDates([endDay]);
     }
   };
 
   const isDateInRange = (day: number, month: number, year: number) => {
-    if (timeRange !== 'Custom' || !startDate || !endDate) return false;
+    if (!startDate || !endDate) return false;
     
     const date = new Date(year, month, day);
     const start = new Date(startDate);
@@ -276,6 +353,21 @@ export default function SearchFilters({
     start.setHours(0, 0, 0, 0);
     end.setHours(23, 59, 59, 999);
     
+    // If we're selecting the start date, only highlight the start date
+    if (activeField === 'start') {
+      return date.getDate() === start.getDate() && 
+             date.getMonth() === start.getMonth() && 
+             date.getFullYear() === start.getFullYear();
+    }
+    
+    // If we're selecting the end date, only highlight the end date
+    if (activeField === 'end') {
+      return date.getDate() === end.getDate() && 
+             date.getMonth() === end.getMonth() && 
+             date.getFullYear() === end.getFullYear();
+    }
+    
+    // When not actively selecting, show the full range
     return date >= start && date <= end;
   };
 
@@ -291,23 +383,31 @@ export default function SearchFilters({
     switch (range) {
       case '30 Days':
         start.setDate(now.getDate() - 30);
+        setIsCalendarVisible(false);
         break;
       case '90 Days':
         start.setDate(now.getDate() - 90);
+        setIsCalendarVisible(false);
         break;
       case '180 Days':
         start.setDate(now.getDate() - 180);
+        setIsCalendarVisible(false);
         break;
       case '365 Days':
         start.setDate(now.getDate() - 365);
+        setIsCalendarVisible(false);
         break;
       case '3 Years':
         start.setFullYear(now.getFullYear() - 3);
+        setIsCalendarVisible(false);
         break;
       case 'All Time':
         start = new Date('2005-02-14'); // YouTube's founding date
+        setIsCalendarVisible(false);
         break;
       case 'Custom':
+        // Don't show calendar immediately when selecting Custom
+        setIsCalendarVisible(false);
         // Don't change the dates when selecting "Custom"
         return;
     }
@@ -350,8 +450,6 @@ export default function SearchFilters({
 
   const handleApply = () => {
     const filters = {
-      searchPrecision,
-      contentFormat,
       timeRange,
       startDate,
       endDate,
@@ -415,71 +513,6 @@ export default function SearchFilters({
         <div className="grid grid-cols-2 gap-x-10 gap-y-3">
           {/* LEFT COLUMN - All slider options */}
           <div>
-            {/* Search precision and Content format in one row */}
-            <div className="flex mb-3 gap-5">
-              {/* Search precision */}
-              <div className="flex-1">
-                <div className="flex items-center mb-1">
-                  <h3 className="text-sm font-normal">Search precision</h3>
-                  <div className="ml-2 text-gray-400 cursor-help">
-                    <FaInfoCircle size={12} />
-                  </div>
-                </div>
-                <div className="flex bg-zinc-900 rounded-full p-1 w-fit">
-                  <button
-                    className={`px-4 py-1 rounded-full text-xs ${
-                      searchPrecision === 'Specific' ? 'bg-red-600 text-white' : 'text-white'
-                    }`}
-                    onClick={() => setSearchPrecision('Specific')}
-                  >
-                    Specific
-                  </button>
-                  <button
-                    className={`px-4 py-1 rounded-full text-xs ${
-                      searchPrecision === 'Hybrid' ? 'bg-red-600 text-white' : 'text-white'
-                    }`}
-                    onClick={() => setSearchPrecision('Hybrid')}
-                  >
-                    Hybrid
-                  </button>
-                </div>
-              </div>
-              
-              {/* Content format */}
-              <div className="flex-1">
-                <div className="flex items-center mb-1">
-                  <h3 className="text-sm font-normal">Content format</h3>
-                  <div className="ml-2 text-gray-400 cursor-help">
-                    <FaInfoCircle size={12} />
-                  </div>
-                </div>
-                <div className="flex bg-zinc-900 rounded-full p-1 w-fit">
-                  <button
-                    className={`px-4 py-1 rounded-full text-xs flex items-center ${
-                      contentFormat === 'Videos' ? 'bg-red-600 text-white' : 'text-white'
-                    }`}
-                    onClick={() => setContentFormat('Videos')}
-                  >
-                    <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="currentColor">
-                      <rect x="2" y="4" width="20" height="16" rx="2" />
-                    </svg>
-                    Videos
-                  </button>
-                  <button
-                    className={`px-4 py-1 rounded-full text-xs flex items-center ${
-                      contentFormat === 'Shorts' ? 'bg-red-600 text-white' : 'text-white'
-                    }`}
-                    onClick={() => setContentFormat('Shorts')}
-                  >
-                    <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
-                    </svg>
-                    Shorts
-                  </button>
-                </div>
-              </div>
-            </div>
-            
             {/* Multiplier */}
             <div className="mb-3">
               <div className="flex items-center mb-1">
@@ -489,13 +522,14 @@ export default function SearchFilters({
                 </div>
               </div>
               <div className="mb-1">
-                <input
-                  type="range"
-                  min="0"
-                  max="500"
-                  step="0.1"
-                  value={parseFloat(multiplierMin) || 0}
-                  onChange={(e) => setMultiplierMin(e.target.value + 'x')}
+                <DualSlider
+                  min={0}
+                  max={500}
+                  step={0.1}
+                  minValue={parseNumberValue(multiplierMin.replace('x', '')) || 0}
+                  maxValue={parseNumberValue(multiplierMax.replace('x', '').replace('+', '')) || 500}
+                  onMinChange={(value) => setMultiplierMin(`${value.toFixed(1)}x`)}
+                  onMaxChange={(value) => setMultiplierMax(value >= 500 ? '500.0x+' : `${value.toFixed(1)}x`)}
                   className="search-filter-range w-full"
                 />
                 <div className="flex justify-between text-xs text-gray-400 mt-1">
@@ -536,13 +570,14 @@ export default function SearchFilters({
                 </div>
               </div>
               <div className="mb-1">
-                <input
-                  type="range"
-                  min="0"
-                  max="1000000000"
-                  step="10000"
-                  value={parseNumberValue(viewsMin) || 0}
-                  onChange={(e) => setViewsMin(e.target.value)}
+                <DualSlider
+                  min={0}
+                  max={1000000000}
+                  step={10000}
+                  minValue={parseNumberValue(viewsMin) || 0}
+                  maxValue={parseNumberValue(viewsMax.replace('+', '')) || 1000000000}
+                  onMinChange={(value) => setViewsMin(value.toString())}
+                  onMaxChange={(value) => setViewsMax(value >= 1000000000 ? '1B+' : value.toString())}
                   className="search-filter-range w-full"
                 />
                 <div className="flex justify-between text-xs text-gray-400 mt-1">
@@ -583,13 +618,14 @@ export default function SearchFilters({
                 </div>
               </div>
               <div className="mb-1">
-                <input
-                  type="range"
-                  min="0"
-                  max="500000000"
-                  step="10000"
-                  value={parseNumberValue(subscribersMin) || 0}
-                  onChange={(e) => setSubscribersMin(e.target.value)}
+                <DualSlider
+                  min={0}
+                  max={500000000}
+                  step={10000}
+                  minValue={parseNumberValue(subscribersMin) || 0}
+                  maxValue={parseNumberValue(subscribersMax.replace('+', '')) || 500000000}
+                  onMinChange={(value) => setSubscribersMin(value.toString())}
+                  onMaxChange={(value) => setSubscribersMax(value >= 500000000 ? '500M+' : value.toString())}
                   className="search-filter-range w-full"
                 />
                 <div className="flex justify-between text-xs text-gray-400 mt-1">
@@ -630,17 +666,25 @@ export default function SearchFilters({
                 </div>
               </div>
               <div className="mb-1">
-                <input
-                  type="range"
-                  min="0"
-                  max="420"
-                  step="1"
-                  value={parseDurationValue(videoDurationMin) || 0}
-                  onChange={(e) => {
-                    const minutes = parseInt(e.target.value);
-                    const hours = Math.floor(minutes / 60);
-                    const mins = minutes % 60;
+                <DualSlider
+                  min={0}
+                  max={420}
+                  step={1}
+                  minValue={parseDurationValue(videoDurationMin) || 0}
+                  maxValue={parseDurationValue(videoDurationMax.replace('+', '')) || 420}
+                  onMinChange={(value) => {
+                    const hours = Math.floor(value / 60);
+                    const mins = value % 60;
                     setVideoDurationMin(`${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:00`);
+                  }}
+                  onMaxChange={(value) => {
+                    if (value >= 420) {
+                      setVideoDurationMax('07:00:00+');
+                    } else {
+                      const hours = Math.floor(value / 60);
+                      const mins = value % 60;
+                      setVideoDurationMax(`${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:00`);
+                    }
                   }}
                   className="search-filter-range w-full"
                 />
@@ -750,15 +794,19 @@ export default function SearchFilters({
                     className={`flex justify-between items-center w-full ${timeRange === 'Custom' ? 'bg-red-600' : 'bg-zinc-900 hover:bg-zinc-800'} px-3 py-1 rounded-full`}
                     onClick={() => handleTimeRangeSelect('Custom')}
                   >
-                    <span className="text-xs">Custom</span>
-                    <span className="text-gray-400 text-xs">▶</span>
+                    <span className="text-xs flex items-center">
+                      <FaCalendarAlt className="mr-1" size={10} /> Custom
+                    </span>
+                    <span className={`text-xs ${timeRange === 'Custom' ? 'text-white' : 'text-gray-400'}`}>
+                      ▶
+                    </span>
                   </button>
                 </div>
               </div>
               
               {/* Date input fields */}
               <div className="mt-2 grid grid-cols-2 gap-2">
-                <div>
+                <div className="relative">
                   <input
                     type="text"
                     value={formatDateForDisplay(startDate)}
@@ -776,11 +824,24 @@ export default function SearchFilters({
                         // Invalid date format, keep the existing value
                       }
                     }}
-                    className="w-full bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-xs"
+                    onClick={() => {
+                      setTimeRange('Custom');
+                      setActiveField('start');
+                      setIsCalendarVisible(true);
+                      // Set calendar month/year to match the start date
+                      const startDateObj = new Date(startDate);
+                      setSelectedMonth(startDateObj.getMonth());
+                      setSelectedYear(startDateObj.getFullYear());
+                    }}
+                    className="w-full bg-zinc-900 border border-zinc-700 px-2 pl-7 py-1 rounded-full text-white text-xs cursor-pointer"
                     placeholder="Start date"
+                    readOnly
                   />
+                  <div className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400">
+                    <FaCalendarAlt size={10} />
+                  </div>
                 </div>
-                <div>
+                <div className="relative">
                   <input
                     type="text"
                     value={formatDateForDisplay(endDate)}
@@ -798,56 +859,111 @@ export default function SearchFilters({
                         // Invalid date format, keep the existing value
                       }
                     }}
-                    className="w-full bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-xs"
+                    onClick={() => {
+                      setTimeRange('Custom');
+                      setActiveField('end');
+                      setIsCalendarVisible(true);
+                      // Set calendar month/year to match the end date
+                      const endDateObj = new Date(endDate);
+                      setSelectedMonth(endDateObj.getMonth());
+                      setSelectedYear(endDateObj.getFullYear());
+                    }}
+                    className="w-full bg-zinc-900 border border-zinc-700 px-2 pl-7 py-1 rounded-full text-white text-xs cursor-pointer"
                     placeholder="End date"
+                    readOnly
                   />
+                  <div className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400">
+                    <FaCalendarAlt size={10} />
+                  </div>
                 </div>
               </div>
               
               {/* Calendar */}
-              <div className="mt-2 bg-zinc-900 p-2 rounded-2xl">
-                <div className="text-xs">
-                  {/* Month & Year Navigation */}
-                  <div className="flex justify-between mb-1 text-xxs">
-                    <button 
-                      className="text-gray-400 hover:text-red-600 rounded-full w-5 h-5 flex items-center justify-center"
-                      onClick={handlePrevMonth}
-                    >
-                      &lt;
-                    </button>
-                    <div className="text-gray-400 bg-zinc-800 px-2 py-0.5 rounded-full">
-                      {new Date(selectedYear, selectedMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              {isCalendarVisible && (
+                <div className="mt-2 bg-zinc-900 p-2 rounded-2xl relative">
+                  <button 
+                    onClick={() => {
+                      setIsCalendarVisible(false);
+                      setActiveField(null);
+                    }}
+                    className="absolute top-1 right-1 text-gray-400 hover:text-white"
+                    aria-label="Close calendar"
+                  >
+                    <FaTimes size={12} />
+                  </button>
+                  <div className="text-xs">
+                    {/* Calendar title */}
+                    <div className="text-center mb-1 text-gray-300">
+                      Select {activeField === 'start' ? 'Start' : 'End'} Date
                     </div>
-                    <button 
-                      className="text-gray-400 hover:text-red-600 rounded-full w-5 h-5 flex items-center justify-center"
-                      onClick={handleNextMonth}
-                    >
-                      &gt;
-                    </button>
-                  </div>
-                  
-                  {/* Day headers */}
-                  <div className="grid grid-cols-7 gap-0">
-                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
-                      <div key={day} className="text-center text-xxs text-gray-400">{day}</div>
-                    ))}
                     
-                    {/* Calendar days - more dynamic based on the actual month */}
-                    {calendarDays.map((dateObj, i) => (
-                      <div 
-                        key={i}
-                        onClick={() => handleDateClick(dateObj.day, dateObj.month, dateObj.year)}
-                        className={`text-center py-0.5 text-xxs cursor-pointer hover:bg-red-600/50 rounded-full
-                          ${!dateObj.isCurrentMonth ? 'text-gray-400' : ''}
-                          ${isDateInRange(dateObj.day, dateObj.month, dateObj.year) ? 'bg-red-600' : ''}
-                        `}
+                    {/* Month & Year Navigation */}
+                    <div className="flex justify-between mb-1 text-xxs gap-2">
+                      <select
+                        value={selectedMonth}
+                        onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                        className="flex-1 bg-zinc-800 text-gray-300 px-2 py-0.5 rounded-full text-center text-xxs border-none outline-none cursor-pointer"
                       >
-                        {dateObj.day}
+                        {[
+                          'January', 'February', 'March', 'April', 'May', 'June',
+                          'July', 'August', 'September', 'October', 'November', 'December'
+                        ].map((month, index) => (
+                          <option key={month} value={index}>{month}</option>
+                        ))}
+                      </select>
+                      
+                      <div className="flex items-center gap-1 flex-1">
+                        <button 
+                          onClick={() => setSelectedYear(selectedYear - 1)}
+                          className="bg-zinc-800 text-gray-400 hover:text-white text-xs rounded-full w-4 h-4 flex items-center justify-center"
+                        >
+                          -
+                        </button>
+                        <input
+                          type="number"
+                          min="1970"
+                          max="2100"
+                          value={selectedYear}
+                          onChange={(e) => {
+                            const year = parseInt(e.target.value);
+                            if (!isNaN(year) && year >= 1970 && year <= 2100) {
+                              setSelectedYear(year);
+                            }
+                          }}
+                          className="flex-1 bg-zinc-800 text-gray-300 px-2 py-0.5 rounded-full text-center text-xxs border-none outline-none"
+                        />
+                        <button 
+                          onClick={() => setSelectedYear(selectedYear + 1)}
+                          className="bg-zinc-800 text-gray-400 hover:text-white text-xs rounded-full w-4 h-4 flex items-center justify-center"
+                        >
+                          +
+                        </button>
                       </div>
-                    ))}
+                    </div>
+                    
+                    {/* Day headers */}
+                    <div className="grid grid-cols-7 gap-0">
+                      {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
+                        <div key={day} className="text-center text-xxs text-gray-400">{day}</div>
+                      ))}
+                      
+                      {/* Calendar days - more dynamic based on the actual month */}
+                      {calendarDays.map((dateObj, i) => (
+                        <div 
+                          key={i}
+                          onClick={() => handleDateClick(dateObj.day, dateObj.month, dateObj.year)}
+                          className={`text-center py-0.5 text-xxs cursor-pointer hover:bg-red-600/50 rounded-full
+                            ${!dateObj.isCurrentMonth ? 'text-gray-400' : ''}
+                            ${isDateInRange(dateObj.day, dateObj.month, dateObj.year) ? 'bg-red-600' : ''}
+                          `}
+                        >
+                          {dateObj.day}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -884,13 +1000,14 @@ export default function SearchFilters({
                     </div>
                   </div>
                   <div className="mb-1">
-                    <input
-                      type="range"
-                      min="0"
-                      max="500"
-                      step="0.1"
-                      value={parseNumberValue(viewsToSubsRatioMin) || 0}
-                      onChange={(e) => setViewsToSubsRatioMin(e.target.value)}
+                    <DualSlider
+                      min={0}
+                      max={500}
+                      step={0.1}
+                      minValue={parseNumberValue(viewsToSubsRatioMin) || 0}
+                      maxValue={parseNumberValue(viewsToSubsRatioMax.replace('+', '')) || 500}
+                      onMinChange={(value) => setViewsToSubsRatioMin(value.toString())}
+                      onMaxChange={(value) => setViewsToSubsRatioMax(value >= 500 ? '500.0+' : value.toString())}
                       className="search-filter-range w-full"
                     />
                   </div>
@@ -926,11 +1043,14 @@ export default function SearchFilters({
                     </div>
                   </div>
                   <div className="mb-1">
-                    <input
-                      type="range"
-                      min="0"
-                      max="100000"
-                      step="100"
+                    <DualSlider
+                      min={0}
+                      max={100000}
+                      step={100}
+                      minValue={parseNumberValue(channelVideoCountMin) || 0}
+                      maxValue={parseNumberValue(channelVideoCountMax.replace('+', '').replace('k', '000')) || 100000}
+                      onMinChange={(value) => setChannelVideoCountMin(value.toString())}
+                      onMaxChange={(value) => setChannelVideoCountMax(value >= 100000 ? '100k+' : value.toString())}
                       className="search-filter-range w-full"
                     />
                   </div>
@@ -969,13 +1089,14 @@ export default function SearchFilters({
                     </div>
                   </div>
                   <div className="mb-1">
-                    <input
-                      type="range"
-                      min="0"
-                      max="400000000"
-                      step="1000"
-                      value={parseNumberValue(medianViewsMin) || 0}
-                      onChange={(e) => setMedianViewsMin(e.target.value)}
+                    <DualSlider
+                      min={0}
+                      max={400000000}
+                      step={1000}
+                      minValue={parseNumberValue(medianViewsMin) || 0}
+                      maxValue={parseNumberValue(medianViewsMax.replace('+', '')) || 400000000}
+                      onMinChange={(value) => setMedianViewsMin(value.toString())}
+                      onMaxChange={(value) => setMedianViewsMax(value >= 400000000 ? '400M+' : value.toString())}
                       className="search-filter-range w-full"
                     />
                   </div>
@@ -1011,13 +1132,14 @@ export default function SearchFilters({
                     </div>
                   </div>
                   <div className="mb-1">
-                    <input
-                      type="range"
-                      min="0"
-                      max="50000000"
-                      step="1000"
-                      value={parseNumberValue(videoLikesMin) || 0}
-                      onChange={(e) => setVideoLikesMin(e.target.value)}
+                    <DualSlider
+                      min={0}
+                      max={50000000}
+                      step={1000}
+                      minValue={parseNumberValue(videoLikesMin) || 0}
+                      maxValue={parseNumberValue(videoLikesMax.replace('+', '')) || 50000000}
+                      onMinChange={(value) => setVideoLikesMin(value.toString())}
+                      onMaxChange={(value) => setVideoLikesMax(value >= 50000000 ? '50M+' : value.toString())}
                       className="search-filter-range w-full"
                     />
                   </div>
@@ -1056,11 +1178,14 @@ export default function SearchFilters({
                     </div>
                   </div>
                   <div className="mb-1">
-                    <input
-                      type="range"
-                      min="0"
-                      max="100000000000"
-                      step="10000"
+                    <DualSlider
+                      min={0}
+                      max={100000000000}
+                      step={10000}
+                      minValue={parseNumberValue(channelTotalViewsMin) || 0}
+                      maxValue={parseNumberValue(channelTotalViewsMax.replace('+', '').replace('B', '000000000')) || 100000000000}
+                      onMinChange={(value) => setChannelTotalViewsMin(value.toString())}
+                      onMaxChange={(value) => setChannelTotalViewsMax(value >= 100000000000 ? '100B+' : value.toString())}
                       className="search-filter-range w-full"
                     />
                   </div>
@@ -1096,13 +1221,14 @@ export default function SearchFilters({
                     </div>
                   </div>
                   <div className="mb-1">
-                    <input
-                      type="range"
-                      min="0"
-                      max="5000000"
-                      step="100"
-                      value={parseNumberValue(videoCommentsMin) || 0}
-                      onChange={(e) => setVideoCommentsMin(e.target.value)}
+                    <DualSlider
+                      min={0}
+                      max={5000000}
+                      step={100}
+                      minValue={parseNumberValue(videoCommentsMin) || 0}
+                      maxValue={parseNumberValue(videoCommentsMax.replace('+', '')) || 5000000}
+                      onMinChange={(value) => setVideoCommentsMin(value.toString())}
+                      onMaxChange={(value) => setVideoCommentsMax(value >= 5000000 ? '5M+' : value.toString())}
                       className="search-filter-range w-full"
                     />
                   </div>
@@ -1141,11 +1267,14 @@ export default function SearchFilters({
                     </div>
                   </div>
                   <div className="mb-1">
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      step="1"
+                    <DualSlider
+                      min={0}
+                      max={100}
+                      step={1}
+                      minValue={parseNumberValue(engagementRateMin) || 0}
+                      maxValue={parseNumberValue(engagementRateMax.replace('+', '')) || 100}
+                      onMinChange={(value) => setEngagementRateMin(value.toString())}
+                      onMaxChange={(value) => setEngagementRateMax(value >= 100 ? '100+' : value.toString())}
                       className="search-filter-range w-full"
                     />
                   </div>
@@ -1181,11 +1310,14 @@ export default function SearchFilters({
                     </div>
                   </div>
                   <div className="mb-1">
-                    <input
-                      type="range"
-                      min="0"
-                      max="20"
-                      step="1"
+                    <DualSlider
+                      min={0}
+                      max={20}
+                      step={1}
+                      minValue={channelAgeMin === 'Brand new' ? 0 : parseNumberValue(channelAgeMin) || 0}
+                      maxValue={parseNumberValue(channelAgeMax.replace('+', '').replace(' years ago', '')) || 20}
+                      onMinChange={(value) => setChannelAgeMin(value === 0 ? 'Brand new' : value.toString())}
+                      onMaxChange={(value) => setChannelAgeMax(value >= 20 ? '20 years ago+' : `${value} years ago`)}
                       className="search-filter-range w-full"
                     />
                   </div>

@@ -72,14 +72,20 @@ export const signIn = async (email: string, password: string): Promise<SignInRes
         // Check if there's a profile with a YouTube channel ID
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('youtube_channel_id')
+          .select('youtube_channel_id, has_completed_onboarding')
           .eq('id', data.user.id)
           .single();
           
-        if (!profileError && profileData && profileData.youtube_channel_id) {
-          hasCompletedOnboarding = true;
-          // Store the channel ID in localStorage for easier access
-          localStorage.setItem('youtubeChannelId', String(profileData.youtube_channel_id));
+        if (!profileError && profileData) {
+          if (profileData.youtube_channel_id) {
+            hasCompletedOnboarding = true;
+            // Store the channel ID in localStorage with user-specific key
+            localStorage.setItem(`user_${data.user.id}_youtubeChannelId`, String(profileData.youtube_channel_id));
+          }
+          
+          if (profileData.has_completed_onboarding) {
+            hasCompletedOnboarding = true;
+          }
         }
       } catch (profileError) {
         console.error('Error checking profile:', profileError);
@@ -89,7 +95,8 @@ export const signIn = async (email: string, password: string): Promise<SignInRes
     
     // Store the user in localStorage for easier access
     if (data.user) {
-      localStorage.setItem('user', JSON.stringify({
+      localStorage.setItem('currentUserId', data.user.id);
+      localStorage.setItem(`user_${data.user.id}`, JSON.stringify({
         id: data.user.id,
         email: data.user.email,
         username: data.user.email?.split('@')[0] || 'user',
@@ -110,15 +117,28 @@ export const signIn = async (email: string, password: string): Promise<SignInRes
 
 export const signOut = async () => {
   try {
-    // Always remove from localStorage
-    localStorage.removeItem('user');
-    localStorage.removeItem('youtubeChannelId');
+    // Get current user ID before signing out
+    const currentUserId = localStorage.getItem('currentUserId');
     
+    // Sign out from Supabase
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+    
+    // Clear all user-specific localStorage items
+    if (currentUserId) {
+      localStorage.removeItem(`user_${currentUserId}`);
+      localStorage.removeItem(`user_${currentUserId}_youtubeChannelId`);
+    }
+    
+    // Clear general localStorage items
+    localStorage.removeItem('currentUserId');
+    localStorage.removeItem('youtubeChannelId'); // Remove legacy item too
+    localStorage.removeItem('user'); // Remove legacy item too
+    
+    return true;
   } catch (error) {
     console.error('Sign out error:', error);
-    throw error;
+    return false;
   }
 };
 
@@ -143,8 +163,8 @@ export const getCurrentUser = async () => {
         if (!profileError && profileData) {
           if (profileData.youtube_channel_id) {
             hasCompletedOnboarding = true;
-            // Store the channel ID in localStorage for easier access
-            localStorage.setItem('youtubeChannelId', String(profileData.youtube_channel_id));
+            // Store the channel ID in localStorage with user-specific key to prevent leaking between accounts
+            localStorage.setItem(`user_${supabaseUser.id}_youtubeChannelId`, String(profileData.youtube_channel_id));
           }
           
           if (profileData.has_completed_onboarding) {
@@ -164,23 +184,26 @@ export const getCurrentUser = async () => {
         hasCompletedOnboarding: hasCompletedOnboarding
       };
       
-      // Store in localStorage for easier access
-      localStorage.setItem('user', JSON.stringify(userData));
+      // Store in localStorage for easier access - with user ID
+      localStorage.setItem('currentUserId', supabaseUser.id);
+      localStorage.setItem(`user_${supabaseUser.id}`, JSON.stringify(userData));
       
       console.log("Using authenticated Supabase user:", supabaseUser.id);
       return userData;
     }
     
     // If no Supabase auth, check localStorage as fallback
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      console.warn("WARNING: Using localStorage user without Supabase authentication. RLS policies may block database operations.");
-      return JSON.parse(storedUser);
+    const currentUserId = localStorage.getItem('currentUserId');
+    if (currentUserId) {
+      const storedUser = localStorage.getItem(`user_${currentUserId}`);
+      if (storedUser) {
+        return JSON.parse(storedUser);
+      }
     }
     
     return null;
   } catch (error) {
-    console.error('Get current user error:', error);
+    console.error('Error getting current user:', error);
     return null;
   }
 };

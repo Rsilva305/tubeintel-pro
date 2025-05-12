@@ -255,6 +255,12 @@ export default function OnboardingPage() {
         throw new Error('Failed to update profile: ' + updateError.message);
       }
       
+      // Store channel ID in user-specific localStorage
+      const currentUserId = localStorage.getItem('currentUserId');
+      if (currentUserId) {
+        localStorage.setItem(`user_${currentUserId}_youtubeChannelId`, finalChannelId);
+      }
+      
       // Redirect to dashboard
       router.push('/dashboard');
     } catch (err: any) {

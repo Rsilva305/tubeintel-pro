@@ -45,10 +45,23 @@ const channelsApi = {
         throw new Error('User not authenticated');
       }
 
-      // First, try to get the channel ID from localStorage as a fallback
+      // First, try to get the channel ID from user-specific localStorage
       let channelId = null;
-      if (typeof window !== 'undefined') {
-        channelId = localStorage.getItem('youtubeChannelId');
+      const currentUserId = localStorage.getItem('currentUserId');
+      
+      if (typeof window !== 'undefined' && currentUserId) {
+        // Try user-specific storage first
+        channelId = localStorage.getItem(`user_${currentUserId}_youtubeChannelId`);
+        
+        // Fall back to legacy storage if needed
+        if (!channelId) {
+          channelId = localStorage.getItem('youtubeChannelId');
+          
+          // If we found a channel ID in legacy storage, migrate it to the user-specific storage
+          if (channelId) {
+            localStorage.setItem(`user_${currentUserId}_youtubeChannelId`, channelId);
+          }
+        }
       }
 
       // If we didn't find it in localStorage, try to get it from Supabase
