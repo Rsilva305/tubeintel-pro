@@ -430,7 +430,7 @@ export default function SettingsPage() {
                   <ul className="max-h-60 overflow-y-auto">
                     {searchResults.map((channel) => (
                       <li 
-                        key={channel.id}
+                        key={channel.id} 
                         onClick={(e: React.MouseEvent<HTMLLIElement>) => {
                           e.stopPropagation();
                           selectChannel(channel);
