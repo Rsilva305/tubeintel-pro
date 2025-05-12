@@ -17,13 +17,30 @@ export default function NavigationWrapper({ children }: NavigationWrapperProps) 
   // Get username from localStorage if available
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        try {
-          const userData = JSON.parse(storedUser);
-          setUsername(userData.username || 'User');
-        } catch (error) {
-          console.error('Error parsing user from localStorage:', error);
+      // Get the current user ID first
+      const currentUserId = localStorage.getItem('currentUserId');
+      
+      if (currentUserId) {
+        // Use the user-specific storage key
+        const storedUser = localStorage.getItem(`user_${currentUserId}`);
+        if (storedUser) {
+          try {
+            const userData = JSON.parse(storedUser);
+            setUsername(userData.username || userData.email?.split('@')[0] || 'User');
+          } catch (error) {
+            console.error('Error parsing user from localStorage:', error);
+          }
+        }
+      } else {
+        // For backward compatibility, try the old key
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          try {
+            const userData = JSON.parse(storedUser);
+            setUsername(userData.username || userData.email?.split('@')[0] || 'User');
+          } catch (error) {
+            console.error('Error parsing user from localStorage:', error);
+          }
         }
       }
     }
