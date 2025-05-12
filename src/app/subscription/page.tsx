@@ -61,7 +61,7 @@ export default function SubscriptionPage() {
   const router = useRouter();
   const [currentPlan, setCurrentPlan] = useState<SubscriptionTier>('free');
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+  const [message, setMessage] = useState<{type: 'success' | 'error' | 'info', text: string} | null>(null);
   
   // Mock function to get the current subscription
   useEffect(() => {
@@ -135,7 +135,9 @@ export default function SubscriptionPage() {
           <div className={`max-w-xl mx-auto mb-8 p-4 rounded-lg ${
             message.type === 'success' 
               ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' 
-              : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
+              : message.type === 'error'
+                ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
+                : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
           }`}>
             <p>{message.text}</p>
           </div>
