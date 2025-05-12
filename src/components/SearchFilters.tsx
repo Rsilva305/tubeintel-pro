@@ -898,22 +898,47 @@ export default function SearchFilters({
                     </div>
                     
                     {/* Month & Year Navigation */}
-                    <div className="flex justify-between mb-1 text-xxs">
-                      <button 
-                        className="text-gray-400 hover:text-red-600 rounded-full w-5 h-5 flex items-center justify-center"
-                        onClick={handlePrevMonth}
+                    <div className="flex justify-between mb-1 text-xxs gap-2">
+                      <select
+                        value={selectedMonth}
+                        onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                        className="flex-1 bg-zinc-800 text-gray-300 px-2 py-0.5 rounded-full text-center text-xxs border-none outline-none cursor-pointer"
                       >
-                        &lt;
-                      </button>
-                      <div className="text-gray-400 bg-zinc-800 px-2 py-0.5 rounded-full">
-                        {new Date(selectedYear, selectedMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                        {[
+                          'January', 'February', 'March', 'April', 'May', 'June',
+                          'July', 'August', 'September', 'October', 'November', 'December'
+                        ].map((month, index) => (
+                          <option key={month} value={index}>{month}</option>
+                        ))}
+                      </select>
+                      
+                      <div className="flex items-center gap-1 flex-1">
+                        <button 
+                          onClick={() => setSelectedYear(selectedYear - 1)}
+                          className="bg-zinc-800 text-gray-400 hover:text-white text-xs rounded-full w-4 h-4 flex items-center justify-center"
+                        >
+                          -
+                        </button>
+                        <input
+                          type="number"
+                          min="1970"
+                          max="2100"
+                          value={selectedYear}
+                          onChange={(e) => {
+                            const year = parseInt(e.target.value);
+                            if (!isNaN(year) && year >= 1970 && year <= 2100) {
+                              setSelectedYear(year);
+                            }
+                          }}
+                          className="flex-1 bg-zinc-800 text-gray-300 px-2 py-0.5 rounded-full text-center text-xxs border-none outline-none"
+                        />
+                        <button 
+                          onClick={() => setSelectedYear(selectedYear + 1)}
+                          className="bg-zinc-800 text-gray-400 hover:text-white text-xs rounded-full w-4 h-4 flex items-center justify-center"
+                        >
+                          +
+                        </button>
                       </div>
-                      <button 
-                        className="text-gray-400 hover:text-red-600 rounded-full w-5 h-5 flex items-center justify-center"
-                        onClick={handleNextMonth}
-                      >
-                        &gt;
-                      </button>
                     </div>
                     
                     {/* Day headers */}
