@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { FaTimes, FaInfoCircle, FaChevronDown } from 'react-icons/fa';
+import { FaTimes, FaInfoCircle, FaChevronDown, FaCalendarAlt } from 'react-icons/fa';
 import '@/styles/dualSlider.css';
 
 // Dual Slider Component
@@ -142,6 +142,8 @@ export default function SearchFilters({
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedDates, setSelectedDates] = useState<number[]>([]);
   const [calendarDays, setCalendarDays] = useState<{day: number, month: number, year: number, isCurrentMonth: boolean}[]>([]);
+  const [isCalendarVisible, setIsCalendarVisible] = useState(false);
+  const [activeField, setActiveField] = useState<'start' | 'end' | null>(null);
   
   // Range sliders state
   const [multiplierMin, setMultiplierMin] = useState('0.0x');
@@ -308,31 +310,40 @@ export default function SearchFilters({
       setTimeRange('Custom');
     }
     
-    // If no dates selected yet or both dates already selected, start a new selection
-    if (selectedDates.length === 0 || selectedDates.length === 2) {
-      setSelectedDates([day]);
+    // Set the date based on which field is active
+    if (activeField === 'start') {
       setStartDate(dateStr);
-      setEndDate(dateStr);
-    } 
-    // If one date is selected, complete the range
-    else if (selectedDates.length === 1) {
-      const firstDate = new Date(startDate);
-      const clickedDate = new Date(dateStr);
-      
-      // Ensure start date is always before end date
-      if (clickedDate < firstDate) {
+      // If the new start date is after the current end date, update end date too
+      const newStart = new Date(dateStr);
+      const currentEnd = new Date(endDate);
+      if (newStart > currentEnd) {
+        setEndDate(dateStr);
+      }
+      // Move focus to the end field after selecting start date
+      setActiveField('end');
+      // Update selected dates for highlighting
+      const startDay = new Date(dateStr).getDate();
+      setSelectedDates([startDay]);
+    } else if (activeField === 'end') {
+      // If the selected end date is before the start date, update the start date instead
+      const currentStart = new Date(startDate);
+      const newEnd = new Date(dateStr);
+      if (newEnd < currentStart) {
         setStartDate(dateStr);
-        setEndDate(firstDate.toISOString().split('T')[0]);
       } else {
         setEndDate(dateStr);
       }
-      
-      setSelectedDates([selectedDates[0], day]);
+      // Close the calendar after selecting the end date
+      setIsCalendarVisible(false);
+      setActiveField(null);
+      // Update selected dates for highlighting
+      const endDay = new Date(dateStr).getDate();
+      setSelectedDates([endDay]);
     }
   };
 
   const isDateInRange = (day: number, month: number, year: number) => {
-    if (timeRange !== 'Custom' || !startDate || !endDate) return false;
+    if (!startDate || !endDate) return false;
     
     const date = new Date(year, month, day);
     const start = new Date(startDate);
@@ -342,6 +353,21 @@ export default function SearchFilters({
     start.setHours(0, 0, 0, 0);
     end.setHours(23, 59, 59, 999);
     
+    // If we're selecting the start date, only highlight the start date
+    if (activeField === 'start') {
+      return date.getDate() === start.getDate() && 
+             date.getMonth() === start.getMonth() && 
+             date.getFullYear() === start.getFullYear();
+    }
+    
+    // If we're selecting the end date, only highlight the end date
+    if (activeField === 'end') {
+      return date.getDate() === end.getDate() && 
+             date.getMonth() === end.getMonth() && 
+             date.getFullYear() === end.getFullYear();
+    }
+    
+    // When not actively selecting, show the full range
     return date >= start && date <= end;
   };
 
@@ -357,23 +383,31 @@ export default function SearchFilters({
     switch (range) {
       case '30 Days':
         start.setDate(now.getDate() - 30);
+        setIsCalendarVisible(false);
         break;
       case '90 Days':
         start.setDate(now.getDate() - 90);
+        setIsCalendarVisible(false);
         break;
       case '180 Days':
         start.setDate(now.getDate() - 180);
+        setIsCalendarVisible(false);
         break;
       case '365 Days':
         start.setDate(now.getDate() - 365);
+        setIsCalendarVisible(false);
         break;
       case '3 Years':
         start.setFullYear(now.getFullYear() - 3);
+        setIsCalendarVisible(false);
         break;
       case 'All Time':
         start = new Date('2005-02-14'); // YouTube's founding date
+        setIsCalendarVisible(false);
         break;
       case 'Custom':
+        // Don't show calendar immediately when selecting Custom
+        setIsCalendarVisible(false);
         // Don't change the dates when selecting "Custom"
         return;
     }
@@ -760,15 +794,19 @@ export default function SearchFilters({
                     className={`flex justify-between items-center w-full ${timeRange === 'Custom' ? 'bg-red-600' : 'bg-zinc-900 hover:bg-zinc-800'} px-3 py-1 rounded-full`}
                     onClick={() => handleTimeRangeSelect('Custom')}
                   >
-                    <span className="text-xs">Custom</span>
-                    <span className="text-gray-400 text-xs">▶</span>
+                    <span className="text-xs flex items-center">
+                      <FaCalendarAlt className="mr-1" size={10} /> Custom
+                    </span>
+                    <span className={`text-xs ${timeRange === 'Custom' ? 'text-white' : 'text-gray-400'}`}>
+                      ▶
+                    </span>
                   </button>
                 </div>
               </div>
               
               {/* Date input fields */}
               <div className="mt-2 grid grid-cols-2 gap-2">
-                <div>
+                <div className="relative">
                   <input
                     type="text"
                     value={formatDateForDisplay(startDate)}
@@ -786,11 +824,24 @@ export default function SearchFilters({
                         // Invalid date format, keep the existing value
                       }
                     }}
-                    className="w-full bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-xs"
+                    onClick={() => {
+                      setTimeRange('Custom');
+                      setActiveField('start');
+                      setIsCalendarVisible(true);
+                      // Set calendar month/year to match the start date
+                      const startDateObj = new Date(startDate);
+                      setSelectedMonth(startDateObj.getMonth());
+                      setSelectedYear(startDateObj.getFullYear());
+                    }}
+                    className="w-full bg-zinc-900 border border-zinc-700 px-2 pl-7 py-1 rounded-full text-white text-xs cursor-pointer"
                     placeholder="Start date"
+                    readOnly
                   />
+                  <div className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400">
+                    <FaCalendarAlt size={10} />
+                  </div>
                 </div>
-                <div>
+                <div className="relative">
                   <input
                     type="text"
                     value={formatDateForDisplay(endDate)}
@@ -808,56 +859,86 @@ export default function SearchFilters({
                         // Invalid date format, keep the existing value
                       }
                     }}
-                    className="w-full bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-xs"
+                    onClick={() => {
+                      setTimeRange('Custom');
+                      setActiveField('end');
+                      setIsCalendarVisible(true);
+                      // Set calendar month/year to match the end date
+                      const endDateObj = new Date(endDate);
+                      setSelectedMonth(endDateObj.getMonth());
+                      setSelectedYear(endDateObj.getFullYear());
+                    }}
+                    className="w-full bg-zinc-900 border border-zinc-700 px-2 pl-7 py-1 rounded-full text-white text-xs cursor-pointer"
                     placeholder="End date"
+                    readOnly
                   />
+                  <div className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400">
+                    <FaCalendarAlt size={10} />
+                  </div>
                 </div>
               </div>
               
               {/* Calendar */}
-              <div className="mt-2 bg-zinc-900 p-2 rounded-2xl">
-                <div className="text-xs">
-                  {/* Month & Year Navigation */}
-                  <div className="flex justify-between mb-1 text-xxs">
-                    <button 
-                      className="text-gray-400 hover:text-red-600 rounded-full w-5 h-5 flex items-center justify-center"
-                      onClick={handlePrevMonth}
-                    >
-                      &lt;
-                    </button>
-                    <div className="text-gray-400 bg-zinc-800 px-2 py-0.5 rounded-full">
-                      {new Date(selectedYear, selectedMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              {isCalendarVisible && (
+                <div className="mt-2 bg-zinc-900 p-2 rounded-2xl relative">
+                  <button 
+                    onClick={() => {
+                      setIsCalendarVisible(false);
+                      setActiveField(null);
+                    }}
+                    className="absolute top-1 right-1 text-gray-400 hover:text-white"
+                    aria-label="Close calendar"
+                  >
+                    <FaTimes size={12} />
+                  </button>
+                  <div className="text-xs">
+                    {/* Calendar title */}
+                    <div className="text-center mb-1 text-gray-300">
+                      Select {activeField === 'start' ? 'Start' : 'End'} Date
                     </div>
-                    <button 
-                      className="text-gray-400 hover:text-red-600 rounded-full w-5 h-5 flex items-center justify-center"
-                      onClick={handleNextMonth}
-                    >
-                      &gt;
-                    </button>
-                  </div>
-                  
-                  {/* Day headers */}
-                  <div className="grid grid-cols-7 gap-0">
-                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
-                      <div key={day} className="text-center text-xxs text-gray-400">{day}</div>
-                    ))}
                     
-                    {/* Calendar days - more dynamic based on the actual month */}
-                    {calendarDays.map((dateObj, i) => (
-                      <div 
-                        key={i}
-                        onClick={() => handleDateClick(dateObj.day, dateObj.month, dateObj.year)}
-                        className={`text-center py-0.5 text-xxs cursor-pointer hover:bg-red-600/50 rounded-full
-                          ${!dateObj.isCurrentMonth ? 'text-gray-400' : ''}
-                          ${isDateInRange(dateObj.day, dateObj.month, dateObj.year) ? 'bg-red-600' : ''}
-                        `}
+                    {/* Month & Year Navigation */}
+                    <div className="flex justify-between mb-1 text-xxs">
+                      <button 
+                        className="text-gray-400 hover:text-red-600 rounded-full w-5 h-5 flex items-center justify-center"
+                        onClick={handlePrevMonth}
                       >
-                        {dateObj.day}
+                        &lt;
+                      </button>
+                      <div className="text-gray-400 bg-zinc-800 px-2 py-0.5 rounded-full">
+                        {new Date(selectedYear, selectedMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                       </div>
-                    ))}
+                      <button 
+                        className="text-gray-400 hover:text-red-600 rounded-full w-5 h-5 flex items-center justify-center"
+                        onClick={handleNextMonth}
+                      >
+                        &gt;
+                      </button>
+                    </div>
+                    
+                    {/* Day headers */}
+                    <div className="grid grid-cols-7 gap-0">
+                      {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
+                        <div key={day} className="text-center text-xxs text-gray-400">{day}</div>
+                      ))}
+                      
+                      {/* Calendar days - more dynamic based on the actual month */}
+                      {calendarDays.map((dateObj, i) => (
+                        <div 
+                          key={i}
+                          onClick={() => handleDateClick(dateObj.day, dateObj.month, dateObj.year)}
+                          className={`text-center py-0.5 text-xxs cursor-pointer hover:bg-red-600/50 rounded-full
+                            ${!dateObj.isCurrentMonth ? 'text-gray-400' : ''}
+                            ${isDateInRange(dateObj.day, dateObj.month, dateObj.year) ? 'bg-red-600' : ''}
+                          `}
+                        >
+                          {dateObj.day}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
