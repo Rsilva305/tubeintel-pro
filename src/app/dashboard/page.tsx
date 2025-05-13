@@ -167,19 +167,10 @@ export default function DashboardPage() {
   };
 
   // Calculate channel statistics based on selected time frame
-  // CHANGED: Instead of filtering videos by publish date, we now use all videos
-  // but with a focus on the most recent ones for limited time periods
-  let videosForStats = recentVideos;
-  if (selectedTimeFrame === '24h' && recentVideos.length > 5) {
-    // For 24h view, use the 5 most recent videos if we have more than 5
-    videosForStats = [...recentVideos]
-      .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
-      .slice(0, 5);
-  }
-  
-  const totalViews = videosForStats.reduce((sum, video) => sum + video.viewCount, 0);
-  const totalLikes = videosForStats.reduce((sum, video) => sum + video.likeCount, 0);
-  const averageVph = Math.round(videosForStats.reduce((sum, video) => sum + video.vph, 0) / Math.max(1, videosForStats.length));
+  const filteredVideos = filterVideosByDateRange(recentVideos, selectedTimeFrame);
+  const totalViews = filteredVideos.reduce((sum, video) => sum + video.viewCount, 0);
+  const totalLikes = filteredVideos.reduce((sum, video) => sum + video.likeCount, 0);
+  const averageVph = Math.round(filteredVideos.reduce((sum, video) => sum + video.vph, 0) / Math.max(1, filteredVideos.length));
 
   // Function to calculate trend data
   const calculateTrend = (current: number, previous: number): TrendData => {
@@ -229,21 +220,12 @@ export default function DashboardPage() {
     return { start: previousStart, end: previousEnd };
   };
 
-  // CHANGED: Use the same video selection logic for previous period
-  let previousPeriodVideos = recentVideos;
-  if (selectedTimeFrame === '24h' && recentVideos.length > 5) {
-    // For 24h view with previous period, use videos 6-10 if we have that many
-    previousPeriodVideos = [...recentVideos]
-      .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
-      .slice(5, 10);
-  } else {
-    // For other timeframes, use the original comparison method
-    const { start: prevStart, end: prevEnd } = getPreviousPeriodData(selectedTimeFrame);
-    previousPeriodVideos = recentVideos.filter(video => {
-      const videoDate = new Date(video.publishedAt);
-      return videoDate >= prevStart && videoDate <= prevEnd;
-    });
-  }
+  // Get videos from previous period
+  const { start: prevStart, end: prevEnd } = getPreviousPeriodData(selectedTimeFrame);
+  const previousPeriodVideos = recentVideos.filter(video => {
+    const videoDate = new Date(video.publishedAt);
+    return videoDate >= prevStart && videoDate <= prevEnd;
+  });
 
   // Calculate metrics for previous period
   const previousTotalViews = previousPeriodVideos.reduce((sum, video) => sum + video.viewCount, 0);
@@ -365,13 +347,6 @@ export default function DashboardPage() {
               <div>
                 <h2 className="text-2xl font-bold">Channel Summary</h2>
                 <p className="opacity-80 mt-1">Last updated: {lastUpdated.toLocaleString()}</p>
-                <p className="opacity-70 mt-1 text-sm">
-                  {selectedTimeFrame === '24h' 
-                    ? 'Based on your 5 most recent videos' 
-                    : selectedTimeFrame === '7d'
-                      ? 'Videos from the past 7 days'
-                      : 'Videos from the past 30 days'}
-                </p>
               </div>
               <div className="mt-4 md:mt-0">
                 <div className="flex items-center space-x-2 bg-white bg-opacity-20 rounded-xl p-1">
@@ -439,10 +414,10 @@ export default function DashboardPage() {
                   <FaChartLine className="text-white text-opacity-50" />
                 </div>
                 <div className="h-16 mt-2">
-                  <Line data={prepareGraphData(videosForStats, 'viewCount')} options={graphOptions} />
+                  <Line data={prepareGraphData(filteredVideos, 'viewCount')} options={graphOptions} />
                 </div>
                 <p className="text-sm mt-2 text-white text-opacity-70">
-                  Last {selectedTimeFrame === '24h' ? '5 videos' : selectedTimeFrame === '7d' ? '7 days' : '30 days'}
+                  Last {selectedTimeFrame === '24h' ? '24 hours' : selectedTimeFrame === '7d' ? '7 days' : '30 days'}
                 </p>
               </div>
               <div className="bg-white bg-opacity-20 p-4 rounded-xl">
@@ -464,10 +439,10 @@ export default function DashboardPage() {
                   <FaChartLine className="text-white text-opacity-50" />
                 </div>
                 <div className="h-16 mt-2">
-                  <Line data={prepareGraphData(videosForStats, 'likeCount')} options={graphOptions} />
+                  <Line data={prepareGraphData(filteredVideos, 'likeCount')} options={graphOptions} />
                 </div>
                 <p className="text-sm mt-2 text-white text-opacity-70">
-                  Last {selectedTimeFrame === '24h' ? '5 videos' : selectedTimeFrame === '7d' ? '7 days' : '30 days'}
+                  Last {selectedTimeFrame === '24h' ? '24 hours' : selectedTimeFrame === '7d' ? '7 days' : '30 days'}
                 </p>
               </div>
               <div className="bg-white bg-opacity-20 p-4 rounded-xl">
@@ -489,10 +464,10 @@ export default function DashboardPage() {
                   <FaChartLine className="text-white text-opacity-50" />
                 </div>
                 <div className="h-16 mt-2">
-                  <Line data={prepareGraphData(videosForStats, 'vph')} options={graphOptions} />
+                  <Line data={prepareGraphData(filteredVideos, 'vph')} options={graphOptions} />
                 </div>
                 <p className="text-sm mt-2 text-white text-opacity-70">
-                  Last {selectedTimeFrame === '24h' ? '5 videos' : selectedTimeFrame === '7d' ? '7 days' : '30 days'}
+                  Last {selectedTimeFrame === '24h' ? '24 hours' : selectedTimeFrame === '7d' ? '7 days' : '30 days'}
                 </p>
               </div>
             </div>
