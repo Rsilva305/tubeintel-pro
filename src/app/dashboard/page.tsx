@@ -342,7 +342,7 @@ export default function DashboardPage() {
           <p className="text-gray-600 dark:text-gray-400 mt-2">Here's an overview of your channel performance</p>
           
           {/* Welcome Card */}
-          <div className="mt-6 bg-gradient-to-r from-purple-600 to-pink-500 rounded-xl shadow-md p-6 text-white">
+          <div className="mt-6 bg-gradient-to-r from-purple-900 to-pink-800 rounded-xl shadow-md p-6 text-white">
             <div className="flex flex-col md:flex-row md:justify-between">
               <div>
                 <h2 className="text-2xl font-bold">Channel Summary</h2>
@@ -491,7 +491,7 @@ export default function DashboardPage() {
         {/* VPH Overview */}
         <section className="mb-10">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white/20 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-white/30">
+            <div className="bg-white/10 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-white/20">
               <h3 className="text-sm font-medium text-white/90">Average VPH</h3>
               <div className="mt-1 flex items-baseline">
                 <p className="text-2xl font-semibold text-white">
@@ -500,7 +500,7 @@ export default function DashboardPage() {
                 <p className="ml-2 text-sm text-white/80">views per hour</p>
               </div>
             </div>
-            <div className="bg-white/20 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-white/30">
+            <div className="bg-white/10 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-white/20">
               <h3 className="text-sm font-medium text-white/90">Highest VPH</h3>
               <div className="mt-1 flex items-baseline">
                 <p className="text-2xl font-semibold text-white">
@@ -512,7 +512,7 @@ export default function DashboardPage() {
                 {recentVideos.length > 0 ? recentVideos.reduce((max, video) => max.vph > video.vph ? max : video, recentVideos[0]).title.substring(0, 30) + '...' : 'No videos found'}
               </p>
             </div>
-            <div className="bg-white/20 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-white/30">
+            <div className="bg-white/10 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-white/20">
               <h3 className="text-sm font-medium text-white/90">VPH Trend</h3>
               <div className="mt-1 flex items-baseline">
                 <p className={`text-2xl font-semibold ${vphTrend.percentage > 0 ? 'text-green-300' : 'text-red-300'}`}>{vphTrend.percentage > 0 ? '+' : ''}{vphTrend.percentage}%</p>
