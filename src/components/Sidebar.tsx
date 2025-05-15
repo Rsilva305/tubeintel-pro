@@ -254,7 +254,7 @@ export default function Sidebar({ collapsed, toggleSidebar }: SidebarProps): JSX
       {!collapsed && subscriptionTier !== 'pro-plus' && (
         <Link 
           href="/subscription" 
-          className="mt-4 mx-3 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-900 to-pink-800 hover:from-purple-800 hover:to-pink-700 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors"
+          className="mt-4 mx-3 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-900 to-pink-800 hover:from-purple-800 hover:to-pink-700 text-white text-sm font-medium py-2 px-3 rounded-full transition-colors"
         >
           <FaCrown size={14} />
           {subscriptionTier === 'free' ? 'Upgrade to Pro' : 'Upgrade to Pro+'}
