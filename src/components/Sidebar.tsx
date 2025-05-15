@@ -58,7 +58,7 @@ const SidebarItem = ({
       href={isFeatureLocked ? '/subscription' : href}
       className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3 px-3'} py-3 rounded-lg transition-all duration-200 ${
         isActive 
-          ? `${theme === 'dark' ? 'bg-purple-900/30 text-purple-200' : 'bg-purple-100 text-purple-800'}` 
+          ? `${theme === 'dark' ? 'bg-blue-900/30 text-blue-200' : 'bg-blue-100 text-blue-800'}` 
           : `${theme === 'dark' ? 'text-gray-400 hover:bg-gray-800 hover:text-white' : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900'}`
       } ${isFeatureLocked ? 'opacity-70' : ''}`}
     >
@@ -254,7 +254,7 @@ export default function Sidebar({ collapsed, toggleSidebar }: SidebarProps): JSX
       {!collapsed && subscriptionTier !== 'pro-plus' && (
         <Link 
           href="/subscription" 
-          className="mt-4 mx-3 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-900 to-pink-800 hover:from-purple-800 hover:to-pink-700 text-white text-sm font-medium py-2 px-3 rounded-full transition-colors"
+          className="mt-4 mx-3 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-950 to-indigo-900 hover:from-blue-900 hover:to-indigo-800 text-white text-sm font-medium py-2 px-3 rounded-full transition-colors"
         >
           <FaCrown size={14} />
           {subscriptionTier === 'free' ? 'Upgrade to Pro' : 'Upgrade to Pro+'}

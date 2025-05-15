@@ -342,7 +342,7 @@ export default function DashboardPage() {
           <p className="text-gray-600 dark:text-gray-400 mt-2">Here's an overview of your channel performance</p>
           
           {/* Welcome Card */}
-          <div className="mt-6 bg-gradient-to-r from-purple-900 to-pink-800 rounded-xl shadow-md p-6 text-white">
+          <div className="mt-6 bg-gradient-to-r from-blue-950 to-indigo-900 rounded-xl shadow-md p-6 text-white">
             <div className="flex flex-col md:flex-row md:justify-between">
               <div>
                 <h2 className="text-2xl font-bold">Channel Summary</h2>
