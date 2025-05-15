@@ -8,12 +8,16 @@
     font-size: 0.65rem;
     line-height: 0.75rem;
   }
+  
+  .gradient-text {
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-100;
+  }
 }
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 245, 245, 245;
-  --background-end-rgb: 255, 255, 255;
+  --foreground-rgb: 255, 255, 255;
+  --background-start-rgb: 59, 130, 246; /* blue-500 */
+  --background-end-rgb: 79, 70, 229; /* indigo-600 */
 }
 
 /* Dark mode enhancement to ensure full coverage */
@@ -30,11 +34,11 @@ html, body {
 body {
   color: rgb(var(--foreground-rgb));
   background: linear-gradient(
-      to bottom,
-      transparent,
+      to bottom right,
+      rgb(var(--background-start-rgb)),
       rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+    );
+  background-attachment: fixed;
 }
 
 @layer base {

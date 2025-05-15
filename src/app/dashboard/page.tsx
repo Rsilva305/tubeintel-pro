@@ -491,32 +491,32 @@ export default function DashboardPage() {
         {/* VPH Overview */}
         <section className="mb-10">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-indigo-200 dark:border-indigo-900">
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Average VPH</h3>
+            <div className="bg-white/20 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-white/30">
+              <h3 className="text-sm font-medium text-white/90">Average VPH</h3>
               <div className="mt-1 flex items-baseline">
-                <p className="text-2xl font-semibold text-indigo-600 dark:text-indigo-400">
+                <p className="text-2xl font-semibold text-white">
                   {Math.round(recentVideos.reduce((sum, video) => sum + video.vph, 0) / Math.max(1, recentVideos.length))}
                 </p>
-                <p className="ml-2 text-sm text-gray-600 dark:text-gray-400">views per hour</p>
+                <p className="ml-2 text-sm text-white/80">views per hour</p>
               </div>
             </div>
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-purple-200 dark:border-purple-900">
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Highest VPH</h3>
+            <div className="bg-white/20 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-white/30">
+              <h3 className="text-sm font-medium text-white/90">Highest VPH</h3>
               <div className="mt-1 flex items-baseline">
-                <p className="text-2xl font-semibold text-purple-600 dark:text-purple-400">
+                <p className="text-2xl font-semibold text-white">
                   {recentVideos.length > 0 ? Math.max(...recentVideos.map(v => v.vph)) : 0}
                 </p>
-                <p className="ml-2 text-sm text-gray-600 dark:text-gray-400">views per hour</p>
+                <p className="ml-2 text-sm text-white/80">views per hour</p>
               </div>
-              <p className="mt-1 text-xs text-purple-600 dark:text-purple-400">
+              <p className="mt-1 text-xs text-white/90">
                 {recentVideos.length > 0 ? recentVideos.reduce((max, video) => max.vph > video.vph ? max : video, recentVideos[0]).title.substring(0, 30) + '...' : 'No videos found'}
               </p>
             </div>
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-green-200 dark:border-green-900">
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">VPH Trend</h3>
+            <div className="bg-white/20 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-white/30">
+              <h3 className="text-sm font-medium text-white/90">VPH Trend</h3>
               <div className="mt-1 flex items-baseline">
-                <p className={`text-2xl font-semibold ${vphTrend.percentage > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{vphTrend.percentage > 0 ? '+' : ''}{vphTrend.percentage}%</p>
-                <p className="ml-2 text-sm text-gray-600 dark:text-gray-400">from {selectedTimeFrame === '24h' ? 'last day' : selectedTimeFrame === '7d' ? 'last week' : 'last month'}</p>
+                <p className={`text-2xl font-semibold ${vphTrend.percentage > 0 ? 'text-green-300' : 'text-red-300'}`}>{vphTrend.percentage > 0 ? '+' : ''}{vphTrend.percentage}%</p>
+                <p className="ml-2 text-sm text-white/80">from {selectedTimeFrame === '24h' ? 'last day' : selectedTimeFrame === '7d' ? 'last week' : 'last month'}</p>
               </div>
             </div>
           </div>

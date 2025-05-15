@@ -64,9 +64,9 @@ export default function TopNav({ username = 'User' }: TopNavProps): JSX.Element 
   const textColor = theme === 'dark' ? 'text-white' : 'text-gray-900';
 
   return (
-    <header className={`h-16 ${bgColor} border-b ${borderColor} flex items-center justify-between px-6 shadow-sm`}>
+    <header className="h-16 bg-white/10 backdrop-blur-md border-b border-white/20 flex items-center justify-between px-6 shadow-sm">
       <div>
-        <h2 className={`text-xl font-semibold ${textColor}`}>YouTube Analytics Dashboard</h2>
+        <h2 className="text-xl font-semibold text-white">YouTube Analytics Dashboard</h2>
       </div>
 
       {/* User Controls */}
@@ -92,53 +92,53 @@ export default function TopNav({ username = 'User' }: TopNavProps): JSX.Element 
             className="flex items-center gap-2 cursor-pointer"
             onClick={() => setDropdownOpen(!dropdownOpen)}
           >
-            <div className={`w-8 h-8 rounded-full ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'} overflow-hidden flex items-center justify-center`}>
-              <FaUser className={`h-4 w-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`} />
+            <div className="w-8 h-8 rounded-full bg-white/20 overflow-hidden flex items-center justify-center">
+              <FaUser className="h-4 w-4 text-white" />
             </div>
-            <span className={textColor}>{username}</span>
+            <span className="text-white">{username}</span>
             {dropdownOpen ? (
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M6 15L12 9L18 15" stroke={theme === 'dark' ? 'white' : 'black'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M6 15L12 9L18 15" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             ) : (
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M6 9L12 15L18 9" stroke={theme === 'dark' ? 'white' : 'black'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M6 9L12 15L18 9" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             )}
           </button>
           
           {dropdownOpen && (
-            <div className={`absolute right-0 mt-2 w-56 ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg shadow-lg z-50 py-2`}>
-              <div className={`px-4 py-2 border-b ${borderColor} mb-2`}>
+            <div className="absolute right-0 mt-2 w-56 bg-white/20 backdrop-blur-md border border-white/30 rounded-lg shadow-lg z-50 py-2">
+              <div className="px-4 py-2 border-b border-white/30 mb-2">
                 <div className="flex items-center gap-2">
-                  <div className={`w-8 h-8 rounded-full ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'} overflow-hidden flex items-center justify-center`}>
-                    <FaUser className={`h-4 w-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`} />
+                  <div className="w-8 h-8 rounded-full bg-white/20 overflow-hidden flex items-center justify-center">
+                    <FaUser className="h-4 w-4 text-white" />
                   </div>
                   <div>
-                    <p className={`text-sm font-medium ${textColor}`}>{username}</p>
+                    <p className="text-sm font-medium text-white">{username}</p>
                   </div>
                 </div>
               </div>
               
-              <a href="#" onClick={handleComingSoonClick('Discord')} className={`block px-4 py-2 ${theme === 'dark' ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>
+              <a href="#" onClick={handleComingSoonClick('Discord')} className="block px-4 py-2 hover:bg-white/10 text-white">
                 Discord
               </a>
-              <a href="#" onClick={handleComingSoonClick('Billing')} className={`block px-4 py-2 ${theme === 'dark' ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>
+              <a href="#" onClick={handleComingSoonClick('Billing')} className="block px-4 py-2 hover:bg-white/10 text-white">
                 Billing
               </a>
-              <a href="#" onClick={handleComingSoonClick('Affiliates')} className={`block px-4 py-2 ${theme === 'dark' ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>
+              <a href="#" onClick={handleComingSoonClick('Affiliates')} className="block px-4 py-2 hover:bg-white/10 text-white">
                 Affiliates
               </a>
-              <a href="#" onClick={handleComingSoonClick('Contact Support')} className={`block px-4 py-2 ${theme === 'dark' ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>
+              <a href="#" onClick={handleComingSoonClick('Contact Support')} className="block px-4 py-2 hover:bg-white/10 text-white">
                 Contact support
               </a>
-              <a href="#" onClick={handleComingSoonClick('Bug Report')} className={`block px-4 py-2 ${theme === 'dark' ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>
+              <a href="#" onClick={handleComingSoonClick('Bug Report')} className="block px-4 py-2 hover:bg-white/10 text-white">
                 Report a bug
               </a>
               
-              <div className={`border-t ${borderColor} mt-2 pt-2`}>
+              <div className="border-t border-white/30 mt-2 pt-2">
                 <button 
-                  className={`block w-full text-left px-4 py-2 ${theme === 'dark' ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}
+                  className="block w-full text-left px-4 py-2 hover:bg-white/10 text-white"
                   onClick={handleLogout}
                 >
                   Logout
