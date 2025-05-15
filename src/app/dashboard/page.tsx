@@ -354,7 +354,7 @@ export default function DashboardPage() {
                 <div className="flex items-center space-x-2 bg-white bg-opacity-20 rounded-xl p-1">
                   <button
                     onClick={() => setSelectedTimeFrame('24h')}
-                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    className={`px-3 py-1 ${selectedTimeFrame === '24h' ? 'rounded-full' : 'rounded-lg'} text-sm font-medium transition-all duration-200 ${
                       selectedTimeFrame === '24h' 
                         ? 'bg-white bg-opacity-30 text-white' 
                         : 'text-white text-opacity-70 hover:text-opacity-100'
@@ -364,7 +364,7 @@ export default function DashboardPage() {
                   </button>
                   <button
                     onClick={() => setSelectedTimeFrame('7d')}
-                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    className={`px-3 py-1 ${selectedTimeFrame === '7d' ? 'rounded-full' : 'rounded-lg'} text-sm font-medium transition-all duration-200 ${
                       selectedTimeFrame === '7d' 
                         ? 'bg-white bg-opacity-30 text-white' 
                         : 'text-white text-opacity-70 hover:text-opacity-100'
@@ -374,7 +374,7 @@ export default function DashboardPage() {
                   </button>
                   <button
                     onClick={() => setSelectedTimeFrame('30d')}
-                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    className={`px-3 py-1 ${selectedTimeFrame === '30d' ? 'rounded-full' : 'rounded-lg'} text-sm font-medium transition-all duration-200 ${
                       selectedTimeFrame === '30d' 
                         ? 'bg-white bg-opacity-30 text-white' 
                         : 'text-white text-opacity-70 hover:text-opacity-100'
@@ -388,7 +388,7 @@ export default function DashboardPage() {
             
             {/* Update Notification */}
             {showUpdateNotification && (
-              <div className="mt-4 bg-white bg-opacity-20 rounded-lg p-2 text-sm flex items-center">
+              <div className="mt-4 bg-white bg-opacity-20 rounded-full p-2 text-sm flex items-center">
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                 </svg>
