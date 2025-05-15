@@ -31,7 +31,7 @@ ChartJS.register(
 
 type SortOption = 'date' | 'vph';
 type ViewMode = 'list' | 'grid';
-type TimeFrame = '24h' | '7d' | '30d';
+type TimeFrame = '7d' | '30d';
 
 interface TrendData {
   current: number;
@@ -49,7 +49,7 @@ export default function DashboardPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [showUpdateNotification, setShowUpdateNotification] = useState(false);
-  const [selectedTimeFrame, setSelectedTimeFrame] = useState<TimeFrame>('24h');
+  const [selectedTimeFrame, setSelectedTimeFrame] = useState<TimeFrame>('7d');
 
   // Calculate trends with historical data if available
   const [viewsTrend, setViewsTrend] = useState<TrendData>({ current: 0, previous: 0, percentage: 0 });
@@ -74,9 +74,6 @@ export default function DashboardPage() {
     const start = new Date();
     
     switch (timeFrame) {
-      case '24h':
-        start.setHours(start.getHours() - 24);
-        break;
       case '7d':
         start.setDate(start.getDate() - 7);
         break;
@@ -197,12 +194,6 @@ export default function DashboardPage() {
     let previousStart: Date, previousEnd: Date;
     
     switch (timeFrame) {
-      case '24h':
-        // Previous period is the 24 hours before current period
-        previousStart = new Date(start);
-        previousStart.setHours(previousStart.getHours() - 24);
-        previousEnd = new Date(start);
-        break;
       case '7d':
         // Previous period is the 7 days before current period
         previousStart = new Date(start);
@@ -240,9 +231,8 @@ export default function DashboardPage() {
         
         try {
           // Get days for the selected timeframe
-          let daysBack = 1;
+          let daysBack = 7;
           switch (selectedTimeFrame) {
-            case '24h': daysBack = 1; break;
             case '7d': daysBack = 7; break;
             case '30d': daysBack = 30; break;
           }
@@ -353,16 +343,6 @@ export default function DashboardPage() {
               <div className="mt-4 md:mt-0">
                 <div className="flex items-center space-x-2 bg-white bg-opacity-20 rounded-xl p-1">
                   <button
-                    onClick={() => setSelectedTimeFrame('24h')}
-                    className={`px-3 py-1 ${selectedTimeFrame === '24h' ? 'rounded-full' : 'rounded-lg'} text-sm font-medium transition-all duration-200 ${
-                      selectedTimeFrame === '24h' 
-                        ? 'bg-white bg-opacity-30 text-white' 
-                        : 'text-white text-opacity-70 hover:text-opacity-100'
-                    }`}
-                  >
-                    24h
-                  </button>
-                  <button
                     onClick={() => setSelectedTimeFrame('7d')}
                     className={`px-3 py-1 ${selectedTimeFrame === '7d' ? 'rounded-full' : 'rounded-lg'} text-sm font-medium transition-all duration-200 ${
                       selectedTimeFrame === '7d' 
@@ -419,7 +399,7 @@ export default function DashboardPage() {
                   <Line data={prepareGraphData(filteredVideos, 'viewCount')} options={graphOptions} />
                 </div>
                 <p className="text-sm mt-2 text-white text-opacity-70">
-                  Last {selectedTimeFrame === '24h' ? '24 hours' : selectedTimeFrame === '7d' ? '7 days' : '30 days'}
+                  Last {selectedTimeFrame === '7d' ? '7 days' : '30 days'}
                 </p>
               </div>
               <div className="bg-white bg-opacity-20 p-4 rounded-xl">
@@ -444,7 +424,7 @@ export default function DashboardPage() {
                   <Line data={prepareGraphData(filteredVideos, 'likeCount')} options={graphOptions} />
                 </div>
                 <p className="text-sm mt-2 text-white text-opacity-70">
-                  Last {selectedTimeFrame === '24h' ? '24 hours' : selectedTimeFrame === '7d' ? '7 days' : '30 days'}
+                  Last {selectedTimeFrame === '7d' ? '7 days' : '30 days'}
                 </p>
               </div>
               <div className="bg-white bg-opacity-20 p-4 rounded-xl">
@@ -469,7 +449,7 @@ export default function DashboardPage() {
                   <Line data={prepareGraphData(filteredVideos, 'vph')} options={graphOptions} />
                 </div>
                 <p className="text-sm mt-2 text-white text-opacity-70">
-                  Last {selectedTimeFrame === '24h' ? '24 hours' : selectedTimeFrame === '7d' ? '7 days' : '30 days'}
+                  Last {selectedTimeFrame === '7d' ? '7 days' : '30 days'}
                 </p>
               </div>
             </div>
@@ -518,7 +498,7 @@ export default function DashboardPage() {
               <h3 className="text-sm font-medium text-white/90">VPH Trend</h3>
               <div className="mt-1 flex items-baseline">
                 <p className={`text-2xl font-semibold ${vphTrend.percentage > 0 ? 'text-green-300' : 'text-red-300'}`}>{vphTrend.percentage > 0 ? '+' : ''}{vphTrend.percentage}%</p>
-                <p className="ml-2 text-sm text-white/80">from {selectedTimeFrame === '24h' ? 'last day' : selectedTimeFrame === '7d' ? 'last week' : 'last month'}</p>
+                <p className="ml-2 text-sm text-white/80">from {selectedTimeFrame === '7d' ? 'last week' : 'last month'}</p>
               </div>
             </div>
           </div>
