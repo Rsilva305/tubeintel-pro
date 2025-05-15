@@ -335,7 +335,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen">
       <div className="container mx-auto p-8">
         <header className="mb-10">
           <h1 className="text-3xl font-bold dark:text-white">Welcome to TubeIntel Pro{user ? `, ${user.username}` : ''}!</h1>
@@ -634,7 +634,7 @@ function VideoCard({ video, showVph = false, allVideos }: VideoCardProps) {
   else if (outlierData.xFactor < 0.8) xColor = 'bg-red-200 text-red-800';
   
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden flex flex-col h-full border border-gray-200 dark:border-gray-700">
+    <div className="bg-white/10 dark:bg-[#00264d]/30 backdrop-blur-sm rounded-xl shadow-sm overflow-hidden flex flex-col h-full border border-white/10 dark:border-blue-400/20">
       <div className="relative w-full pt-[56.25%]"> {/* 16:9 aspect ratio */}
         <img 
           src={video.thumbnailUrl} 
@@ -646,10 +646,10 @@ function VideoCard({ video, showVph = false, allVideos }: VideoCardProps) {
         <h3 className="font-medium text-gray-900 dark:text-white truncate">{video.title}</h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{new Date(video.publishedAt).toLocaleDateString()}</p>
         <div className="flex flex-wrap gap-2 mt-2">
-          <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
+          <span className="text-xs bg-white/20 dark:bg-white/10 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
             {video.viewCount.toLocaleString()} views
           </span>
-          <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
+          <span className="text-xs bg-white/20 dark:bg-white/10 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
             {video.likeCount.toLocaleString()} likes
           </span>
           {showVph && (
@@ -728,7 +728,7 @@ function VideoGridCard({ video, showVph = false, allVideos }: VideoCardProps) {
   else if (outlierData.xFactor < 0.8) xColor = 'bg-red-200 text-red-800';
   
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden flex flex-col h-full border border-gray-200 dark:border-gray-700">
+    <div className="bg-white/10 dark:bg-[#00264d]/30 backdrop-blur-sm rounded-xl shadow-sm overflow-hidden flex flex-col h-full border border-white/10 dark:border-blue-400/20">
       <div className="relative w-full pt-[56.25%]"> {/* 16:9 aspect ratio */}
         <img 
           src={video.thumbnailUrl} 
@@ -740,10 +740,10 @@ function VideoGridCard({ video, showVph = false, allVideos }: VideoCardProps) {
         <h3 className="font-medium text-gray-900 dark:text-white truncate">{video.title}</h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{new Date(video.publishedAt).toLocaleDateString()}</p>
         <div className="flex flex-wrap gap-2 mt-2">
-          <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
+          <span className="text-xs bg-white/20 dark:bg-white/10 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
             {video.viewCount.toLocaleString()} views
           </span>
-          <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
+          <span className="text-xs bg-white/20 dark:bg-white/10 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
             {video.likeCount.toLocaleString()} likes
           </span>
           {showVph && (
