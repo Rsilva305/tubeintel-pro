@@ -76,7 +76,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   const [videoGridColumns, setVideoGridColumns] = useState<number>(6); // Default to 6 columns for video grid
   const [showVideoInfo, setShowVideoInfo] = useState<boolean>(true);
   const [videoSearchQuery, setVideoSearchQuery] = useState<string>('');
-  const [activeVideoTab, setActiveVideoTab] = useState<'competitors' | 'similar'>('competitors');
+  const [activeVideoTab, setActiveVideoTab] = useState<'competitors'>('competitors');
   
   // Add states for the video context menu
   const [showVideoContextMenu, setShowVideoContextMenu] = useState<boolean>(false);
@@ -1136,24 +1136,9 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
         {/* Video Selection Tabs */}
         <div className="flex mb-4 border-b border-gray-200 dark:border-gray-700">
           <button
-            className={`px-4 py-2 text-sm font-medium ${
-              activeVideoTab === 'competitors' 
-                ? 'text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400' 
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-            }`}
-            onClick={() => setActiveVideoTab('competitors')}
+            className="px-4 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400"
           >
             Competitor Videos
-          </button>
-          <button
-            className={`px-4 py-2 text-sm font-medium ${
-              activeVideoTab === 'similar' 
-                ? 'text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400' 
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-            }`}
-            onClick={() => setActiveVideoTab('similar')}
-          >
-            Similar Content
           </button>
         </div>
         
@@ -1314,7 +1299,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
             <p className="ml-4 text-gray-600 dark:text-gray-400">Loading videos...</p>
           </div>
-        ) : activeVideoTab === 'competitors' && filteredVideos.length > 0 ? (
+        ) : filteredVideos.length > 0 ? (
           <div>
             {/* Combined video grid */}
             <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${videoGridColumns}, minmax(0, 1fr))` }}>
@@ -1368,63 +1353,14 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
               ))}
             </div>
           </div>
-        ) : activeVideoTab === 'similar' && filteredVideos.length > 0 ? (
-          <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${videoGridColumns}, minmax(0, 1fr))` }}>
-            {filteredVideos.map((video) => (
-              <div 
-                key={video.id} 
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow duration-200 cursor-pointer group"
-                onClick={() => openVideoOnYouTube(video.youtubeId)}
-                onContextMenu={(e) => handleVideoContextMenu(e, video.youtubeId)}
-              >
-                <div className="relative pt-[56.25%]"> {/* 16:9 aspect ratio */}
-                  <img 
-                    src={video.thumbnailUrl} 
-                    alt={video.title} 
-                    className="absolute top-0 left-0 w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-40 transition-opacity duration-300"></div>
-                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <FaPlay className="text-white text-4xl" />
-                  </div>
-                  <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
-                    {new Date(video.publishedAt).toLocaleDateString()}
-                  </div>
-                </div>
-                
-                {showVideoInfo && (
-                  <div className="p-3">
-                    <div className="flex justify-between items-start">
-                      <h3 className="font-medium text-gray-900 dark:text-white line-clamp-2 mb-1 flex-1">{video.title}</h3>
-                      <FaExternalLinkAlt size={12} className="text-gray-400 dark:text-gray-500 mt-1 ml-2 flex-shrink-0" />
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
-                        {formatNumber(video.viewCount)} views
-                      </span>
-                      <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
-                        {formatNumber(video.likeCount)} likes
-                      </span>
-                      <span className="text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 rounded-xl px-2 py-1 font-medium">
-                        {video.vph} VPH
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
         ) : (
           <div className="text-center py-12">
             <p className="text-gray-500 dark:text-gray-400 mb-4">
               {videoSearchQuery 
                 ? "No videos found matching your search." 
-                : activeVideoTab === 'competitors'
-                  ? competitors.length > 0
-                    ? "No videos found for your tracked competitors."
-                    : "Videos from your tracked competitors will appear here. Add competitors to the Tracked Channels section above."
-                  : "Similar content videos are not available at this time."}
+                : competitors.length > 0
+                  ? "No videos found for your tracked competitors."
+                  : "Videos from your tracked competitors will appear here. Add competitors to the Tracked Channels section above."}
             </p>
             {videoSearchQuery && (
               <button
