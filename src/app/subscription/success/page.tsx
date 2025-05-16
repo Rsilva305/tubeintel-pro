@@ -21,25 +21,50 @@ export default function SubscriptionSuccessPage() {
       return;
     }
     
+    // Handle demo sessions (from development mode)
+    if (sessionId.startsWith('demo_session_')) {
+      localStorage.setItem('subscription', 'pro');
+      
+      setSubscription({
+        planName: 'Pro',
+        startDate: new Date().toLocaleDateString(),
+        nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()
+      });
+      
+      setIsLoading(false);
+      return;
+    }
+    
     // Verify the payment session and update local state
     const verifyPayment = async () => {
       try {
-        // In a production app, we'd verify the session with our backend
-        // For now, we'll just set a local flag to simulate success
+        // Fetch session details from our backend, which will verify with Stripe
+        const response = await fetch(`/api/stripe/verify-session?session_id=${sessionId}`);
         
-        localStorage.setItem('subscription', 'pro');
+        if (!response.ok) {
+          throw new Error('Failed to verify session');
+        }
         
-        // Get subscription details (in a real app, this would come from backend)
-        setSubscription({
-          planName: 'Pro',
-          startDate: new Date().toLocaleDateString(),
-          nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()
-        });
+        const data = await response.json();
+        
+        if (data.success) {
+          // Store subscription info in localStorage (for client-side checks)
+          localStorage.setItem('subscription', data.subscription.plan_type || 'pro');
+          
+          // Format the data for display
+          setSubscription({
+            planName: data.subscription.plan_type === 'pro-plus' ? 'Pro+' : 'Pro',
+            startDate: new Date(data.subscription.created_at).toLocaleDateString(),
+            nextBillingDate: new Date(data.subscription.current_period_end).toLocaleDateString()
+          });
+        } else {
+          throw new Error(data.error || 'Verification failed');
+        }
         
         setIsLoading(false);
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error verifying payment:', err);
-        setError('Failed to verify your subscription. Please contact support.');
+        setError(err.message || 'Failed to verify your subscription. Please contact support.');
         setIsLoading(false);
       }
     };

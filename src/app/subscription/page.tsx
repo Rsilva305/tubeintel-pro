@@ -71,6 +71,9 @@ export default function SubscriptionPage() {
   
   // Check for cancel/success status in URL and initialize component
   useEffect(() => {
+    // Log environment variables (not the values, just whether they exist)
+    console.log('Stripe public key exists:', !!process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
+    
     // Safely check URL parameters
     try {
       const urlParams = new URLSearchParams(window.location.search);
@@ -91,8 +94,8 @@ export default function SubscriptionPage() {
       const savedPlan = localStorage.getItem('subscription') as SubscriptionTier || 'free';
       setCurrentPlan(savedPlan);
       
-      // Check if Stripe public key is available (without actually loading Stripe yet)
-      setIsStripeAvailable(!!process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
+      // Always enable Stripe for now, we'll implement proper checks later
+      setIsStripeAvailable(true);
     } catch (error) {
       console.error('Error in subscription page initialization:', error);
     }
@@ -109,22 +112,13 @@ export default function SubscriptionPage() {
     }
     
     setIsLoading(true);
+    console.log('Starting subscription process for tier:', tier);
     
     try {
       // Always update localStorage for demo purposes
       localStorage.setItem('subscription', tier);
       
-      // If Stripe is not available, just update state and show success message
-      if (!isStripeAvailable) {
-        setCurrentPlan(tier);
-        setMessage({
-          type: 'success',
-          text: `Successfully upgraded to ${tier === 'pro-plus' ? 'Pro+' : 'Pro'} (Demo Mode)`
-        });
-        return;
-      }
-      
-      // For real Stripe integration - only import when needed
+      // For Stripe integration - only import when needed
       const { getStripe } = await import('@/utils/stripe');
       
       // Determine the Stripe price ID based on the selected plan
@@ -132,7 +126,10 @@ export default function SubscriptionPage() {
         ? PRODUCTS.PRO.priceId 
         : PRODUCTS.PRO_PLUS.priceId;
       
+      console.log('Using price ID:', priceId);
+      
       // Call our checkout API endpoint
+      console.log('Calling checkout API endpoint...');
       const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: {
@@ -144,7 +141,9 @@ export default function SubscriptionPage() {
         }),
       });
       
+      console.log('Checkout API response status:', response.status);
       const result = await response.json();
+      console.log('Checkout API response:', result);
       
       if (!response.ok) {
         throw new Error(result.error || 'Something went wrong');
@@ -152,6 +151,7 @@ export default function SubscriptionPage() {
       
       // Redirect to Stripe Checkout or success page
       if (result.url) {
+        console.log('Redirecting to:', result.url);
         window.location.href = result.url;
         return;
       }

@@ -1,5 +1,9 @@
 import { loadStripe, Stripe as StripeJS } from '@stripe/stripe-js';
 
+// Debug the environment variables
+console.log('Client-side: NEXT_PUBLIC_STRIPE_PUBLIC_KEY exists:', 
+  typeof window !== 'undefined' && !!process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
+
 // Cache the Stripe promise so we don't recreate it on each request
 let stripePromise: Promise<StripeJS | null> | null = null;
 
@@ -18,6 +22,11 @@ export const getStripe = () => {
 
 // For server-side Stripe operations
 import Stripe from 'stripe';
+
+// Debug server-side env variables
+if (typeof window === 'undefined') {
+  console.log('Server-side: STRIPE_SECRET_KEY exists:', !!process.env.STRIPE_SECRET_KEY);
+}
 
 // Create a server-side instance only when in a server context
 let serverStripe: Stripe | null = null;
@@ -53,8 +62,8 @@ export const stripe = getServerStripe();
 export const PRODUCTS = {
   PRO: {
     name: 'Pro',
-    id: 'prod_pro', // You'll replace this with your actual product ID from Stripe
-    priceId: 'price_pro_monthly', // Replace with your actual price ID
+    id: 'prod_SK8lQHJNjndiEO', // Your Stripe product ID
+    priceId: 'price_1RPUTvC02Im4s7TPMUqG7ql6', // Your Stripe price ID
     features: [
       'Track unlimited competitors',
       'Advanced Trend Analysis',
@@ -64,8 +73,8 @@ export const PRODUCTS = {
   },
   PRO_PLUS: {
     name: 'Pro Plus',
-    id: 'prod_pro_plus', // You'll replace this with your actual product ID from Stripe
-    priceId: 'price_pro_plus_monthly', // Replace with your actual price ID
+    id: 'prod_SK8lQHJNjndiEO', // Using the same product ID for now
+    priceId: 'price_1RPUTvC02Im4s7TPMUqG7ql6', // Using the same price ID for now
     features: [
       'AI Content Recommendations',
       'Advanced Audience Insights',
