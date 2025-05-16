@@ -132,7 +132,7 @@ export default function SubscriptionPage() {
         </div>
         
         {message && (
-          <div className={`max-w-xl mx-auto mb-8 p-4 rounded-lg ${
+          <div className={`max-w-xl mx-auto mb-8 p-4 rounded-full ${
             message.type === 'success' 
               ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' 
               : message.type === 'error'
@@ -170,7 +170,7 @@ export default function SubscriptionPage() {
               </ul>
               
               <button 
-                className="mt-6 w-full py-2 px-4 bg-gray-200 dark:bg-gray-700 rounded-lg text-gray-800 dark:text-gray-300 font-medium" 
+                className="mt-6 w-full py-2 px-4 bg-gray-200 dark:bg-gray-700 rounded-full text-gray-800 dark:text-gray-300 font-medium" 
                 disabled
               >
                 Current Plan
@@ -191,7 +191,7 @@ export default function SubscriptionPage() {
                   <FaCrown className="text-blue-500" /> Pro
                 </h2>
                 {currentPlan === 'pro' && (
-                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-medium rounded">
+                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-full">
                     Current Plan
                   </span>
                 )}
@@ -220,7 +220,7 @@ export default function SubscriptionPage() {
               <button 
                 onClick={() => handleSubscribe('pro')}
                 disabled={isLoading || currentPlan === 'pro'}
-                className={`mt-6 w-full py-2 px-4 rounded-lg font-medium transition-colors ${
+                className={`mt-6 w-full py-2 px-4 rounded-full font-medium transition-colors ${
                   currentPlan === 'pro'
                     ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 cursor-default'
                     : 'bg-blue-600 hover:bg-blue-700 text-white'
@@ -244,7 +244,7 @@ export default function SubscriptionPage() {
                   <FaStar className="text-purple-500" /> Pro+
                 </h2>
                 {currentPlan === 'pro-plus' && (
-                  <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 text-xs font-medium rounded">
+                  <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 text-xs font-medium rounded-full">
                     Current Plan
                   </span>
                 )}
@@ -273,7 +273,7 @@ export default function SubscriptionPage() {
               <button 
                 onClick={() => handleSubscribe('pro-plus')}
                 disabled={isLoading || currentPlan === 'pro-plus'}
-                className={`mt-6 w-full py-2 px-4 rounded-lg font-medium transition-colors ${
+                className={`mt-6 w-full py-2 px-4 rounded-full font-medium transition-colors ${
                   currentPlan === 'pro-plus'
                     ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 cursor-default'
                     : 'bg-purple-600 hover:bg-purple-700 text-white'

@@ -421,8 +421,8 @@ export default function CompetitorsPage() {
   if (isLoading) {
     return (
       <div className="w-full flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-        <p className="ml-4 text-gray-600 dark:text-gray-400">Loading competitors...</p>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-400"></div>
+        <p className="ml-4 text-white/80">Loading competitors...</p>
       </div>
     );
   }
@@ -438,11 +438,11 @@ export default function CompetitorsPage() {
       {competitorLists.length === 0 ? (
         // Empty state container
         <div className="flex items-center justify-center py-24">
-          <div className="w-full max-w-lg h-64 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl flex flex-col items-center justify-center p-8 text-center">
-            <p className="text-gray-500 dark:text-gray-400 mb-6">You haven't created any competitor lists yet.</p>
+          <div className="w-full max-w-lg h-64 border-2 border-dashed border-white/20 rounded-xl flex flex-col items-center justify-center p-8 text-center backdrop-blur-sm">
+            <p className="text-white/80 mb-6">You haven't created any competitor lists yet.</p>
             <button 
               onClick={() => openModal()}
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl transition-colors"
+              className="flex items-center gap-2 bg-blue-600/80 hover:bg-blue-600 text-white px-4 py-2 rounded-full transition-colors"
             >
               <FaPlus size={18} />
               <span>Create new competitor list</span>
@@ -454,39 +454,39 @@ export default function CompetitorsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Create new competitor list button - Always first */}
           <div 
-            className="border border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            className="border border-dashed border-gray-300 dark:border-white/20 rounded-xl p-5 cursor-pointer hover:bg-white/10 backdrop-blur-sm transition-colors"
             onClick={(e) => {
               e.stopPropagation();
               openModal();
             }}
           >
             <div className="flex justify-between items-start">
-              <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+              <div className="flex items-center gap-2 text-indigo-400">
                 <FaPlus size={18} />
                 <span className="font-medium">Create new competitor list</span>
               </div>
             </div>
-            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Add a new collection</p>
+            <p className="text-gray-300 text-sm mt-1">Add a new collection</p>
           </div>
           
           {/* Competitor lists */}
           {sortedLists.map((list) => (
             <div key={list.id} className="relative">
               <Link href={`/dashboard/competitors/${list.id}?name=${encodeURIComponent(list.name)}`}>
-                <div className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded-xl p-5 transition-colors cursor-pointer group shadow-sm">
+                <div className="bg-white/10 dark:bg-[#00264d]/30 backdrop-blur-sm hover:bg-white/15 dark:hover:bg-[#00264d]/40 border border-white/10 dark:border-blue-400/20 rounded-xl p-5 transition-colors cursor-pointer group shadow-sm">
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2">
                       {getListIcon(list)}
-                      <h3 className="text-gray-800 dark:text-white font-medium text-lg">{list.name}</h3>
+                      <h3 className="text-white font-medium text-lg">{list.name}</h3>
                     </div>
                     <button 
                       onClick={(e) => toggleMenu(list.id, e)}
-                      className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                      className="text-white/70 hover:text-white p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
                     >
                       <FaEllipsisV size={16} />
                     </button>
                   </div>
-                  <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{list.competitors.length} competitors</p>
+                  <p className="text-gray-300 text-sm mt-1">{list.competitors.length} competitors</p>
                 </div>
               </Link>
 
@@ -494,22 +494,22 @@ export default function CompetitorsPage() {
               {openMenuId === list.id && (
                 <div 
                   ref={menuRef}
-                  className="absolute top-12 right-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg py-2 z-50"
+                  className="absolute top-12 right-3 bg-[#00264d]/90 backdrop-blur-md border border-blue-400/20 rounded-xl shadow-lg py-2 z-50"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <button 
-                    className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                    className="flex items-center gap-3 w-full px-4 py-2 text-sm text-white/80 hover:bg-[#02386e]/50 transition-colors text-left"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
                       pinList(list.id);
                     }}
                   >
-                    <FaThumbtack size={16} className={list.isPinned ? 'text-indigo-600 dark:text-indigo-400' : ''} />
+                    <FaThumbtack size={16} className={list.isPinned ? 'text-indigo-400' : ''} />
                     {list.isPinned ? 'Unpin' : 'Pin'}
                   </button>
                   <button 
-                    className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                    className="flex items-center gap-3 w-full px-4 py-2 text-sm text-white/80 hover:bg-[#02386e]/50 transition-colors text-left"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -520,7 +520,7 @@ export default function CompetitorsPage() {
                     Rename
                   </button>
                   <button 
-                    className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                    className="flex items-center gap-3 w-full px-4 py-2 text-sm text-white/80 hover:bg-[#02386e]/50 transition-colors text-left"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -531,8 +531,8 @@ export default function CompetitorsPage() {
                     Duplicate
                   </button>
                   <button 
-                    className={`flex items-center gap-3 w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left ${
-                      list.id === "default" ? "text-gray-400 dark:text-gray-500 cursor-not-allowed" : "text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300"
+                    className={`flex items-center gap-3 w-full px-4 py-2 text-sm hover:bg-[#02386e]/50 transition-colors text-left ${
+                      list.id === "default" ? "text-gray-500 cursor-not-allowed" : "text-red-400 hover:text-red-300"
                     }`}
                     onClick={(e) => {
                       e.preventDefault();
@@ -556,16 +556,16 @@ export default function CompetitorsPage() {
       {/* Modal Dialog */}
       {isModalOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-40"
           onClick={(e) => e.target === e.currentTarget && closeModal()}
         >
-          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-xl font-bold mb-4 dark:text-white">
+          <div className="bg-[#00264d]/80 backdrop-blur-md border border-blue-400/20 rounded-xl max-w-md w-full p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-xl font-bold mb-4 text-white">
               {editingListId ? 'Edit List' : 'Create New List'}
             </h3>
             
             <div className="mb-4">
-              <label htmlFor="listName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="listName" className="block text-sm font-medium text-white/90 mb-2">
                 List Name
               </label>
               <input
@@ -573,7 +573,7 @@ export default function CompetitorsPage() {
                 id="listName"
                 value={listName}
                 onChange={(e) => setListName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 py-2 border border-blue-400/30 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-[#00264d]/50 text-white"
                 placeholder="My Competitors"
                 autoFocus
               />
@@ -581,7 +581,7 @@ export default function CompetitorsPage() {
 
             {/* Add error display */}
             {error && (
-              <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-md text-sm">
+              <div className="mb-4 p-3 bg-red-900/30 text-red-300 rounded-md text-sm border border-red-500/30">
                 {error}
               </div>
             )}
@@ -590,7 +590,7 @@ export default function CompetitorsPage() {
               <button
                 type="button"
                 onClick={closeModal}
-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                className="px-4 py-2 text-sm font-medium text-white/80 hover:bg-[#02386e]/50 rounded-full"
               >
                 Cancel
               </button>
@@ -598,7 +598,7 @@ export default function CompetitorsPage() {
                 type="button"
                 onClick={handleSave}
                 disabled={!listName.trim() || isCreatingList}
-                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600/80 hover:bg-blue-600 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isCreatingList ? 'Saving...' : (editingListId ? 'Update' : 'Create')}
               </button>

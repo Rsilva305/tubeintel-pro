@@ -31,7 +31,7 @@ ChartJS.register(
 
 type SortOption = 'date' | 'vph';
 type ViewMode = 'list' | 'grid';
-type TimeFrame = '24h' | '7d' | '30d';
+type TimeFrame = '7d' | '30d';
 
 interface TrendData {
   current: number;
@@ -49,7 +49,7 @@ export default function DashboardPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [showUpdateNotification, setShowUpdateNotification] = useState(false);
-  const [selectedTimeFrame, setSelectedTimeFrame] = useState<TimeFrame>('24h');
+  const [selectedTimeFrame, setSelectedTimeFrame] = useState<TimeFrame>('7d');
 
   // Calculate trends with historical data if available
   const [viewsTrend, setViewsTrend] = useState<TrendData>({ current: 0, previous: 0, percentage: 0 });
@@ -74,9 +74,6 @@ export default function DashboardPage() {
     const start = new Date();
     
     switch (timeFrame) {
-      case '24h':
-        start.setHours(start.getHours() - 24);
-        break;
       case '7d':
         start.setDate(start.getDate() - 7);
         break;
@@ -197,12 +194,6 @@ export default function DashboardPage() {
     let previousStart: Date, previousEnd: Date;
     
     switch (timeFrame) {
-      case '24h':
-        // Previous period is the 24 hours before current period
-        previousStart = new Date(start);
-        previousStart.setHours(previousStart.getHours() - 24);
-        previousEnd = new Date(start);
-        break;
       case '7d':
         // Previous period is the 7 days before current period
         previousStart = new Date(start);
@@ -240,9 +231,8 @@ export default function DashboardPage() {
         
         try {
           // Get days for the selected timeframe
-          let daysBack = 1;
+          let daysBack = 7;
           switch (selectedTimeFrame) {
-            case '24h': daysBack = 1; break;
             case '7d': daysBack = 7; break;
             case '30d': daysBack = 30; break;
           }
@@ -335,14 +325,16 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen">
       <div className="container mx-auto p-8">
         <header className="mb-10">
           <h1 className="text-3xl font-bold dark:text-white">Welcome to TubeIntel Pro{user ? `, ${user.username}` : ''}!</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">Here's an overview of your channel performance</p>
           
           {/* Welcome Card */}
-          <div className="mt-6 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-md p-6 text-white">
+          <div className="mt-6 rounded-xl shadow-md p-6 text-white" style={{
+            background: 'linear-gradient(to right, #000b18, #00172d, #00264d, #02386e, #00498d, #0052a2)'
+          }}>
             <div className="flex flex-col md:flex-row md:justify-between">
               <div>
                 <h2 className="text-2xl font-bold">Channel Summary</h2>
@@ -351,18 +343,8 @@ export default function DashboardPage() {
               <div className="mt-4 md:mt-0">
                 <div className="flex items-center space-x-2 bg-white bg-opacity-20 rounded-xl p-1">
                   <button
-                    onClick={() => setSelectedTimeFrame('24h')}
-                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
-                      selectedTimeFrame === '24h' 
-                        ? 'bg-white bg-opacity-30 text-white' 
-                        : 'text-white text-opacity-70 hover:text-opacity-100'
-                    }`}
-                  >
-                    24h
-                  </button>
-                  <button
                     onClick={() => setSelectedTimeFrame('7d')}
-                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    className={`px-3 py-1 ${selectedTimeFrame === '7d' ? 'rounded-full' : 'rounded-lg'} text-sm font-medium transition-all duration-200 ${
                       selectedTimeFrame === '7d' 
                         ? 'bg-white bg-opacity-30 text-white' 
                         : 'text-white text-opacity-70 hover:text-opacity-100'
@@ -372,7 +354,7 @@ export default function DashboardPage() {
                   </button>
                   <button
                     onClick={() => setSelectedTimeFrame('30d')}
-                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    className={`px-3 py-1 ${selectedTimeFrame === '30d' ? 'rounded-full' : 'rounded-lg'} text-sm font-medium transition-all duration-200 ${
                       selectedTimeFrame === '30d' 
                         ? 'bg-white bg-opacity-30 text-white' 
                         : 'text-white text-opacity-70 hover:text-opacity-100'
@@ -386,7 +368,7 @@ export default function DashboardPage() {
             
             {/* Update Notification */}
             {showUpdateNotification && (
-              <div className="mt-4 bg-white bg-opacity-20 rounded-lg p-2 text-sm flex items-center">
+              <div className="mt-4 bg-white bg-opacity-20 rounded-full p-2 text-sm flex items-center">
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                 </svg>
@@ -417,7 +399,7 @@ export default function DashboardPage() {
                   <Line data={prepareGraphData(filteredVideos, 'viewCount')} options={graphOptions} />
                 </div>
                 <p className="text-sm mt-2 text-white text-opacity-70">
-                  Last {selectedTimeFrame === '24h' ? '24 hours' : selectedTimeFrame === '7d' ? '7 days' : '30 days'}
+                  Last {selectedTimeFrame === '7d' ? '7 days' : '30 days'}
                 </p>
               </div>
               <div className="bg-white bg-opacity-20 p-4 rounded-xl">
@@ -442,7 +424,7 @@ export default function DashboardPage() {
                   <Line data={prepareGraphData(filteredVideos, 'likeCount')} options={graphOptions} />
                 </div>
                 <p className="text-sm mt-2 text-white text-opacity-70">
-                  Last {selectedTimeFrame === '24h' ? '24 hours' : selectedTimeFrame === '7d' ? '7 days' : '30 days'}
+                  Last {selectedTimeFrame === '7d' ? '7 days' : '30 days'}
                 </p>
               </div>
               <div className="bg-white bg-opacity-20 p-4 rounded-xl">
@@ -467,7 +449,7 @@ export default function DashboardPage() {
                   <Line data={prepareGraphData(filteredVideos, 'vph')} options={graphOptions} />
                 </div>
                 <p className="text-sm mt-2 text-white text-opacity-70">
-                  Last {selectedTimeFrame === '24h' ? '24 hours' : selectedTimeFrame === '7d' ? '7 days' : '30 days'}
+                  Last {selectedTimeFrame === '7d' ? '7 days' : '30 days'}
                 </p>
               </div>
             </div>
@@ -491,32 +473,32 @@ export default function DashboardPage() {
         {/* VPH Overview */}
         <section className="mb-10">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-indigo-200 dark:border-indigo-900">
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Average VPH</h3>
+            <div className="bg-white/10 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-white/20">
+              <h3 className="text-sm font-medium text-white/90">Average VPH</h3>
               <div className="mt-1 flex items-baseline">
-                <p className="text-2xl font-semibold text-indigo-600 dark:text-indigo-400">
+                <p className="text-2xl font-semibold text-white">
                   {Math.round(recentVideos.reduce((sum, video) => sum + video.vph, 0) / Math.max(1, recentVideos.length))}
                 </p>
-                <p className="ml-2 text-sm text-gray-600 dark:text-gray-400">views per hour</p>
+                <p className="ml-2 text-sm text-white/80">views per hour</p>
               </div>
             </div>
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-purple-200 dark:border-purple-900">
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Highest VPH</h3>
+            <div className="bg-white/10 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-white/20">
+              <h3 className="text-sm font-medium text-white/90">Highest VPH</h3>
               <div className="mt-1 flex items-baseline">
-                <p className="text-2xl font-semibold text-purple-600 dark:text-purple-400">
+                <p className="text-2xl font-semibold text-white">
                   {recentVideos.length > 0 ? Math.max(...recentVideos.map(v => v.vph)) : 0}
                 </p>
-                <p className="ml-2 text-sm text-gray-600 dark:text-gray-400">views per hour</p>
+                <p className="ml-2 text-sm text-white/80">views per hour</p>
               </div>
-              <p className="mt-1 text-xs text-purple-600 dark:text-purple-400">
+              <p className="mt-1 text-xs text-white/90">
                 {recentVideos.length > 0 ? recentVideos.reduce((max, video) => max.vph > video.vph ? max : video, recentVideos[0]).title.substring(0, 30) + '...' : 'No videos found'}
               </p>
             </div>
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-green-200 dark:border-green-900">
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">VPH Trend</h3>
+            <div className="bg-white/10 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-white/20">
+              <h3 className="text-sm font-medium text-white/90">VPH Trend</h3>
               <div className="mt-1 flex items-baseline">
-                <p className={`text-2xl font-semibold ${vphTrend.percentage > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{vphTrend.percentage > 0 ? '+' : ''}{vphTrend.percentage}%</p>
-                <p className="ml-2 text-sm text-gray-600 dark:text-gray-400">from {selectedTimeFrame === '24h' ? 'last day' : selectedTimeFrame === '7d' ? 'last week' : 'last month'}</p>
+                <p className={`text-2xl font-semibold ${vphTrend.percentage > 0 ? 'text-green-300' : 'text-red-300'}`}>{vphTrend.percentage > 0 ? '+' : ''}{vphTrend.percentage}%</p>
+                <p className="ml-2 text-sm text-white/80">from {selectedTimeFrame === '7d' ? 'last week' : 'last month'}</p>
               </div>
             </div>
           </div>
@@ -632,7 +614,7 @@ function VideoCard({ video, showVph = false, allVideos }: VideoCardProps) {
   else if (outlierData.xFactor < 0.8) xColor = 'bg-red-200 text-red-800';
   
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden flex flex-col h-full border border-gray-200 dark:border-gray-700">
+    <div className="bg-white/10 dark:bg-[#00264d]/30 backdrop-blur-sm rounded-xl shadow-sm overflow-hidden flex flex-col h-full border border-white/10 dark:border-blue-400/20">
       <div className="relative w-full pt-[56.25%]"> {/* 16:9 aspect ratio */}
         <img 
           src={video.thumbnailUrl} 
@@ -644,10 +626,10 @@ function VideoCard({ video, showVph = false, allVideos }: VideoCardProps) {
         <h3 className="font-medium text-gray-900 dark:text-white truncate">{video.title}</h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{new Date(video.publishedAt).toLocaleDateString()}</p>
         <div className="flex flex-wrap gap-2 mt-2">
-          <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
+          <span className="text-xs bg-white/20 dark:bg-white/10 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
             {video.viewCount.toLocaleString()} views
           </span>
-          <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
+          <span className="text-xs bg-white/20 dark:bg-white/10 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
             {video.likeCount.toLocaleString()} likes
           </span>
           {showVph && (
@@ -726,7 +708,7 @@ function VideoGridCard({ video, showVph = false, allVideos }: VideoCardProps) {
   else if (outlierData.xFactor < 0.8) xColor = 'bg-red-200 text-red-800';
   
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden flex flex-col h-full border border-gray-200 dark:border-gray-700">
+    <div className="bg-white/10 dark:bg-[#00264d]/30 backdrop-blur-sm rounded-xl shadow-sm overflow-hidden flex flex-col h-full border border-white/10 dark:border-blue-400/20">
       <div className="relative w-full pt-[56.25%]"> {/* 16:9 aspect ratio */}
         <img 
           src={video.thumbnailUrl} 
@@ -738,10 +720,10 @@ function VideoGridCard({ video, showVph = false, allVideos }: VideoCardProps) {
         <h3 className="font-medium text-gray-900 dark:text-white truncate">{video.title}</h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{new Date(video.publishedAt).toLocaleDateString()}</p>
         <div className="flex flex-wrap gap-2 mt-2">
-          <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
+          <span className="text-xs bg-white/20 dark:bg-white/10 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
             {video.viewCount.toLocaleString()} views
           </span>
-          <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
+          <span className="text-xs bg-white/20 dark:bg-white/10 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
             {video.likeCount.toLocaleString()} likes
           </span>
           {showVph && (

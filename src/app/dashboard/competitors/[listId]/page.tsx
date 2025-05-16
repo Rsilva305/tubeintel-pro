@@ -76,7 +76,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   const [videoGridColumns, setVideoGridColumns] = useState<number>(6); // Default to 6 columns for video grid
   const [showVideoInfo, setShowVideoInfo] = useState<boolean>(true);
   const [videoSearchQuery, setVideoSearchQuery] = useState<string>('');
-  const [activeVideoTab, setActiveVideoTab] = useState<'competitors' | 'similar'>('competitors');
+  const [activeVideoTab, setActiveVideoTab] = useState<'competitors'>('competitors');
   
   // Add states for the video context menu
   const [showVideoContextMenu, setShowVideoContextMenu] = useState<boolean>(false);
@@ -991,14 +991,14 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
       </div>
 
       {/* Tracked Channels section (formerly Performance Analytics) */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
+      <div className="bg-white/10 dark:bg-[#00264d]/30 backdrop-blur-sm border border-white/10 dark:border-blue-400/20 rounded-xl shadow-md p-6 mb-8">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2">
             <FaYoutube className="text-red-500" />
-            <h2 className="text-xl font-bold text-gray-800 dark:text-white">
-              Tracked Channels <span className="text-gray-500 dark:text-gray-400 font-normal text-base">({competitors.length})</span>
+            <h2 className="text-xl font-bold text-white">
+              Tracked Channels <span className="text-white/70 font-normal text-base">({competitors.length})</span>
             </h2>
-            <div className="text-gray-400 dark:text-gray-500 cursor-help" title="Channels you're currently tracking in this list">
+            <div className="text-white/50 cursor-help" title="Channels you're currently tracking in this list">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -1006,7 +1006,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
           </div>
           <div className="flex items-center gap-2">
             <button 
-              className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-xl text-sm transition-colors"
+              className="flex items-center gap-1 bg-white/10 dark:bg-indigo-600/80 backdrop-blur-sm hover:bg-white/20 dark:hover:bg-indigo-700 text-white px-3 py-1.5 rounded-full text-sm transition-colors"
               onClick={() => setIsModalOpen(true)}
             >
               <FaPlus size={14} />
@@ -1018,15 +1018,15 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
         {/* Channel analytics table with scrolling for >4 channels */}
         <div className={`${competitors.length > 4 ? 'max-h-[400px] overflow-y-auto pr-2' : ''} overflow-x-auto`}>
           <table className="min-w-full">
-            <thead className="bg-white dark:bg-gray-800 sticky top-0 z-10">
-              <tr className="border-b border-gray-200 dark:border-gray-700">
-                <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Channel</th>
-                <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Subscribers</th>
-                <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Videos</th>
-                <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Avg. Views</th>
-                <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Engagement</th>
-                <th className="py-3 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Growth</th>
-                <th className="py-3 px-4 text-right text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
+            <thead className="bg-white/5 dark:bg-[#00264d]/50 backdrop-blur-sm sticky top-0 z-10">
+              <tr className="border-b border-white/10 dark:border-blue-400/20">
+                <th className="py-3 px-4 text-left text-sm font-medium text-white/70">Channel</th>
+                <th className="py-3 px-4 text-left text-sm font-medium text-white/70">Subscribers</th>
+                <th className="py-3 px-4 text-left text-sm font-medium text-white/70">Videos</th>
+                <th className="py-3 px-4 text-left text-sm font-medium text-white/70">Avg. Views</th>
+                <th className="py-3 px-4 text-left text-sm font-medium text-white/70">Engagement</th>
+                <th className="py-3 px-4 text-left text-sm font-medium text-white/70">Growth</th>
+                <th className="py-3 px-4 text-right text-sm font-medium text-white/70">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -1035,10 +1035,10 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                 const avgViews = Math.round(competitor.viewCount / Math.max(competitor.videoCount, 1));
                 
                 return (
-                  <tr key={competitor.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                  <tr key={competitor.id} className="border-b border-white/5 dark:border-blue-400/10 hover:bg-white/5 dark:hover:bg-[#00264d]/40">
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
+                        <div className="w-10 h-10 rounded-full overflow-hidden bg-white/10 dark:bg-[#00264d]/50">
                           <img src={competitor.thumbnailUrl} alt={competitor.name} className="w-full h-full object-cover" />
                         </div>
                         <div>
@@ -1046,24 +1046,24 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                             href={`https://youtube.com/channel/${competitor.youtubeId}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors"
+                            className="font-medium text-indigo-300 hover:text-indigo-200 transition-colors"
                           >
                             {competitor.name}
                           </a>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{competitor.youtubeId}</p>
+                          <p className="text-xs text-white/50">{competitor.youtubeId}</p>
                         </div>
                       </div>
                     </td>
                     <td className="py-4 px-4">
                       <div className="flex items-center">
-                        <span className="font-medium text-gray-800 dark:text-gray-200">{formatNumber(competitor.subscriberCount)}</span>
+                        <span className="font-medium text-white">{formatNumber(competitor.subscriberCount)}</span>
                       </div>
                     </td>
                     <td className="py-4 px-4">
-                      <span className="text-gray-800 dark:text-gray-200">{competitor.videoCount.toLocaleString()}</span>
+                      <span className="text-white">{competitor.videoCount.toLocaleString()}</span>
                     </td>
                     <td className="py-4 px-4">
-                      <span className="text-gray-800 dark:text-gray-200">{formatNumber(avgViews)}</span>
+                      <span className="text-white">{formatNumber(avgViews)}</span>
                     </td>
                     <td className="py-4 px-4">
                       {/* Generate deterministic engagement rate based on channel ID */}
@@ -1092,10 +1092,10 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
           
           {competitors.length === 0 && (
             <div className="text-center py-8">
-              <p className="text-gray-500 dark:text-gray-400">No channels tracked yet.</p>
+              <p className="text-white/70">No channels tracked yet.</p>
               <button 
                 onClick={() => setIsModalOpen(true)}
-                className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm transition-colors"
+                className="mt-4 bg-white/10 dark:bg-indigo-600/80 backdrop-blur-sm hover:bg-white/20 dark:hover:bg-indigo-700 text-white px-4 py-2 rounded-full text-sm transition-colors"
               >
                 Add your first channel
               </button>
@@ -1116,16 +1116,16 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
       />
 
       {/* Competitors Grid */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+      <div className="bg-white/10 dark:bg-[#00264d]/30 backdrop-blur-sm border border-white/10 dark:border-blue-400/20 rounded-xl shadow-md p-6 mb-8">
       </div>
 
       {/* Similar Videos Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
+      <div className="bg-white/10 dark:bg-[#00264d]/30 backdrop-blur-sm border border-white/10 dark:border-blue-400/20 rounded-xl shadow-md p-6 mb-8">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2">
             <FaYoutube className="text-red-500" />
-            <h2 className="text-xl font-bold text-gray-800 dark:text-white">Related Videos</h2>
-            <div className="text-gray-400 dark:text-gray-500 cursor-help" title="Videos from competitive channels and similar content">
+            <h2 className="text-xl font-bold text-white">Related Videos</h2>
+            <div className="text-white/50 cursor-help" title="Videos from competitive channels and similar content">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -1134,26 +1134,11 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
         </div>
         
         {/* Video Selection Tabs */}
-        <div className="flex mb-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex mb-4 border-b border-white/10 dark:border-blue-400/20">
           <button
-            className={`px-4 py-2 text-sm font-medium ${
-              activeVideoTab === 'competitors' 
-                ? 'text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400' 
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-            }`}
-            onClick={() => setActiveVideoTab('competitors')}
+            className="px-4 py-2 text-sm font-medium text-indigo-300 border-b-2 border-indigo-400"
           >
             Competitor Videos
-          </button>
-          <button
-            className={`px-4 py-2 text-sm font-medium ${
-              activeVideoTab === 'similar' 
-                ? 'text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400' 
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-            }`}
-            onClick={() => setActiveVideoTab('similar')}
-          >
-            Similar Content
           </button>
         </div>
         
@@ -1314,14 +1299,14 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
             <p className="ml-4 text-gray-600 dark:text-gray-400">Loading videos...</p>
           </div>
-        ) : activeVideoTab === 'competitors' && filteredVideos.length > 0 ? (
+        ) : filteredVideos.length > 0 ? (
           <div>
             {/* Combined video grid */}
             <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${videoGridColumns}, minmax(0, 1fr))` }}>
               {getSortedVideos().map((video) => (
                 <div 
                   key={video.id} 
-                  className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow duration-200 cursor-pointer group"
+                  className="bg-white/10 dark:bg-[#00264d]/30 backdrop-blur-sm border border-white/10 dark:border-blue-400/20 rounded-xl shadow-sm overflow-hidden hover:bg-white/15 dark:hover:bg-[#00264d]/40 transition-all duration-200 cursor-pointer group"
                   onClick={() => openVideoOnYouTube(video.youtubeId)}
                   onContextMenu={(e) => handleVideoContextMenu(e, video.youtubeId)}
                 >
@@ -1347,18 +1332,18 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                   {showVideoInfo && (
                     <div className="p-3">
                       <div className="flex justify-between items-start">
-                        <h3 className="font-medium text-gray-900 dark:text-white line-clamp-2 mb-1 flex-1">{video.title}</h3>
-                        <FaExternalLinkAlt size={12} className="text-gray-400 dark:text-gray-500 mt-1 ml-2 flex-shrink-0" />
+                        <h3 className="font-medium text-white line-clamp-2 mb-1 flex-1">{video.title}</h3>
+                        <FaExternalLinkAlt size={12} className="text-white/50 mt-1 ml-2 flex-shrink-0" />
                       </div>
                       
                       <div className="flex flex-wrap gap-2 mt-2">
-                        <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
+                        <span className="text-xs bg-white/10 text-white rounded-xl px-2 py-1">
                           {formatNumber(video.viewCount)} views
                         </span>
-                        <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
+                        <span className="text-xs bg-white/10 text-white rounded-xl px-2 py-1">
                           {formatNumber(video.likeCount)} likes
                         </span>
-                        <span className="text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 rounded-xl px-2 py-1 font-medium">
+                        <span className="text-xs bg-blue-500/20 text-blue-300 rounded-xl px-2 py-1 font-medium">
                           {video.vph} VPH
                         </span>
                       </div>
@@ -1368,63 +1353,14 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
               ))}
             </div>
           </div>
-        ) : activeVideoTab === 'similar' && filteredVideos.length > 0 ? (
-          <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${videoGridColumns}, minmax(0, 1fr))` }}>
-            {filteredVideos.map((video) => (
-              <div 
-                key={video.id} 
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow duration-200 cursor-pointer group"
-                onClick={() => openVideoOnYouTube(video.youtubeId)}
-                onContextMenu={(e) => handleVideoContextMenu(e, video.youtubeId)}
-              >
-                <div className="relative pt-[56.25%]"> {/* 16:9 aspect ratio */}
-                  <img 
-                    src={video.thumbnailUrl} 
-                    alt={video.title} 
-                    className="absolute top-0 left-0 w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-40 transition-opacity duration-300"></div>
-                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <FaPlay className="text-white text-4xl" />
-                  </div>
-                  <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
-                    {new Date(video.publishedAt).toLocaleDateString()}
-                  </div>
-                </div>
-                
-                {showVideoInfo && (
-                  <div className="p-3">
-                    <div className="flex justify-between items-start">
-                      <h3 className="font-medium text-gray-900 dark:text-white line-clamp-2 mb-1 flex-1">{video.title}</h3>
-                      <FaExternalLinkAlt size={12} className="text-gray-400 dark:text-gray-500 mt-1 ml-2 flex-shrink-0" />
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
-                        {formatNumber(video.viewCount)} views
-                      </span>
-                      <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
-                        {formatNumber(video.likeCount)} likes
-                      </span>
-                      <span className="text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 rounded-xl px-2 py-1 font-medium">
-                        {video.vph} VPH
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
         ) : (
           <div className="text-center py-12">
             <p className="text-gray-500 dark:text-gray-400 mb-4">
               {videoSearchQuery 
                 ? "No videos found matching your search." 
-                : activeVideoTab === 'competitors'
-                  ? competitors.length > 0
-                    ? "No videos found for your tracked competitors."
-                    : "Videos from your tracked competitors will appear here. Add competitors to the Tracked Channels section above."
-                  : "Similar content videos are not available at this time."}
+                : competitors.length > 0
+                  ? "No videos found for your tracked competitors."
+                  : "Videos from your tracked competitors will appear here. Add competitors to the Tracked Channels section above."}
             </p>
             {videoSearchQuery && (
               <button
@@ -1441,25 +1377,25 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
       {/* Add Competitor Modal */}
       {isModalOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
           onClick={(e) => e.stopPropagation()}
         >
           <div 
-            className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md p-6 relative"
+            className="bg-white/10 dark:bg-[#00264d]/30 backdrop-blur-md border border-white/10 dark:border-blue-400/20 rounded-xl w-full max-w-md p-6 relative shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <button 
               onClick={() => setIsModalOpen(false)} 
-              className="absolute top-4 right-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+              className="absolute top-4 right-4 text-white/60 hover:text-white"
             >
               <FaTimes size={20} />
             </button>
-            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">
+            <h3 className="text-xl font-bold text-white mb-4">
               Add New Competitor
             </h3>
             <form onSubmit={handleAddCompetitor}>
               <div className="mb-4">
-                <label htmlFor="channelSearch" className="block text-gray-600 dark:text-gray-300 text-sm mb-2">
+                <label htmlFor="channelSearch" className="block text-white/80 text-sm mb-2">
                   Search for a YouTube Channel:
                 </label>
                 <div className="relative">
@@ -1468,22 +1404,27 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                     id="channelSearch"
                     value={channelSearchQuery}
                     onChange={(e) => setChannelSearchQuery(e.target.value)}
-                    className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full bg-white/5 border border-white/10 dark:border-blue-400/30 text-white rounded-xl py-2 px-3 pl-10 focus:outline-none focus:ring-2 focus:ring-indigo-500 backdrop-blur-sm"
                     placeholder="Enter channel name..."
                     autoFocus
                   />
                   {isSearching && (
                     <div className="absolute right-3 top-2">
-                      <svg className="animate-spin h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <svg className="animate-spin h-5 w-5 text-white/60" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
                     </div>
                   )}
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
                   
                   {/* Only show search results if there are results AND user hasn't selected a channel yet */}
                   {channelSearchResults.length > 0 && !newCompetitorId && (
-                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg">
+                    <div className="absolute z-10 w-full mt-1 bg-white/10 dark:bg-[#00264d]/80 backdrop-blur-md border border-white/10 dark:border-blue-400/20 rounded-md shadow-lg">
                       <ul className="max-h-60 overflow-y-auto">
                         {channelSearchResults.map((channel) => (
                           <li 
@@ -1492,7 +1433,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                               e.stopPropagation(); // Prevent event from bubbling up
                               selectChannel(channel);
                             }}
-                            className="flex items-center p-3 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer"
+                            className="flex items-center p-3 hover:bg-white/10 dark:hover:bg-[#00264d]/50 cursor-pointer"
                           >
                             <img 
                               src={channel.thumbnailUrl} 
@@ -1500,8 +1441,8 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                               className="w-10 h-10 rounded-full mr-3"
                             />
                             <div>
-                              <p className="font-medium dark:text-white">{channel.title}</p>
-                              <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{channel.description}</p>
+                              <p className="font-medium text-white">{channel.title}</p>
+                              <p className="text-sm text-white/60 truncate">{channel.description}</p>
                             </div>
                           </li>
                         ))}
@@ -1509,13 +1450,13 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                     </div>
                   )}
                 </div>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                <p className="mt-1 text-sm text-white/60">
                   Search for a YouTube channel by name to find and track competitors
                 </p>
               </div>
               
               <div className="mb-4">
-                <label htmlFor="youtubeId" className="block text-gray-600 dark:text-gray-300 text-sm mb-2">
+                <label htmlFor="youtubeId" className="block text-white/80 text-sm mb-2">
                   Or enter YouTube Channel ID directly:
                 </label>
                 <input 
@@ -1523,17 +1464,17 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                   id="youtubeId"
                   value={newCompetitorId}
                   onChange={handleChannelIdChange}
-                  className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full bg-white/5 border border-white/10 dark:border-blue-400/30 text-white rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 backdrop-blur-sm"
                   placeholder="e.g. UC_x5XG1OV2P6uZZ5FSM9Ttw"
                 />
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                <p className="mt-1 text-sm text-white/60">
                   Channel ID is in the format 'UC_x5XG1OV2P6uZZ5FSM9Ttw'.
                 </p>
               </div>
 
               {error && (
-                <div className="bg-red-100 dark:bg-red-900/30 border-l-4 border-red-500 p-4 mb-4 rounded-r-xl">
-                  <p className="text-red-700 dark:text-red-300">{error}</p>
+                <div className="bg-red-500/10 backdrop-blur-sm border-l-4 border-red-500 p-4 mb-4 rounded-r-xl">
+                  <p className="text-red-300">{error}</p>
                 </div>
               )}
 
@@ -1541,14 +1482,14 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                 <button 
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="bg-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 px-4 py-2 rounded-xl mr-2"
+                  className="bg-transparent text-white/70 hover:text-white px-4 py-2 rounded-full mr-2"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit"
                   disabled={isAdding || (!newCompetitorId.trim() && !channelSearchQuery.trim())}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl disabled:opacity-50"
+                  className="bg-white/10 dark:bg-indigo-600/80 backdrop-blur-sm hover:bg-white/20 dark:hover:bg-indigo-700 text-white px-4 py-2 rounded-full disabled:opacity-50 transition-colors"
                 >
                   {isAdding ? 'Adding...' : 'Add Competitor'}
                 </button>
@@ -1562,19 +1503,19 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
       {showVideoContextMenu && (
         <div 
           ref={contextMenuRef}
-          className="fixed shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg py-2 z-50"
+          className="fixed shadow-lg bg-white/10 dark:bg-[#00264d]/80 backdrop-blur-md border border-white/10 dark:border-blue-400/20 rounded-lg py-2 z-50"
           style={{ 
             top: `${contextMenuPosition.y}px`, 
             left: `${contextMenuPosition.x}px`,
             minWidth: '180px'
           }}
         >
-          <div className="px-3 py-1 text-sm font-medium text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700 mb-1">
+          <div className="px-3 py-1 text-sm font-medium text-white/60 border-b border-white/10 dark:border-blue-400/20 mb-1">
             Video Options
           </div>
           
           <button 
-            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-white hover:bg-white/10 dark:hover:bg-[#00264d]/50 transition-colors text-left"
             onClick={() => {
               if (selectedVideoId) openVideoOnYouTube(selectedVideoId);
               setShowVideoContextMenu(false);
@@ -1585,7 +1526,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
           </button>
           
           <button 
-            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-white hover:bg-white/10 dark:hover:bg-[#00264d]/50 transition-colors text-left"
             onClick={() => {
               alert('Feature not yet implemented');
               setShowVideoContextMenu(false);
@@ -1596,7 +1537,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
           </button>
           
           <button 
-            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-white hover:bg-white/10 dark:hover:bg-[#00264d]/50 transition-colors text-left"
             onClick={() => {
               alert('Feature not yet implemented');
               setShowVideoContextMenu(false);
@@ -1607,7 +1548,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
           </button>
           
           <button 
-            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-white hover:bg-white/10 dark:hover:bg-[#00264d]/50 transition-colors text-left"
             onClick={() => {
               alert('Feature not yet implemented');
               setShowVideoContextMenu(false);
