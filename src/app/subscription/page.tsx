@@ -4,6 +4,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaCrown, FaStar, FaCheck, FaLock } from 'react-icons/fa';
 import Link from 'next/link';
+import { PRODUCTS } from '@/utils/stripe';
+
+// Debug logs for component lifecycle
+console.log('Subscription page module loaded');
 
 // Subscription types
 type SubscriptionTier = 'free' | 'pro' | 'pro-plus';
@@ -58,16 +62,40 @@ const features: Feature[] = [
 ];
 
 export default function SubscriptionPage() {
+  console.log('Subscription page component rendered');
   const router = useRouter();
   const [currentPlan, setCurrentPlan] = useState<SubscriptionTier>('free');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{type: 'success' | 'error' | 'info', text: string} | null>(null);
+  const [isStripeAvailable, setIsStripeAvailable] = useState<boolean | null>(null);
   
-  // Mock function to get the current subscription
+  // Check for cancel/success status in URL and initialize component
   useEffect(() => {
-    // In a real app, you would fetch this from your backend
-    const savedPlan = localStorage.getItem('subscription') as SubscriptionTier || 'free';
-    setCurrentPlan(savedPlan);
+    // Safely check URL parameters
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      
+      if (urlParams.get('canceled')) {
+        setMessage({
+          type: 'info',
+          text: 'Payment canceled. You can try again when you\'re ready.'
+        });
+      } else if (urlParams.get('success')) {
+        setMessage({
+          type: 'success',
+          text: 'Payment successful! Your subscription is now active.'
+        });
+      }
+      
+      // Get current user's subscription from localStorage
+      const savedPlan = localStorage.getItem('subscription') as SubscriptionTier || 'free';
+      setCurrentPlan(savedPlan);
+      
+      // Check if Stripe public key is available (without actually loading Stripe yet)
+      setIsStripeAvailable(!!process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
+    } catch (error) {
+      console.error('Error in subscription page initialization:', error);
+    }
   }, []);
   
   // Handle subscription change
@@ -83,26 +111,60 @@ export default function SubscriptionPage() {
     setIsLoading(true);
     
     try {
-      // Simulate an API call to your payment processor
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // In a real app, you would integrate with Stripe or another payment processor here
-      
-      // For demo purposes, just update localStorage
+      // Always update localStorage for demo purposes
       localStorage.setItem('subscription', tier);
-      setCurrentPlan(tier);
       
-      setMessage({
-        type: 'success',
-        text: `Successfully upgraded to ${tier === 'pro-plus' ? 'Pro+' : 'Pro'}!`
+      // If Stripe is not available, just update state and show success message
+      if (!isStripeAvailable) {
+        setCurrentPlan(tier);
+        setMessage({
+          type: 'success',
+          text: `Successfully upgraded to ${tier === 'pro-plus' ? 'Pro+' : 'Pro'} (Demo Mode)`
+        });
+        return;
+      }
+      
+      // For real Stripe integration - only import when needed
+      const { getStripe } = await import('@/utils/stripe');
+      
+      // Determine the Stripe price ID based on the selected plan
+      const priceId = tier === 'pro' 
+        ? PRODUCTS.PRO.priceId 
+        : PRODUCTS.PRO_PLUS.priceId;
+      
+      // Call our checkout API endpoint
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          priceId,
+          planType: tier,
+        }),
       });
       
-      // In a real app, you might redirect to a confirmation page
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 2000);
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Something went wrong');
+      }
+      
+      // Redirect to Stripe Checkout or success page
+      if (result.url) {
+        window.location.href = result.url;
+        return;
+      }
+      
+      // If we got a success response without URL (demo mode in API)
+      setCurrentPlan(tier);
+      setMessage({
+        type: 'success',
+        text: `Successfully upgraded to ${tier === 'pro-plus' ? 'Pro+' : 'Pro'}`
+      });
       
     } catch (error) {
+      console.error('Subscription error:', error);
       setMessage({
         type: 'error',
         text: 'There was an error processing your subscription. Please try again.'
@@ -118,6 +180,8 @@ export default function SubscriptionPage() {
     }
     return <FaLock className="text-gray-400" />;
   };
+  
+  console.log('Rendering subscription page UI');
   
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">

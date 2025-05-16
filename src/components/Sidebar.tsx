@@ -16,6 +16,7 @@ import {
 } from 'react-icons/fa';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useState, useEffect } from 'react';
+import UpgradeButton from './UpgradeButton';
 
 // Subscription types
 type SubscriptionTier = 'free' | 'pro' | 'pro-plus';
@@ -252,23 +253,9 @@ export default function Sidebar({ collapsed, toggleSidebar }: SidebarProps): JSX
       
       {/* Subscription link */}
       {!collapsed && subscriptionTier !== 'pro-plus' && (
-        <Link 
-          href="/subscription" 
-          className="mt-4 mx-3 flex items-center justify-center gap-2 text-white text-sm font-medium py-2 px-3 rounded-full transition-colors"
-          style={{
-            background: 'linear-gradient(to right, #00264d, #02386e, #00498d)',
-            transition: 'all 0.3s ease'
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.background = 'linear-gradient(to right, #02386e, #00498d, #0052a2)';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.background = 'linear-gradient(to right, #00264d, #02386e, #00498d)';
-          }}
-        >
-          <FaCrown size={14} />
-          {subscriptionTier === 'free' ? 'Upgrade to Pro' : 'Upgrade to Pro+'}
-        </Link>
+        <div className="mt-4 mx-3">
+          <UpgradeButton variant="full" className="w-full" />
+        </div>
       )}
       
       <div className="mt-auto px-4">
@@ -280,4 +267,4 @@ export default function Sidebar({ collapsed, toggleSidebar }: SidebarProps): JSX
       </div>
     </div>
   );
-} 
+}

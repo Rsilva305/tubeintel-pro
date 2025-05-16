@@ -17,6 +17,7 @@ import {
 } from 'chart.js';
 import { getChannelTrendData } from '@/services/metrics/history';
 import { calculateOutlierScore, getTopPerformingVideos } from '@/services/metrics/outliers';
+import UpgradeButton from '@/components/UpgradeButton';
 
 // Register ChartJS components
 ChartJS.register(
@@ -328,8 +329,15 @@ export default function DashboardPage() {
     <div className="min-h-screen">
       <div className="container mx-auto p-8">
         <header className="mb-10">
-          <h1 className="text-3xl font-bold dark:text-white">Welcome to TubeIntel Pro{user ? `, ${user.username}` : ''}!</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">Here's an overview of your channel performance</p>
+          <div className="flex flex-wrap justify-between items-center mb-4">
+            <div>
+              <h1 className="text-3xl font-bold dark:text-white">Welcome to TubeIntel Pro{user ? `, ${user.username}` : ''}!</h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-2">Here's an overview of your channel performance</p>
+            </div>
+            <div className="mt-4 md:mt-0">
+              <UpgradeButton size="large" className="shadow-md" />
+            </div>
+          </div>
           
           {/* Welcome Card */}
           <div className="mt-6 rounded-xl shadow-md p-6 text-white" style={{
