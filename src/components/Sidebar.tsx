@@ -58,7 +58,7 @@ const SidebarItem = ({
       href={isFeatureLocked ? '/subscription' : href}
       className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3 px-3'} py-3 rounded-lg transition-all duration-200 ${
         isActive 
-          ? `${theme === 'dark' ? 'bg-blue-900/20 text-blue-400' : 'bg-blue-100 text-blue-600'}` 
+          ? `${theme === 'dark' ? 'bg-[#00264d] text-blue-200' : 'bg-blue-100 text-blue-800'}` 
           : `${theme === 'dark' ? 'text-gray-400 hover:bg-gray-800 hover:text-white' : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900'}`
       } ${isFeatureLocked ? 'opacity-70' : ''}`}
     >
@@ -121,8 +121,7 @@ export default function Sidebar({ collapsed, toggleSidebar }: SidebarProps): JSX
     <div 
       className={`${
         collapsed ? 'w-[70px]' : 'w-[240px]'
-      } h-screen flex-shrink-0 ${bgColor} border-r ${borderColor} py-6 flex flex-col transition-all duration-300 ease-in-out`}
-      style={{ boxShadow: '0 0 10px 5px rgba(0,0,0,0.3)' }}
+      } h-screen flex-shrink-0 bg-white/10 backdrop-blur-md border-r border-white/20 py-6 flex flex-col transition-all duration-300 ease-in-out`}
     >
       {collapsed ? (
         <>
@@ -255,7 +254,17 @@ export default function Sidebar({ collapsed, toggleSidebar }: SidebarProps): JSX
       {!collapsed && subscriptionTier !== 'pro-plus' && (
         <Link 
           href="/subscription" 
-          className="mt-4 mx-3 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors"
+          className="mt-4 mx-3 flex items-center justify-center gap-2 text-white text-sm font-medium py-2 px-3 rounded-full transition-colors"
+          style={{
+            background: 'linear-gradient(to right, #00264d, #02386e, #00498d)',
+            transition: 'all 0.3s ease'
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(to right, #02386e, #00498d, #0052a2)';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(to right, #00264d, #02386e, #00498d)';
+          }}
         >
           <FaCrown size={14} />
           {subscriptionTier === 'free' ? 'Upgrade to Pro' : 'Upgrade to Pro+'}
