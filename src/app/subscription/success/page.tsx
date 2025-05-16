@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FaCheckCircle } from 'react-icons/fa';
 import Link from 'next/link';
+import { isAuthenticated } from '@/lib/supabase';
 
 export default function SubscriptionSuccessPage() {
   const router = useRouter();
@@ -21,47 +22,39 @@ export default function SubscriptionSuccessPage() {
       return;
     }
     
-    // Handle demo sessions (from development mode)
-    if (sessionId.startsWith('demo_session_')) {
-      localStorage.setItem('subscription', 'pro');
-      
-      setSubscription({
-        planName: 'Pro',
-        startDate: new Date().toLocaleDateString(),
-        nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()
-      });
-      
-      setIsLoading(false);
-      return;
-    }
-    
-    // Verify the payment session and update local state
+    // First check if user is authenticated then verify the payment
     const verifyPayment = async () => {
       try {
         // Fetch session details from our backend, which will verify with Stripe
-        const response = await fetch(`/api/stripe/verify-session?session_id=${sessionId}`);
+        const response = await fetch(`/api/stripe/verify-session?session_id=${sessionId}`, {
+          credentials: 'include'
+        });
         
-        if (!response.ok) {
-          throw new Error('Failed to verify session');
-        }
-        
+        // Parse the response
         const data = await response.json();
         
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to verify session');
+        }
+        
         if (data.success) {
-          // Store subscription info in localStorage (for client-side checks)
+          // We have confirmed the payment was successful, now we can safely
+          // store subscription info in localStorage (for client-side checks)
           localStorage.setItem('subscription', data.subscription.plan_type || 'pro');
           
           // Format the data for display
           setSubscription({
             planName: data.subscription.plan_type === 'pro-plus' ? 'Pro+' : 'Pro',
             startDate: new Date(data.subscription.created_at).toLocaleDateString(),
-            nextBillingDate: new Date(data.subscription.current_period_end).toLocaleDateString()
+            nextBillingDate: new Date(data.subscription.current_period_end).toLocaleDateString(),
+            isTestMode: data.subscription.test_mode === true
           });
+          
+          // Show success message and set loading state to false
+          setIsLoading(false);
         } else {
           throw new Error(data.error || 'Verification failed');
         }
-        
-        setIsLoading(false);
       } catch (err: any) {
         console.error('Error verifying payment:', err);
         setError(err.message || 'Failed to verify your subscription. Please contact support.');
@@ -70,7 +63,7 @@ export default function SubscriptionSuccessPage() {
     };
     
     verifyPayment();
-  }, [searchParams]);
+  }, [searchParams, router]);
   
   // Redirect to dashboard after a few seconds
   useEffect(() => {
@@ -150,6 +143,12 @@ export default function SubscriptionSuccessPage() {
               <span className="text-gray-700 dark:text-gray-300">Next billing date:</span>
               <span className="font-medium text-gray-900 dark:text-white">{subscription?.nextBillingDate}</span>
             </div>
+            
+            {subscription?.isTestMode && (
+              <div className="mt-2 py-1 px-2 bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 text-xs rounded text-center">
+                Test Mode - This is a development subscription
+              </div>
+            )}
           </div>
           
           <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">

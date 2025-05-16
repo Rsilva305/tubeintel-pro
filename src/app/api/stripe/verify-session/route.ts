@@ -1,39 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerStripe } from '@/utils/stripe';
 import { createClient } from '@/utils/supabase/server';
+import { cookies } from 'next/headers';
+import { PRODUCTS } from '@/utils/stripe';
 
 export async function GET(req: NextRequest) {
-  const url = new URL(req.url);
-  const sessionId = url.searchParams.get('session_id');
-  
-  if (!sessionId) {
-    return NextResponse.json(
-      { success: false, error: 'Missing session ID' },
-      { status: 400 }
-    );
-  }
-  
   try {
-    // Get our Stripe instance
-    const stripe = getServerStripe();
+    // Get session_id from query string
+    const searchParams = req.nextUrl.searchParams;
+    const sessionId = searchParams.get('session_id');
     
-    // If Stripe is not configured or we have a demo session, return mock success data
-    if (!stripe || sessionId.startsWith('demo_')) {
-      console.log('Returning mock subscription data');
-      return NextResponse.json({
-        success: true,
-        subscription: {
-          plan_type: 'pro',
-          created_at: new Date().toISOString(),
-          current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        }
-      });
+    if (!sessionId) {
+      return NextResponse.json(
+        { success: false, error: 'Missing session_id parameter' },
+        { status: 400 }
+      );
     }
     
-    // Retrieve the checkout session from Stripe
-    const session = await stripe.checkout.sessions.retrieve(sessionId, {
-      expand: ['subscription']
-    });
+    // Verify with Stripe
+    const stripe = getServerStripe();
+    
+    if (!stripe) {
+      return NextResponse.json(
+        { success: false, error: 'Stripe is not configured' },
+        { status: 500 }
+      );
+    }
+    
+    // Get the session info from Stripe
+    console.log('Retrieving Stripe session:', sessionId.substring(0, 10) + '...');
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
     
     if (!session) {
       return NextResponse.json(
@@ -42,7 +38,7 @@ export async function GET(req: NextRequest) {
       );
     }
     
-    // Verify the payment was successful
+    // Check if the session was successful
     if (session.payment_status !== 'paid') {
       return NextResponse.json(
         { success: false, error: 'Payment not completed' },
@@ -50,105 +46,109 @@ export async function GET(req: NextRequest) {
       );
     }
     
-    // Get user ID from session metadata
+    // Get the user ID from the session metadata
     const userId = session.metadata?.userId;
+    const planType = session.metadata?.planType;
+    const authMethod = session.metadata?.authMethod || 'unknown';
     
-    if (!userId) {
+    if (!userId || !planType) {
       return NextResponse.json(
-        { success: false, error: 'User not found in session' },
+        { success: false, error: 'Missing user information in session' },
         { status: 400 }
       );
     }
     
-    // For test users, return mock data
-    if (userId.startsWith('test_user_')) {
-      console.log('Test user detected, returning mock subscription data');
-      return NextResponse.json({
-        success: true,
-        subscription: {
-          plan_type: session.metadata?.planType || 'pro',
-          created_at: new Date().toISOString(),
-          current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        }
-      });
-    }
-    
-    // Get subscription details from Supabase
+    // STRICT AUTHENTICATION: Verify the user is authenticated
     const supabase = createClient();
+    const { data: { session: authSession }, error: sessionError } = await supabase.auth.getSession();
     
-    try {
-      const { data: subscriptionData, error } = await supabase
-        .from('user_subscriptions')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
+    // Default authentication state is unauthenticated
+    let authenticatedUserId = null;
+    let currentAuthMethod = 'none';
+    
+    // Check for session from Supabase client
+    if (authSession && authSession.user) {
+      authenticatedUserId = authSession.user.id;
+      currentAuthMethod = 'supabase_session';
+    } 
+    // Fallback: Try to extract user directly from cookie if Supabase session fails
+    else {
+      const cookieStore = cookies();
+      const authCookie = cookieStore.get('sb-auth-token');
       
-      if (error || !subscriptionData) {
-        console.error('Error fetching subscription data:', error);
-        
-        // If subscription data is not found in our database yet (might take time for webhook to process)
-        // Return data from Stripe directly
-        if (session.subscription) {
-          const subscription = session.subscription as any; // Type assertion needed because of the expanded field
-          
-          // Safely convert Unix timestamps to ISO strings
-          const createdAt = subscription.created ? 
-            new Date(subscription.created * 1000).toISOString() : 
-            new Date().toISOString();
-            
-          const periodEnd = subscription.current_period_end ? 
-            new Date(subscription.current_period_end * 1000).toISOString() : 
-            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-          
-          return NextResponse.json({
-            success: true,
-            subscription: {
-              plan_type: session.metadata?.planType || 'pro',
-              created_at: createdAt,
-              current_period_end: periodEnd,
-            }
-          });
+      if (authCookie) {
+        try {
+          const authData = JSON.parse(authCookie.value);
+          if (authData && authData.user) {
+            authenticatedUserId = authData.user.id;
+            currentAuthMethod = 'cookie_extraction';
+            console.log('User extracted directly from cookie for verification');
+          }
+        } catch (parseError) {
+          console.error('Failed to parse auth cookie:', parseError);
         }
-      } else {
-        // Return the subscription data from database
-        return NextResponse.json({
-          success: true,
-          subscription: subscriptionData
-        });
       }
-    } catch (dbError) {
-      console.error('Database error:', dbError);
-      // Fall back to mock data if database query fails
-      return NextResponse.json({
-        success: true,
-        subscription: {
-          plan_type: session.metadata?.planType || 'pro',
-          created_at: new Date().toISOString(),
-          current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        }
-      });
     }
     
-    // If we reached here without returning, provide a fallback response
+    // If user is not authenticated with either method, return error and redirect to login
+    if (!authenticatedUserId) {
+      console.log('User not authenticated for subscription verification');
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Authentication required',
+          redirectUrl: `/login?redirectTo=${encodeURIComponent(`/subscription/success?session_id=${sessionId}`)}`
+        },
+        { status: 401 }
+      );
+    }
+    
+    // Check if the authenticated user matches the one from the session metadata
+    if (authenticatedUserId !== userId) {
+      console.log('User ID mismatch: Session belongs to a different user');
+      console.log(`Stripe session user: ${userId.substring(0, 8)}... vs Authenticated user: ${authenticatedUserId.substring(0, 8)}...`);
+      
+      return NextResponse.json(
+        { success: false, error: 'User mismatch. This subscription belongs to another account.' },
+        { status: 403 }
+      );
+    }
+    
+    // Format the subscription data
+    const endDate = new Date();
+    // Add 30 days for monthly subscription
+    endDate.setDate(endDate.getDate() + 30);
+    
+    const subscriptionData = {
+      id: session.subscription?.toString() || session.id,
+      user_id: userId,
+      plan_type: planType,
+      status: 'active',
+      created_at: new Date().toISOString(),
+      current_period_end: endDate.toISOString(),
+      price_id: planType === 'pro' ? PRODUCTS.PRO.priceId : PRODUCTS.PRO_PLUS.priceId
+    };
+    
+    // Here you would normally store the subscription in your database
+    console.log('Verified subscription:', {
+      userId: userId.substring(0, 8) + '...',
+      planType,
+      subscriptionId: subscriptionData.id.substring(0, 10) + '...',
+      authMethod: currentAuthMethod
+    });
+    
+    // Return success response
     return NextResponse.json({
       success: true,
-      subscription: {
-        plan_type: session.metadata?.planType || 'pro',
-        created_at: new Date().toISOString(),
-        current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      }
+      message: 'Payment verified successfully',
+      subscription: subscriptionData
     });
     
   } catch (error: any) {
-    console.error('Error verifying session:', error);
-    // Return a friendly error with mock data so the user experience isn't broken
-    return NextResponse.json({
-      success: true,
-      subscription: {
-        plan_type: 'pro',
-        created_at: new Date().toISOString(),
-        current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      }
-    });
+    console.error('Error verifying Stripe session:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to verify payment', details: error.message },
+      { status: 500 }
+    );
   }
 } 

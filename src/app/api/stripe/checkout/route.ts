@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerStripe } from '@/utils/stripe';
 import { createClient } from '@/utils/supabase/server';
 import { PRODUCTS } from '@/utils/stripe';
-import { headers } from 'next/headers';
+import { cookies } from 'next/headers';
 
 export async function POST(req: NextRequest) {
   try {
+    // Get the request data
     const { priceId, planType } = await req.json();
     
     // Debug info
@@ -30,57 +31,85 @@ export async function POST(req: NextRequest) {
 
     // Check if Stripe is configured
     const stripe = getServerStripe();
-    console.log('Stripe client initialized:', !!stripe);
     
-    // Let's directly create a stripe instance to ensure we're not affected by caching issues
-    const Stripe = require('stripe');
-    const directStripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      typescript: true,
-    });
-    console.log('Direct Stripe client initialized:', !!directStripe);
-    
-    if (!directStripe) {
-      console.log('Stripe not configured, returning demo success URL');
-      // For development/demo purposes, just return a success URL
-      return NextResponse.json({
-        success: true,
-        url: `/subscription/success?session_id=demo_session_${Date.now()}`
-      });
+    if (!stripe) {
+      console.log('Stripe not configured, cannot process payment');
+      return NextResponse.json(
+        { error: 'Stripe is not configured' },
+        { status: 500 }
+      );
     }
 
-    // Get the user's session to identify them
-    const headersList = headers();
+    // Get the user's authentication status - AUTHENTICATION IS REQUIRED
     const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
-    // Default email and user ID for testing without authentication
-    let email = 'test@example.com';
-    let userId = `test_user_${Date.now()}`;
+    // Default to no authentication
+    let userId = null;
+    let email = null;
+    let authMethod = "none";
     
+    // Check for session from Supabase client
     if (session && session.user) {
-      // If authenticated, use real user info
-      email = session.user.email || email;
       userId = session.user.id;
-      console.log('User authenticated:', { email, userId: userId.substring(0, 8) + '...' });
-    } else {
-      console.log('User not authenticated, using test credentials');
+      email = session.user.email || '';
+      authMethod = "supabase_session";
+    } 
+    // Fallback: Try to extract user directly from cookie if Supabase session fails
+    else {
+      const cookieStore = cookies();
+      const authCookie = cookieStore.get('sb-auth-token');
+      
+      if (authCookie) {
+        try {
+          const authData = JSON.parse(authCookie.value);
+          if (authData && authData.user) {
+            userId = authData.user.id;
+            email = authData.user.email || '';
+            authMethod = "cookie_extraction";
+            console.log('User extracted directly from cookie for checkout');
+          }
+        } catch (parseError) {
+          console.error('Failed to parse auth cookie:', parseError);
+        }
+      }
     }
-
-    // Get the correct price ID based on the plan type
-    const activePriceId = planType === 'pro' 
-      ? PRODUCTS.PRO.priceId 
-      : PRODUCTS.PRO_PLUS.priceId;
     
-    console.log('Active price ID:', activePriceId);
+    // Debug auth information
+    console.log('Auth check result:', {
+      method: authMethod,
+      hasUserId: !!userId,
+      hasEmail: !!email,
+      error: sessionError ? sessionError.message : null
+    });
+    
+    // STRICT CHECK: If user is not authenticated, return error and redirect to login
+    if (!userId || !email) {
+      console.log('User not authenticated, returning error with redirect');
+      return NextResponse.json(
+        { 
+          error: 'Authentication required',
+          redirectUrl: `/login?redirectTo=${encodeURIComponent('/subscription')}`
+        },
+        { status: 401 }
+      );
+    }
+    
+    // User is authenticated, get their details
+    console.log('Using authenticated user:', { 
+      userId: userId.substring(0, 8) + '...', 
+      email: email.substring(0, 3) + '...',
+      method: authMethod
+    });
 
     try {
       // Create a new checkout session with Stripe
       console.log('Creating Stripe checkout session...');
-      const checkoutSession = await directStripe.checkout.sessions.create({
+      const checkoutSession = await stripe.checkout.sessions.create({
         customer_email: email,
         line_items: [
           {
-            price: activePriceId, // Use the price ID from our configuration
+            price: priceId,
             quantity: 1,
           },
         ],
@@ -90,6 +119,7 @@ export async function POST(req: NextRequest) {
         metadata: {
           userId,
           planType,
+          authMethod
         },
       });
       
@@ -99,13 +129,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ url: checkoutSession.url });
     } catch (stripeError) {
       console.error('Stripe API error:', stripeError);
-      // For testing purposes, return a demo URL if there's an error with Stripe
-      if (!session || !session.user) {
-        console.log('User not authenticated, returning demo checkout session for testing');
-        return NextResponse.json({
-          url: `/subscription/success?session_id=demo_session_${Date.now()}`
-        });
-      }
       return NextResponse.json(
         { error: 'Stripe checkout session creation failed' },
         { status: 500 }
