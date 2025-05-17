@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { FaCheckCircle } from 'react-icons/fa';
 import Link from 'next/link';
 import { isAuthenticated } from '@/lib/supabase';
+import { useSubscriptionContext } from '@/contexts/SubscriptionContext';
 
 export default function SubscriptionSuccessPage() {
   const router = useRouter();
@@ -12,6 +13,7 @@ export default function SubscriptionSuccessPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [subscription, setSubscription] = useState<any>(null);
   const [error, setError] = useState('');
+  const { refreshSubscription } = useSubscriptionContext();
   
   useEffect(() => {
     const sessionId = searchParams.get('session_id');
@@ -25,67 +27,69 @@ export default function SubscriptionSuccessPage() {
     // First check if user is authenticated then verify the payment
     const verifyPayment = async () => {
       try {
-        // Fetch session details from our backend, which will verify with Stripe
-        const response = await fetch(`/api/stripe/verify-session?session_id=${sessionId}`, {
-          credentials: 'include'
-        });
+        // Check if the user is authenticated
+        const isUserAuthenticated = await isAuthenticated();
         
-        // Parse the response
+        if (!isUserAuthenticated) {
+          router.push(`/login?redirectTo=${encodeURIComponent(`/subscription/success?session_id=${sessionId}`)}`);
+          return;
+        }
+        
+        // Verify the payment with our API
+        const response = await fetch(`/api/stripe/verify-session?session_id=${sessionId}`);
         const data = await response.json();
         
         if (!response.ok) {
-          throw new Error(data.error || 'Failed to verify session');
+          if (data.redirectUrl) {
+            // If we need to redirect (e.g., for authentication)
+            router.push(data.redirectUrl);
+            return;
+          }
+          
+          throw new Error(data.error || 'Payment verification failed');
         }
         
-        if (data.success) {
-          // We have confirmed the payment was successful, now we can safely
-          // store subscription info in localStorage (for client-side checks)
-          localStorage.setItem('subscription', data.subscription.plan_type || 'pro');
-          
-          // Format the data for display
-          setSubscription({
-            planName: data.subscription.plan_type === 'pro-plus' ? 'Pro+' : 'Pro',
-            startDate: new Date(data.subscription.created_at).toLocaleDateString(),
-            nextBillingDate: new Date(data.subscription.current_period_end).toLocaleDateString(),
-            isTestMode: data.subscription.test_mode === true
-          });
-          
-          // Show success message and set loading state to false
-          setIsLoading(false);
-        } else {
-          throw new Error(data.error || 'Verification failed');
-        }
+        // Store the subscription data from the API response
+        setSubscription(data.subscription);
+        
+        // Immediately refresh the subscription data in the context
+        // This ensures the UI throughout the app shows the updated subscription
+        console.log('Refreshing subscription data in context...');
+        await refreshSubscription();
+        console.log('Subscription data refreshed!');
+        
+        setIsLoading(false);
+        
       } catch (err: any) {
-        console.error('Error verifying payment:', err);
-        setError(err.message || 'Failed to verify your subscription. Please contact support.');
+        console.error('Verification error:', err);
+        setError(err.message || 'Failed to verify payment');
         setIsLoading(false);
       }
     };
     
     verifyPayment();
-  }, [searchParams, router]);
+  }, [router, searchParams, refreshSubscription]);
   
-  // Redirect to dashboard after a few seconds
+  // Redirect to dashboard after 5 seconds
   useEffect(() => {
-    if (!isLoading && !error) {
+    if (subscription && !isLoading) {
       const timer = setTimeout(() => {
         router.push('/dashboard');
       }, 5000);
       
       return () => clearTimeout(timer);
     }
-  }, [isLoading, error, router]);
-
+  }, [subscription, isLoading, router]);
+  
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-6">
-        <div className="w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
-          <div className="flex flex-col items-center">
-            <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
-              Confirming your subscription...
-            </h2>
-          </div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <h2 className="text-2xl font-bold mb-4">Processing Your Payment</h2>
+          <p className="text-gray-600">
+            Please wait while we verify your payment...
+          </p>
         </div>
       </div>
     );
@@ -93,22 +97,23 @@ export default function SubscriptionSuccessPage() {
   
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-6">
-        <div className="w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
-          <div className="text-center">
-            <div className="w-16 h-16 mx-auto bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-4">
-              <span className="text-red-500 text-2xl">×</span>
-            </div>
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
-              Subscription Error
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              {error}
-            </p>
-            <Link href="/subscription">
-              <span className="inline-block px-6 py-2 bg-blue-600 text-white font-medium rounded-full">
-                Return to Plans
-              </span>
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full text-center">
+          <div className="bg-red-100 text-red-500 p-3 rounded-full inline-flex mb-4">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold mb-4">Payment Verification Failed</h2>
+          <p className="text-gray-600 mb-6">
+            {error}
+          </p>
+          <div className="flex flex-col space-y-3">
+            <Link href="/pricing" className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded transition">
+              Return to Pricing
+            </Link>
+            <Link href="/contact" className="w-full border border-gray-300 hover:bg-gray-50 py-2 px-4 rounded transition">
+              Contact Support
             </Link>
           </div>
         </div>
@@ -117,50 +122,33 @@ export default function SubscriptionSuccessPage() {
   }
   
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-6">
-      <div className="w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
-        <div className="text-center">
-          <div className="w-16 h-16 mx-auto bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mb-4">
-            <FaCheckCircle className="text-green-500 text-2xl" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
-            Thank You!
-          </h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            Your {subscription?.planName} subscription is now active
-          </p>
-          
-          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 mb-6">
-            <div className="flex justify-between mb-2">
-              <span className="text-gray-700 dark:text-gray-300">Plan:</span>
-              <span className="font-medium text-gray-900 dark:text-white">{subscription?.planName}</span>
-            </div>
-            <div className="flex justify-between mb-2">
-              <span className="text-gray-700 dark:text-gray-300">Start date:</span>
-              <span className="font-medium text-gray-900 dark:text-white">{subscription?.startDate}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-700 dark:text-gray-300">Next billing date:</span>
-              <span className="font-medium text-gray-900 dark:text-white">{subscription?.nextBillingDate}</span>
-            </div>
-            
-            {subscription?.isTestMode && (
-              <div className="mt-2 py-1 px-2 bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 text-xs rounded text-center">
-                Test Mode - This is a development subscription
-              </div>
-            )}
-          </div>
-          
-          <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
-            You'll be redirected to your dashboard in a few seconds...
-          </p>
-          
-          <Link href="/dashboard">
-            <span className="inline-block px-6 py-2 bg-blue-600 text-white font-medium rounded-full">
-              Go to Dashboard
-            </span>
-          </Link>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full text-center">
+        <div className="bg-green-100 text-green-500 p-3 rounded-full inline-flex mb-4">
+          <FaCheckCircle className="w-6 h-6" />
         </div>
+        <h2 className="text-2xl font-bold mb-4">Payment Successful!</h2>
+        <p className="text-gray-600 mb-6">
+          Thank you for subscribing to {subscription?.plan_type === 'pro' ? 'Pro' : 'Pro Plus'}. Your account has been upgraded.
+        </p>
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+          <div className="flex justify-between mb-2">
+            <span className="text-gray-500">Plan:</span>
+            <span className="font-medium">{subscription?.plan_type === 'pro' ? 'Pro' : 'Pro Plus'}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-500">Next billing date:</span>
+            <span className="font-medium">
+              {subscription?.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : 'N/A'}
+            </span>
+          </div>
+        </div>
+        <p className="text-sm text-gray-500 mb-6">
+          You'll be redirected to the dashboard in a few seconds...
+        </p>
+        <Link href="/dashboard" className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded transition inline-block">
+          Go to Dashboard
+        </Link>
       </div>
     </div>
   );
