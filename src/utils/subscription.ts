@@ -48,7 +48,8 @@ export async function getUserSubscription(userId: string): Promise<UserSubscript
       'current_period_end' in data &&
       'created_at' in data
     ) {
-      return data as UserSubscription;
+      // First convert to unknown, then to UserSubscription
+      return data as unknown as UserSubscription;
     }
     
     console.error('Subscription data missing required fields:', data);
