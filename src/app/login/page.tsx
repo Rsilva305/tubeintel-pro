@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { FaYoutube } from 'react-icons/fa';
 import Link from 'next/link';
 import { signIn, isAuthenticated } from '@/lib/supabase';
@@ -15,12 +15,24 @@ interface SignInResult {
 }
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginContent />
+    </Suspense>
+  );
+}
+
+function LoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { theme } = useTheme();
+  
+  // Get redirect URL if present
+  const redirectTo = searchParams.get('redirectTo') || '/dashboard';
 
   // Check if user is already logged in
   useEffect(() => {
@@ -36,6 +48,12 @@ export default function LoginPage() {
               const userData = JSON.parse(userJson);
               // Check for user-specific channel ID
               const hasChannel = !!localStorage.getItem(`user_${currentUserId}_youtubeChannelId`);
+              
+              // Check if there's a redirectTo parameter to use instead
+              if (redirectTo && redirectTo !== '/dashboard') {
+                router.push(redirectTo);
+                return;
+              }
               
               // If the user has completed onboarding or has a YouTube channel ID, go to dashboard
               if (userData.hasCompletedOnboarding || hasChannel) {
@@ -60,7 +78,7 @@ export default function LoginPage() {
     };
     
     checkAuth();
-  }, [router]);
+  }, [router, redirectTo]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,6 +99,12 @@ export default function LoginPage() {
       }
       
       console.log('Login successful:', result.user, 'Onboarding completed:', result.hasCompletedOnboarding);
+      
+      // Check if we need to redirect to a specific page (like subscription)
+      if (redirectTo && redirectTo !== '/dashboard') {
+        router.push(redirectTo);
+        return;
+      }
       
       // Check if user has completed onboarding based on return value or localStorage
       const hasChannel = !!localStorage.getItem(`user_${result.user.id}_youtubeChannelId`);

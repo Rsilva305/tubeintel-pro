@@ -4,6 +4,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaCrown, FaStar, FaCheck, FaLock } from 'react-icons/fa';
 import Link from 'next/link';
+import { PRODUCTS } from '@/utils/stripe';
+
+// Debug logs for component lifecycle
+console.log('Subscription page module loaded');
 
 // Subscription types
 type SubscriptionTier = 'free' | 'pro' | 'pro-plus';
@@ -58,16 +62,94 @@ const features: Feature[] = [
 ];
 
 export default function SubscriptionPage() {
+  console.log('Subscription page component rendered');
   const router = useRouter();
   const [currentPlan, setCurrentPlan] = useState<SubscriptionTier>('free');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{type: 'success' | 'error' | 'info', text: string} | null>(null);
+  const [isStripeAvailable, setIsStripeAvailable] = useState<boolean | null>(null);
   
-  // Mock function to get the current subscription
+  // Check for cancel/success status in URL and initialize component
   useEffect(() => {
-    // In a real app, you would fetch this from your backend
-    const savedPlan = localStorage.getItem('subscription') as SubscriptionTier || 'free';
-    setCurrentPlan(savedPlan);
+    // Log environment variables (not the values, just whether they exist)
+    console.log('Stripe public key exists:', !!process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
+    
+    // Simplified init function that prevents redirect loops
+    const initSubscriptionPage = async () => {
+      try {
+        console.log('Initializing subscription page...');
+        
+        // Get current user's subscription from localStorage as a starting point
+        const savedPlan = localStorage.getItem('subscription') as SubscriptionTier || 'free';
+        setCurrentPlan(savedPlan);
+        
+        // Always enable Stripe if the key exists
+        setIsStripeAvailable(!!process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
+        
+        // Try to get current auth and subscription info without causing redirects
+        try {
+          const authResponse = await fetch('/api/auth/check', {
+            credentials: 'include'
+          });
+          
+          if (authResponse.ok) {
+            const authResult = await authResponse.json();
+            console.log('Auth check successful:', authResult);
+            
+            // Only check subscription if user is authenticated
+            if (authResult.authenticated) {
+              try {
+                const subscriptionResponse = await fetch('/api/subscription/check', {
+                  credentials: 'include'
+                });
+                
+                if (subscriptionResponse.ok) {
+                  const result = await subscriptionResponse.json();
+                  console.log('Subscription status:', result);
+                  
+                  if (result.success && result.subscription) {
+                    // Update to server-provided data
+                    setCurrentPlan(result.subscription.plan_type || 'free');
+                  }
+                }
+              } catch (subscriptionError) {
+                console.error('Error checking subscription:', subscriptionError);
+              }
+            }
+          } else {
+            console.log('User not authenticated, but not redirecting to prevent loops');
+            // We don't redirect here - we'll check auth again when user clicks subscribe
+          }
+        } catch (error) {
+          console.error('Error checking auth/subscription:', error);
+        }
+      } catch (error) {
+        console.error('Error initializing subscription page:', error);
+      }
+    };
+    
+    // Safely check URL parameters
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      
+      if (urlParams.get('canceled')) {
+        setMessage({
+          type: 'info',
+          text: 'Payment canceled. You can try again when you\'re ready.'
+        });
+      } else if (urlParams.get('success')) {
+        setMessage({
+          type: 'success',
+          text: 'Payment successful! Your subscription is now active.'
+        });
+      }
+      
+      // Start the page initialization without redirects
+      initSubscriptionPage();
+      
+    } catch (error) {
+      console.error('Error in subscription page initialization:', error);
+    }
   }, []);
   
   // Handle subscription change
@@ -81,28 +163,89 @@ export default function SubscriptionPage() {
     }
     
     setIsLoading(true);
+    setMessage(null);  // Clear any previous messages
+    console.log('Starting subscription process for tier:', tier);
     
     try {
-      // Simulate an API call to your payment processor
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // In a real app, you would integrate with Stripe or another payment processor here
-      
-      // For demo purposes, just update localStorage
-      localStorage.setItem('subscription', tier);
-      setCurrentPlan(tier);
-      
-      setMessage({
-        type: 'success',
-        text: `Successfully upgraded to ${tier === 'pro-plus' ? 'Pro+' : 'Pro'}!`
+      // First check if user is logged in
+      const authResponse = await fetch('/api/auth/check', {
+        credentials: 'include'
       });
       
-      // In a real app, you might redirect to a confirmation page
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 2000);
+      // If not authenticated, redirect to login
+      if (!authResponse.ok) {
+        console.log('User not authenticated, redirecting to login...');
+        
+        // Store intended subscription in localStorage for after login
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('intended_subscription', tier);
+        }
+        
+        // Show message before redirecting
+        setMessage({
+          type: 'info',
+          text: 'Please log in to continue with your subscription'
+        });
+        
+        // Short delay before redirect for user to see message
+        setTimeout(() => {
+          router.push(`/login?redirectTo=${encodeURIComponent('/subscription')}`);
+        }, 1500);
+        
+        setIsLoading(false);
+        return;
+      }
+      
+      // For Stripe integration - only import when needed
+      const { getStripe } = await import('@/utils/stripe');
+      
+      // Determine the Stripe price ID based on the selected plan
+      const priceId = tier === 'pro' 
+        ? PRODUCTS.PRO.priceId 
+        : PRODUCTS.PRO_PLUS.priceId;
+      
+      console.log('Using price ID:', priceId);
+      
+      // Call our checkout API endpoint
+      console.log('Calling checkout API endpoint...');
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Important: include cookies with the request
+        body: JSON.stringify({
+          priceId,
+          planType: tier
+        }),
+      });
+      
+      console.log('Checkout API response status:', response.status);
+      
+      const result = await response.json();
+      console.log('Checkout API response:', result);
+      
+      // If user needs to authenticate, handle that error
+      if (response.status === 401 && result.redirectUrl) {
+        console.log('Authentication required. Redirecting to login page...');
+        router.push(result.redirectUrl);
+        return;
+      }
+      
+      // Handle other errors
+      if (!response.ok) {
+        throw new Error(result.error || 'Something went wrong');
+      }
+      
+      // Redirect to Stripe Checkout
+      if (result.url) {
+        console.log('Redirecting to:', result.url);
+        window.location.href = result.url;
+        return;
+      }
       
     } catch (error) {
+      console.error('Subscription error:', error);
       setMessage({
         type: 'error',
         text: 'There was an error processing your subscription. Please try again.'
@@ -118,6 +261,8 @@ export default function SubscriptionPage() {
     }
     return <FaLock className="text-gray-400" />;
   };
+  
+  console.log('Rendering subscription page UI');
   
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
@@ -292,6 +437,13 @@ export default function SubscriptionPage() {
           >
             ← Back to Dashboard
           </Link>
+          
+          {/* Demo mode indicator - only visible if demo=true in URL */}
+          {new URLSearchParams(window?.location?.search || '').get('demo') === 'true' && (
+            <div className="mt-4 text-sm text-yellow-600 dark:text-yellow-400">
+              Demo Mode Enabled - No authentication required
+            </div>
+          )}
         </div>
       </div>
     </div>

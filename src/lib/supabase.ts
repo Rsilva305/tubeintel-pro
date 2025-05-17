@@ -7,7 +7,7 @@ let supabase: ReturnType<typeof createClient>;
 
 try {
   // Log environment variables for debugging (without exposing the full key)
-  console.log("Supabase initialization:");
+  console.log("Client Supabase initialization:");
   console.log("- URL:", SUPABASE_URL ? SUPABASE_URL.substring(0, 15) + '...' : 'Missing');
   console.log("- Key:", SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.substring(0, 5) + '...' : 'Missing');
   
@@ -16,9 +16,50 @@ try {
     throw new Error('Missing Supabase credentials. Please check your environment variables.');
   }
   
+  // Check if we're in a browser environment
+  const isBrowser = typeof window !== 'undefined';
+  
+  // Create the client with environment-appropriate auth configuration
   supabase = createClient(
     SUPABASE_URL, 
-    SUPABASE_ANON_KEY
+    SUPABASE_ANON_KEY,
+    {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: false,
+        // Only use the custom storage in browser environments
+        ...(isBrowser ? {
+          storageKey: 'sb-auth-token',
+          storage: {
+            getItem: (key) => {
+              const value = document.cookie
+                .split('; ')
+                .find((row) => row.startsWith(`${key}=`))
+                ?.split('=')[1];
+              return value ? decodeURIComponent(value) : null;
+            },
+            setItem: (key, value) => {
+              document.cookie = `${key}=${encodeURIComponent(value)}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+              // Backup to localStorage in case cookies fail
+              try {
+                localStorage.setItem(key, value);
+              } catch (e) {
+                console.warn('Failed to backup to localStorage:', e);
+              }
+            },
+            removeItem: (key) => {
+              document.cookie = `${key}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+              try {
+                localStorage.removeItem(key);
+              } catch (e) {
+                console.warn('Failed to remove from localStorage:', e);
+              }
+            }
+          }
+        } : {})
+      }
+    }
   );
   
   // Verify the client was created
@@ -57,12 +98,31 @@ export const signUp = async (email: string, password: string) => {
 
 export const signIn = async (email: string, password: string): Promise<SignInResult> => {
   try {
+    // Log any existing cookies for debugging (browser-only)
+    if (typeof window !== 'undefined') {
+      console.log('Existing cookies before login:', document.cookie);
+    }
+    
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     
     if (error) throw error;
+    
+    // Debug cookies after login to verify they were set (browser-only)
+    if (typeof window !== 'undefined') {
+      console.log('Cookies after login:', document.cookie);
+      
+      // Store session refresh token in localStorage as backup for cookie issues
+      if (data.session?.refresh_token) {
+        try {
+          localStorage.setItem('sb:refresh_token', data.session.refresh_token);
+        } catch (e) {
+          console.warn('Failed to set localStorage refresh token:', e);
+        }
+      }
+    }
     
     // Check if the user has a YouTube channel ID in their profile
     let hasCompletedOnboarding = false;
@@ -80,7 +140,9 @@ export const signIn = async (email: string, password: string): Promise<SignInRes
           if (profileData.youtube_channel_id) {
             hasCompletedOnboarding = true;
             // Store the channel ID in localStorage with user-specific key
-            localStorage.setItem(`user_${data.user.id}_youtubeChannelId`, String(profileData.youtube_channel_id));
+            if (typeof window !== 'undefined') {
+              localStorage.setItem(`user_${data.user.id}_youtubeChannelId`, String(profileData.youtube_channel_id));
+            }
           }
           
           if (profileData.has_completed_onboarding) {
@@ -93,8 +155,8 @@ export const signIn = async (email: string, password: string): Promise<SignInRes
       }
     }
     
-    // Store the user in localStorage for easier access
-    if (data.user) {
+    // Store the user in localStorage for easier access (browser-only)
+    if (data.user && typeof window !== 'undefined') {
       localStorage.setItem('currentUserId', data.user.id);
       localStorage.setItem(`user_${data.user.id}`, JSON.stringify({
         id: data.user.id,
@@ -229,14 +291,16 @@ export const getSession = async () => {
 // Function to check if user is logged in
 export const isAuthenticated = async () => {
   try {
-    // Check localStorage first for simplicity
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
+    // First check the Supabase session
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session && session.user) {
       return true;
     }
     
-    const session = await getSession();
-    return !!session;
+    // Fallback to localStorage check (for development/demo purposes)
+    const currentUserId = localStorage.getItem('currentUserId');
+    const storedUser = currentUserId ? localStorage.getItem(`user_${currentUserId}`) : null;
+    return !!storedUser;
   } catch (error) {
     console.error('isAuthenticated error:', error);
     return false;
