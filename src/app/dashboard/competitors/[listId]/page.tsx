@@ -9,6 +9,7 @@ import { videosApi } from '@/services/api';
 import { competitorListsApi } from '@/services/api/competitorLists';
 import { secureYoutubeService } from '@/services/api/youtube-secure';
 import SearchFilters from '@/components/SearchFilters';
+import { calculateOutlierScore, calculatePerformanceScore } from '@/services/metrics/outliers';
 
 // Format number to compact form
 const formatNumber = (num: number): string => {
@@ -1335,15 +1336,81 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                       </div>
                       
                       <div className="flex flex-wrap gap-2 mt-2">
-                        <span className="text-xs bg-white/10 text-white rounded-xl px-2 py-1">
+                        <span className="text-xs bg-white/20 dark:bg-white/10 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
                           {formatNumber(video.viewCount)} views
                         </span>
-                        <span className="text-xs bg-white/10 text-white rounded-xl px-2 py-1">
+                        <span className="text-xs bg-white/20 dark:bg-white/10 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
                           {formatNumber(video.likeCount)} likes
                         </span>
-                        <span className="text-xs bg-blue-500/20 text-blue-300 rounded-xl px-2 py-1 font-medium">
-                          {video.vph} VPH
-                        </span>
+                        
+                        {/* VPH with performance level */}
+                        {(() => {
+                          const outlierData = calculateOutlierScore(video, getSortedVideos());
+                          const performanceLevel = outlierData.performanceLevel;
+                          const isHighVph = video.vph > 100;
+                          
+                          return (
+                            <span className={`text-xs ${
+                              performanceLevel === 'low' ? 'bg-gray-100 dark:bg-gray-900/50 text-gray-800 dark:text-gray-300' : 
+                              performanceLevel === 'high' ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300' : 
+                              performanceLevel === 'exceptional' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300' : 
+                              'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'
+                            } rounded-xl px-2 py-1 font-medium relative group cursor-help`}>
+                              {formatNumber(video.vph)} VPH
+                              {performanceLevel === 'exceptional' && <span className="ml-1">🔥</span>}
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded-xl p-2 w-48 shadow-lg z-10">
+                                <div className="relative">
+                                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
+                                  <p>Views Per Hour (VPH) - A metric showing how quickly this video is gaining views.</p>
+                                  {isHighVph && <p className="mt-1 text-green-300">This video is performing exceptionally well!</p>}
+                                </div>
+                              </div>
+                            </span>
+                          );
+                        })()}
+                        
+                        {/* Outlier Score Badge */}
+                        {(() => {
+                          const outlierData = calculateOutlierScore(video, getSortedVideos());
+                          const xColor = outlierData.xFactor > 1.2 ? 'bg-blue-200 text-blue-800' : 
+                                        outlierData.xFactor < 0.8 ? 'bg-red-200 text-red-800' : 
+                                        'bg-gray-200 text-gray-800';
+                          
+                          return (
+                            <span className={`text-xs font-bold rounded-xl px-2 py-1 ${xColor} relative group cursor-help`}>
+                              {outlierData.xFactor.toFixed(1)}x
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded-xl p-2 w-48 shadow-lg z-10">
+                                <div className="relative">
+                                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
+                                  <p>This video has <b>{outlierData.xFactor.toFixed(1)}x</b> the views of the channel's median video ({outlierData.medianViews.toLocaleString()} views).</p>
+                                </div>
+                              </div>
+                            </span>
+                          );
+                        })()}
+                        
+                        {/* Performance Score Badge */}
+                        {(() => {
+                          const performanceScore = calculatePerformanceScore(video, getSortedVideos());
+                          return (
+                            <span className="text-xs font-bold rounded-xl px-2 py-1 bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300 relative group cursor-help">
+                              {Math.round(performanceScore)} Score
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded-xl p-2 w-56 shadow-lg z-10">
+                                <div className="relative">
+                                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
+                                  <p>Performance Score: {Math.round(performanceScore)}/100</p>
+                                  <p className="mt-1">A comprehensive ranking that combines multiple metrics:</p>
+                                  <ul className="list-disc list-inside">
+                                    <li>Outlier score (50%)</li>
+                                    <li>Engagement rate (30%)</li>
+                                    <li>VPH (10%)</li>
+                                    <li>Recency (10%)</li>
+                                  </ul>
+                                </div>
+                              </div>
+                            </span>
+                          );
+                        })()}
                       </div>
                     </div>
                   )}
