@@ -16,6 +16,8 @@ import {
 } from 'react-icons/fa';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useState, useEffect } from 'react';
+import UpgradeButton from './UpgradeButton';
+import { useSubscription } from '@/hooks/useSubscription';
 
 // Subscription types
 type SubscriptionTier = 'free' | 'pro' | 'pro-plus';
@@ -98,16 +100,18 @@ interface SidebarProps {
 export default function Sidebar({ collapsed, toggleSidebar }: SidebarProps): JSX.Element {
   const pathname = usePathname();
   const { theme } = useTheme();
-  // In a real app, this would come from your auth/subscription service
+  const { plan, isLoading } = useSubscription();
   const [subscriptionTier, setSubscriptionTier] = useState<SubscriptionTier>('free');
   
-  // Mock function to get user subscription - in a real app, this would fetch from an API
+  // Update subscription tier when the plan changes
   useEffect(() => {
-    // Simulate loading subscription data
-    // In a real app, you'd fetch this from your backend
-    const mockSubscription = localStorage.getItem('subscription') as SubscriptionTier || 'free';
-    setSubscriptionTier(mockSubscription);
-  }, []);
+    if (!isLoading) {
+      setSubscriptionTier(plan);
+      
+      // For debugging - log the subscription status
+      console.log('Subscription plan from API:', plan);
+    }
+  }, [plan, isLoading]);
   
   const isActive = (path: string): boolean => {
     return pathname === path || pathname.startsWith(`${path}/`);
@@ -252,23 +256,9 @@ export default function Sidebar({ collapsed, toggleSidebar }: SidebarProps): JSX
       
       {/* Subscription link */}
       {!collapsed && subscriptionTier !== 'pro-plus' && (
-        <Link 
-          href="/subscription" 
-          className="mt-4 mx-3 flex items-center justify-center gap-2 text-white text-sm font-medium py-2 px-3 rounded-full transition-colors"
-          style={{
-            background: 'linear-gradient(to right, #00264d, #02386e, #00498d)',
-            transition: 'all 0.3s ease'
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.background = 'linear-gradient(to right, #02386e, #00498d, #0052a2)';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.background = 'linear-gradient(to right, #00264d, #02386e, #00498d)';
-          }}
-        >
-          <FaCrown size={14} />
-          {subscriptionTier === 'free' ? 'Upgrade to Pro' : 'Upgrade to Pro+'}
-        </Link>
+        <div className="mt-4 mx-3">
+          <UpgradeButton variant="full" className="w-full" />
+        </div>
       )}
       
       <div className="mt-auto px-4">
@@ -280,4 +270,4 @@ export default function Sidebar({ collapsed, toggleSidebar }: SidebarProps): JSX
       </div>
     </div>
   );
-} 
+}
