@@ -6,7 +6,6 @@ import { FaArrowLeft, FaPlus, FaTimes, FaYoutube, FaEllipsisV, FaChartBar, FaDow
 import Link from 'next/link';
 import { Competitor, Video } from '@/types';
 import { videosApi } from '@/services/api';
-import { getUseRealApi } from '@/services/api/config';
 import { competitorListsApi } from '@/services/api/competitorLists';
 import { secureYoutubeService } from '@/services/api/youtube-secure';
 import SearchFilters from '@/components/SearchFilters';
@@ -41,7 +40,6 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   const [isSearching, setIsSearching] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [useRealApi] = useState(getUseRealApi());
   const [chartMetric, setChartMetric] = useState('Subscribers');
   const [subscribersOnly, setSubscribersOnly] = useState(true);
   const [sortBy, setSortBy] = useState('date');

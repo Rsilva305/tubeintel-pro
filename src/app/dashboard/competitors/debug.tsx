@@ -134,13 +134,6 @@ export default function CompetitorsDebug({ onLogin }: { onLogin?: () => void }) 
             {localUser ? 'Present ✅' : 'Not present ❌'}
           </span>
         </div>
-        
-        <div className="mb-2">
-          <span className="text-sm font-medium">API Mode for Competitors:</span>
-          <span className="ml-2 text-sm">
-            {useRealApiForCompetitors() ? 'Real API ✅' : 'Demo Mode ❌'}
-          </span>
-        </div>
       </div>
       
       {!supabaseAuth && (

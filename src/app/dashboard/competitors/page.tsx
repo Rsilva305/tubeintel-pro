@@ -19,16 +19,16 @@ interface CompetitorList {
 
 export default function CompetitorsPage() {
   const router = useRouter();
+  const [competitorLists, setCompetitorLists] = useState<CompetitorList[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [listName, setListName] = useState('');
-  const [competitorLists, setCompetitorLists] = useState<CompetitorList[]>([]);
   const [editingListId, setEditingListId] = useState<string | null>(null);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [listCategory, setListCategory] = useState('default');
-  const menuRef = useRef<HTMLDivElement>(null);
   const [isCreatingList, setIsCreatingList] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [listCategory, setListCategory] = useState('default');
+  const menuRef = useRef<HTMLDivElement>(null);
 
   // Close menu when clicking outside
   useEffect(() => {
