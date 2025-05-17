@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server';
 import { fetchFromYouTubeApi } from '../utils';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/youtube/search
 export async function GET(request: NextRequest) {
   try {
