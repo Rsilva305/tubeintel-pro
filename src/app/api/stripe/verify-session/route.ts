@@ -4,6 +4,8 @@ import { createClient, createAdminClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 import { PRODUCTS } from '@/utils/stripe';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     // Get session_id from query string
