@@ -73,16 +73,17 @@ export async function POST(req: NextRequest) {
       
       case 'invoice.payment_succeeded': {
         // Handle successful recurring payment
-        const invoice = event.data.object as Stripe.Invoice;
+        const invoice = event.data.object as Stripe.Invoice & { subscription?: string };
         // Access subscription safely - subscription could be string or Stripe.Subscription
-        const subscriptionId = invoice.subscription as string | undefined;
+        const subscriptionId = invoice.subscription;
         const customerId = invoice.customer as string | undefined;
         
         if (subscriptionId) {
           const supabase = createClient();
           
           // Get subscription details from Stripe
-          const subscription = await stripeInstance.subscriptions.retrieve(subscriptionId);
+          const subscriptionResponse = await stripeInstance.subscriptions.retrieve(subscriptionId);
+          const subscription = subscriptionResponse as unknown as Stripe.Subscription & { current_period_end: number };
           
           // Find user by customer ID
           const { data: userData, error: userError } = await supabase
@@ -116,9 +117,9 @@ export async function POST(req: NextRequest) {
       
       case 'invoice.payment_failed': {
         // Handle failed payment by canceling the subscription immediately
-        const invoice = event.data.object as Stripe.Invoice;
+        const invoice = event.data.object as Stripe.Invoice & { subscription?: string };
         // Access subscription safely - subscription could be string or Stripe.Subscription
-        const subscriptionId = invoice.subscription as string | undefined;
+        const subscriptionId = invoice.subscription;
         const customerId = invoice.customer as string | undefined;
         
         if (subscriptionId && customerId) {
@@ -155,7 +156,7 @@ export async function POST(req: NextRequest) {
       }
       
       case 'customer.subscription.updated': {
-        const subscription = event.data.object as Stripe.Subscription;
+        const subscription = event.data.object as Stripe.Subscription & { current_period_end: number };
         const customerId = subscription.customer as string | undefined;
         
         if (!customerId) {
