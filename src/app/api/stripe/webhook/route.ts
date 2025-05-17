@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { stripe, getServerStripe } from '@/utils/stripe';
 import { headers } from 'next/headers';
 import { createClient } from '@/utils/supabase/server';
+import Stripe from 'stripe';
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
     // Handle specific events
     switch (event.type) {
       case 'checkout.session.completed': {
-        const session = event.data.object;
+        const session = event.data.object as Stripe.Checkout.Session;
         
         // Extract metadata from the session
         const userId = session.metadata?.userId;
@@ -72,15 +73,16 @@ export async function POST(req: NextRequest) {
       
       case 'invoice.payment_succeeded': {
         // Handle successful recurring payment
-        const invoice = event.data.object;
-        const subscriptionId = invoice.subscription;
-        const customerId = invoice.customer;
+        const invoice = event.data.object as Stripe.Invoice;
+        // Access subscription safely - subscription could be string or Stripe.Subscription
+        const subscriptionId = invoice.subscription as string | undefined;
+        const customerId = invoice.customer as string | undefined;
         
         if (subscriptionId) {
           const supabase = createClient();
           
           // Get subscription details from Stripe
-          const subscription = await stripeInstance.subscriptions.retrieve(subscriptionId as string);
+          const subscription = await stripeInstance.subscriptions.retrieve(subscriptionId);
           
           // Find user by customer ID
           const { data: userData, error: userError } = await supabase
@@ -95,10 +97,11 @@ export async function POST(req: NextRequest) {
           }
           
           // Update subscription period end date
+          const periodEnd = subscription.current_period_end; // Unix timestamp
           const { error } = await supabase
             .from('user_subscriptions')
             .update({
-              current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+              current_period_end: new Date(periodEnd * 1000).toISOString(),
               status: subscription.status,
               updated_at: new Date().toISOString()
             })
@@ -111,15 +114,60 @@ export async function POST(req: NextRequest) {
         break;
       }
       
+      case 'invoice.payment_failed': {
+        // Handle failed payment by canceling the subscription immediately
+        const invoice = event.data.object as Stripe.Invoice;
+        // Access subscription safely - subscription could be string or Stripe.Subscription
+        const subscriptionId = invoice.subscription as string | undefined;
+        const customerId = invoice.customer as string | undefined;
+        
+        if (subscriptionId && customerId) {
+          const supabase = createClient();
+          
+          // Find user by customer ID
+          const { data: userData, error: userError } = await supabase
+            .from('user_subscriptions')
+            .select('user_id')
+            .eq('stripe_customer_id', customerId)
+            .single();
+            
+          if (userError || !userData) {
+            console.error('Error finding user for customer:', customerId, userError);
+            break;
+          }
+          
+          // Set subscription status to canceled
+          const { error } = await supabase
+            .from('user_subscriptions')
+            .update({
+              status: 'canceled',
+              updated_at: new Date().toISOString()
+            })
+            .eq('user_id', userData.user_id);
+            
+          if (error) {
+            console.error('Error updating subscription to canceled after payment failure:', error);
+          }
+          
+          console.log(`Subscription ${subscriptionId} canceled due to payment failure for user ${userData.user_id}`);
+        }
+        break;
+      }
+      
       case 'customer.subscription.updated': {
-        const subscription = event.data.object;
-        const customerId = subscription.customer;
+        const subscription = event.data.object as Stripe.Subscription;
+        const customerId = subscription.customer as string | undefined;
+        
+        if (!customerId) {
+          console.error('No valid customer ID found for subscription update');
+          break;
+        }
         
         // Get user by customer ID
         const supabase = createClient();
         const { data: userData, error: userError } = await supabase
           .from('user_subscriptions')
-          .select('user_id')
+          .select('user_id, plan_type')
           .eq('stripe_customer_id', customerId)
           .single();
           
@@ -128,12 +176,49 @@ export async function POST(req: NextRequest) {
           break;
         }
         
+        // Determine if this is a plan upgrade
+        const previousPlan = userData.plan_type;
+        
+        // Get the new plan type from items[0].price.product
+        let newPlanType = previousPlan;
+        try {
+          // Get the product ID from the first subscription item's price
+          const priceId = subscription.items.data[0]?.price?.id;
+          
+          if (priceId) {
+            // Get price details to determine the product
+            const price = await stripeInstance.prices.retrieve(priceId);
+            const productId = price.product as string | undefined;
+            
+            if (productId) {
+              // Map product ID to plan type based on your products
+              // This mapping depends on your Stripe product setup
+              if (productId.includes('pro-plus')) {
+                newPlanType = 'pro-plus';
+              } else if (productId.includes('pro')) {
+                newPlanType = 'pro';
+              }
+              
+              console.log(`Subscription updated: ${previousPlan} -> ${newPlanType}`);
+            }
+          }
+        } catch (priceError) {
+          console.error('Error getting price details:', priceError);
+        }
+        
+        // Check if this is an upgrade (pro -> pro-plus, or free -> any paid plan)
+        const isUpgrade = 
+          (previousPlan === 'free' && (newPlanType === 'pro' || newPlanType === 'pro-plus')) ||
+          (previousPlan === 'pro' && newPlanType === 'pro-plus');
+          
         // Update subscription status
+        const periodEnd = subscription.current_period_end; // Unix timestamp
         const { error } = await supabase
           .from('user_subscriptions')
           .update({
             status: subscription.status,
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+            plan_type: newPlanType,
+            current_period_end: new Date(periodEnd * 1000).toISOString(),
             updated_at: new Date().toISOString()
           })
           .eq('user_id', userData.user_id);
@@ -141,12 +226,38 @@ export async function POST(req: NextRequest) {
         if (error) {
           console.error('Error updating subscription status:', error);
         }
+        
+        // If this is an upgrade, store a flag in Supabase Realtime Broadcast to notify clients
+        if (isUpgrade) {
+          try {
+            // Create a subscription_upgraded event in a special table for the user
+            await supabase
+              .from('subscription_events')
+              .insert({
+                user_id: userData.user_id,
+                event_type: 'upgrade',
+                previous_plan: previousPlan,
+                new_plan: newPlanType,
+                created_at: new Date().toISOString()
+              });
+              
+            console.log(`Subscription upgrade event created for user ${userData.user_id}`);
+          } catch (eventError) {
+            console.error('Error creating upgrade event:', eventError);
+          }
+        }
+        
         break;
       }
       
       case 'customer.subscription.deleted': {
-        const subscription = event.data.object;
-        const customerId = subscription.customer;
+        const subscription = event.data.object as Stripe.Subscription;
+        const customerId = subscription.customer as string | undefined;
+        
+        if (!customerId) {
+          console.error('Invalid customer ID for subscription deletion event');
+          break;
+        }
         
         // Get user by customer ID
         const supabase = createClient();

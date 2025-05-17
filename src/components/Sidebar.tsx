@@ -17,6 +17,7 @@ import {
 import { useTheme } from '@/contexts/ThemeContext';
 import { useState, useEffect } from 'react';
 import UpgradeButton from './UpgradeButton';
+import { useSubscription } from '@/hooks/useSubscription';
 
 // Subscription types
 type SubscriptionTier = 'free' | 'pro' | 'pro-plus';
@@ -99,16 +100,18 @@ interface SidebarProps {
 export default function Sidebar({ collapsed, toggleSidebar }: SidebarProps): JSX.Element {
   const pathname = usePathname();
   const { theme } = useTheme();
-  // In a real app, this would come from your auth/subscription service
+  const { plan, isLoading } = useSubscription();
   const [subscriptionTier, setSubscriptionTier] = useState<SubscriptionTier>('free');
   
-  // Mock function to get user subscription - in a real app, this would fetch from an API
+  // Update subscription tier when the plan changes
   useEffect(() => {
-    // Simulate loading subscription data
-    // In a real app, you'd fetch this from your backend
-    const mockSubscription = localStorage.getItem('subscription') as SubscriptionTier || 'free';
-    setSubscriptionTier(mockSubscription);
-  }, []);
+    if (!isLoading) {
+      setSubscriptionTier(plan);
+      
+      // For debugging - log the subscription status
+      console.log('Subscription plan from API:', plan);
+    }
+  }, [plan, isLoading]);
   
   const isActive = (path: string): boolean => {
     return pathname === path || pathname.startsWith(`${path}/`);

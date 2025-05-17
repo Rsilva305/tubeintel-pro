@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerStripe } from '@/utils/stripe';
-import { createClient } from '@/utils/supabase/server';
+import { createClient, createAdminClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 import { PRODUCTS } from '@/utils/stripe';
 
@@ -119,29 +119,88 @@ export async function GET(req: NextRequest) {
     // Add 30 days for monthly subscription
     endDate.setDate(endDate.getDate() + 30);
     
+    // Generate a unique subscription ID that is UUID compatible
+    // This will be used as the primary key in Supabase
+    const generateUUID = () => {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    };
+    
+    // Create subscription data matching the table schema
     const subscriptionData = {
-      id: session.subscription?.toString() || session.id,
+      id: generateUUID(), // Use UUID format for the primary key
       user_id: userId,
       plan_type: planType,
       status: 'active',
       created_at: new Date().toISOString(),
       current_period_end: endDate.toISOString(),
-      price_id: planType === 'pro' ? PRODUCTS.PRO.priceId : PRODUCTS.PRO_PLUS.priceId
+      stripe_subscription_id: session.subscription?.toString() || session.id, // Store the Stripe ID separately
+      stripe_customer_id: session.customer?.toString() || null
     };
     
-    // Here you would normally store the subscription in your database
-    console.log('Verified subscription:', {
-      userId: userId.substring(0, 8) + '...',
-      planType,
-      subscriptionId: subscriptionData.id.substring(0, 10) + '...',
-      authMethod: currentAuthMethod
-    });
+    // Store the subscription in Supabase using the admin client
+    try {
+      // Create admin client that bypasses RLS
+      const adminClient = createAdminClient();
+      
+      // Check if this subscription already exists for this user
+      const { data: existingSub, error: lookupError } = await adminClient
+        .from('user_subscriptions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .maybeSingle();
+      
+      if (lookupError) {
+        console.error('Error checking for existing subscription:', lookupError);
+      }
+      
+      let dbOperation;
+      if (existingSub) {
+        // Update existing subscription
+        dbOperation = await adminClient
+          .from('user_subscriptions')
+          .update({
+            plan_type: subscriptionData.plan_type,
+            status: subscriptionData.status,
+            current_period_end: subscriptionData.current_period_end,
+            stripe_subscription_id: subscriptionData.stripe_subscription_id,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingSub.id);
+          
+        console.log('Updated existing subscription in database');
+      } else {
+        // Insert new subscription
+        dbOperation = await adminClient
+          .from('user_subscriptions')
+          .insert(subscriptionData);
+          
+        console.log('Inserted new subscription into database');
+      }
+      
+      if (dbOperation.error) {
+        console.error('Failed to save subscription to database:', dbOperation.error);
+      } else {
+        console.log('Successfully saved subscription to database');
+      }
+    } catch (dbError) {
+      console.error('Database operation failed:', dbError);
+      // Continue with the flow - we still want to return success to the user
+      // as the payment was successful, even if storing in DB failed
+    }
     
-    // Return success response
+    // Return success response with cleaner subscription data for the frontend
     return NextResponse.json({
       success: true,
       message: 'Payment verified successfully',
-      subscription: subscriptionData
+      subscription: {
+        plan_type: subscriptionData.plan_type,
+        current_period_end: subscriptionData.current_period_end,
+        status: subscriptionData.status
+      }
     });
     
   } catch (error: any) {

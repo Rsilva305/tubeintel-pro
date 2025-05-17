@@ -1,97 +1,66 @@
 'use client';
 
-import { ReactNode, useState, useEffect } from 'react';
+import { ReactNode } from 'react';
+import { useSubscription, SubscriptionStatus } from '@/hooks/useSubscription';
 import Link from 'next/link';
-import { FaLock, FaCrown } from 'react-icons/fa';
-import { getUserSubscription, hasFeatureAccess } from '@/utils/subscription';
-import { useRouter } from 'next/navigation';
 
 interface SubscriptionGateProps {
   children: ReactNode;
-  requiredFeature: 'basic' | 'pro' | 'pro-plus';
+  minimumPlan?: SubscriptionStatus;
   fallback?: ReactNode;
 }
 
-export default function SubscriptionGate({ 
-  children, 
-  requiredFeature,
+/**
+ * A component that controls access to content based on subscription level.
+ * It will show the children only if the user has the required subscription.
+ * Otherwise, it will show the fallback content or a default upgrade prompt.
+ */
+export default function SubscriptionGate({
+  children,
+  minimumPlan = 'pro',
   fallback
 }: SubscriptionGateProps) {
-  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
+  const { plan, isLoading } = useSubscription();
   
-  useEffect(() => {
-    async function checkAccess() {
-      try {
-        // Get current user ID from localStorage
-        const userId = localStorage.getItem('currentUserId');
-        
-        if (!userId) {
-          setHasAccess(false);
-          setIsLoading(false);
-          return;
-        }
-        
-        // Get user subscription
-        const subscription = await getUserSubscription(userId);
-        
-        // Check if user has access to the required feature
-        setHasAccess(hasFeatureAccess(requiredFeature, subscription));
-      } catch (error) {
-        console.error('Error checking feature access:', error);
-        setHasAccess(false);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    
-    checkAccess();
-  }, [requiredFeature]);
+  // Check if user has access
+  const hasAccess = !isLoading && (
+    (minimumPlan === 'pro' && (plan === 'pro' || plan === 'pro-plus')) ||
+    (minimumPlan === 'pro-plus' && plan === 'pro-plus') ||
+    (minimumPlan === 'free')
+  );
   
-  // Handle loading state
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center p-6 min-h-[200px]">
-        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+      <div className="rounded-lg border border-gray-200 shadow-sm p-4 animate-pulse">
+        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
       </div>
     );
   }
   
-  // If user has access, show the children
   if (hasAccess) {
-    return children;
+    return <>{children}</>;
   }
   
-  // If fallback is provided, use it
+  // Show fallback content if provided
   if (fallback) {
-    return fallback;
+    return <>{fallback}</>;
   }
   
-  // Default fallback - upgrade prompt
+  // Default upgrade prompt
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-6 text-center">
-      <div className="flex justify-center mb-4">
-        <div className="bg-yellow-100 dark:bg-yellow-900/30 p-3 rounded-full">
-          <FaLock className="text-yellow-600 dark:text-yellow-500 text-xl" />
-        </div>
-      </div>
-      
-      <h3 className="text-lg font-medium dark:text-white">
-        Premium Feature
+    <div className="rounded-lg border border-gray-200 bg-white shadow-sm p-6 text-center">
+      <h3 className="text-lg font-medium text-gray-900 mb-2">
+        {minimumPlan === 'pro-plus' ? 'Pro+ Plan Required' : 'Pro Plan Required'}
       </h3>
-      
-      <p className="text-gray-600 dark:text-gray-400 mt-2 mb-4">
-        {requiredFeature === 'pro' 
-          ? 'This feature requires a Pro subscription.' 
-          : 'This feature requires a Pro+ subscription.'}
+      <p className="text-gray-600 mb-4">
+        Upgrade your subscription to unlock this feature.
       </p>
-      
-      <Link href="/subscription">
-        <span className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-full font-medium">
-          <FaCrown className="mr-2" />
-          Upgrade Your Plan
-        </span>
+      <Link 
+        href="/subscription" 
+        className="inline-block py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+      >
+        View Pricing
       </Link>
     </div>
   );

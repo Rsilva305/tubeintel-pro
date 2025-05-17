@@ -135,4 +135,31 @@ export const createClient = () => {
       },
     }
   );
-}; 
+};
+
+/**
+ * Create a Supabase admin client with service role permissions
+ * Use this for operations that need to bypass RLS policies
+ */
+export function createAdminClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (!supabaseUrl || !supabaseServiceKey) {
+    console.error('Missing Supabase admin credentials in server environment');
+    throw new Error('Supabase admin client could not be initialized');
+  }
+  
+  console.log('Creating Supabase admin client with service role');
+  
+  return createSupabaseClient(
+    supabaseUrl,
+    supabaseServiceKey,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    }
+  );
+} 
