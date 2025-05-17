@@ -1,5 +1,14 @@
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { createClient as createSupabaseClient, SupabaseClientOptions } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+
+// Extend the SupabaseClientOptions type to include our custom cookie handling
+interface CustomSupabaseClientOptions extends SupabaseClientOptions<'public'> {
+  cookies?: {
+    get: (name: string) => string | null;
+    set: (name: string, value: string, options: any) => void;
+    remove: (name: string, options: any) => void;
+  };
+}
 
 export const createClient = () => {
   const cookieStore = cookies();
@@ -133,7 +142,7 @@ export const createClient = () => {
           console.log(`Server attempted to remove cookie: ${name} (ignored in server context)`);
         }
       },
-    }
+    } as CustomSupabaseClientOptions
   );
 };
 
