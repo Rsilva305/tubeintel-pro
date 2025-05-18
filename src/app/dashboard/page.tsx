@@ -41,6 +41,13 @@ interface TrendData {
   hasPreviousData?: boolean;
 }
 
+// Format number to compact form
+const formatNumber = (num: number): string => {
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+  if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+  return num.toString();
+};
+
 export default function DashboardPage() {
   const [user, setUser] = useState<{ username: string } | null>(null);
   const [recentVideos, setRecentVideos] = useState<Video[]>([]);
@@ -389,7 +396,7 @@ export default function DashboardPage() {
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="text-sm font-medium opacity-70">Total Views</p>
-                    <p className="text-3xl font-bold mt-1">{totalViews.toLocaleString()}</p>
+                    <p className="text-3xl font-bold mt-1">{formatNumber(totalViews)}</p>
                     <div className="flex items-center mt-1">
                       {viewsTrend.percentage > 0 ? (
                         <FaArrowUp className="text-green-400 mr-1" />
@@ -414,7 +421,7 @@ export default function DashboardPage() {
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="text-sm font-medium opacity-70">Total Likes</p>
-                    <p className="text-3xl font-bold mt-1">{totalLikes.toLocaleString()}</p>
+                    <p className="text-3xl font-bold mt-1">{formatNumber(totalLikes)}</p>
                     <div className="flex items-center mt-1">
                       {likesTrend.percentage > 0 ? (
                         <FaArrowUp className="text-green-400 mr-1" />
@@ -439,7 +446,7 @@ export default function DashboardPage() {
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="text-sm font-medium opacity-70">Average VPH</p>
-                    <p className="text-3xl font-bold mt-1">{averageVph}</p>
+                    <p className="text-3xl font-bold mt-1">{formatNumber(Math.round(recentVideos.reduce((sum, video) => sum + video.vph, 0) / Math.max(1, recentVideos.length)))}</p>
                     <div className="flex items-center mt-1">
                       {vphTrend.percentage > 0 ? (
                         <FaArrowUp className="text-green-400 mr-1" />
@@ -485,7 +492,7 @@ export default function DashboardPage() {
               <h3 className="text-sm font-medium text-white/90">Average VPH</h3>
               <div className="mt-1 flex items-baseline">
                 <p className="text-2xl font-semibold text-white">
-                  {Math.round(recentVideos.reduce((sum, video) => sum + video.vph, 0) / Math.max(1, recentVideos.length))}
+                  {formatNumber(Math.round(recentVideos.reduce((sum, video) => sum + video.vph, 0) / Math.max(1, recentVideos.length)))}
                 </p>
                 <p className="ml-2 text-sm text-white/80">views per hour</p>
               </div>
@@ -494,7 +501,7 @@ export default function DashboardPage() {
               <h3 className="text-sm font-medium text-white/90">Highest VPH</h3>
               <div className="mt-1 flex items-baseline">
                 <p className="text-2xl font-semibold text-white">
-                  {recentVideos.length > 0 ? Math.max(...recentVideos.map(v => v.vph)) : 0}
+                  {recentVideos.length > 0 ? formatNumber(Math.max(...recentVideos.map(v => v.vph))) : 0}
                 </p>
                 <p className="ml-2 text-sm text-white/80">views per hour</p>
               </div>
@@ -635,10 +642,10 @@ function VideoCard({ video, showVph = false, allVideos }: VideoCardProps) {
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{new Date(video.publishedAt).toLocaleDateString()}</p>
         <div className="flex flex-wrap gap-2 mt-2">
           <span className="text-xs bg-white/20 dark:bg-white/10 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
-            {video.viewCount.toLocaleString()} views
+            {formatNumber(video.viewCount)} views
           </span>
           <span className="text-xs bg-white/20 dark:bg-white/10 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
-            {video.likeCount.toLocaleString()} likes
+            {formatNumber(video.likeCount)} likes
           </span>
           {showVph && (
             <>
@@ -648,7 +655,7 @@ function VideoCard({ video, showVph = false, allVideos }: VideoCardProps) {
                 performanceLevel === 'exceptional' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300' : 
                 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'
               } rounded-xl px-2 py-1 font-medium relative group cursor-help`}>
-                {video.vph.toLocaleString()} VPH
+                {formatNumber(video.vph)} VPH
                 {performanceLevel === 'exceptional' && <span className="ml-1">🔥</span>}
                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded-xl p-2 w-48 shadow-lg z-10">
                   <div className="relative">
@@ -729,10 +736,10 @@ function VideoGridCard({ video, showVph = false, allVideos }: VideoCardProps) {
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{new Date(video.publishedAt).toLocaleDateString()}</p>
         <div className="flex flex-wrap gap-2 mt-2">
           <span className="text-xs bg-white/20 dark:bg-white/10 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
-            {video.viewCount.toLocaleString()} views
+            {formatNumber(video.viewCount)} views
           </span>
           <span className="text-xs bg-white/20 dark:bg-white/10 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
-            {video.likeCount.toLocaleString()} likes
+            {formatNumber(video.likeCount)} likes
           </span>
           {showVph && (
             <>
@@ -742,7 +749,7 @@ function VideoGridCard({ video, showVph = false, allVideos }: VideoCardProps) {
                 performanceLevel === 'exceptional' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300' : 
                 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'
               } rounded-xl px-2 py-1 font-medium relative group cursor-help`}>
-                {video.vph.toLocaleString()} VPH
+                {formatNumber(video.vph)} VPH
                 {performanceLevel === 'exceptional' && <span className="ml-1">🔥</span>}
                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded-xl p-2 w-48 shadow-lg z-10">
                   <div className="relative">

@@ -4,7 +4,10 @@ import { headers } from 'next/headers';
 import { createClient } from '@/utils/supabase/server';
 import Stripe from 'stripe';
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+// Get the appropriate webhook secret based on environment
+const webhookSecret = process.env.NODE_ENV === 'production' 
+  ? process.env.STRIPE_WEBHOOK_SECRET_LIVE 
+  : process.env.STRIPE_WEBHOOK_SECRET_TEST;
 
 export const dynamic = 'force-dynamic';
 
