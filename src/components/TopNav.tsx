@@ -87,16 +87,52 @@ export default function TopNav({ username = 'User' }: TopNavProps): JSX.Element 
     { href: '/dashboard/videos', label: 'Videos' },
   ];
 
+  // Add function to handle billing navigation
+  const handleBillingClick = async () => {
+    setDropdownOpen(false);
+    try {
+      // First check if user is logged in
+      const authResponse = await fetch('/api/auth/check', {
+        credentials: 'include'
+      });
+      
+      // If not authenticated, redirect to login
+      if (!authResponse.ok) {
+        // Store intended destination in localStorage for after login
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('intended_destination', '/subscription');
+        }
+        
+        // Redirect to login
+        window.location.href = '/login?redirectTo=/subscription';
+        return;
+      }
+
+      // Check subscription status
+      const response = await fetch('/api/subscription/status');
+      const data = await response.json();
+      
+      if (data.subscribed) {
+        // If they have a subscription, go to portal
+        window.location.href = '/api/stripe/create-portal';
+      } else {
+        // If no subscription, go to subscription page
+        window.location.href = '/subscription';
+      }
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+      // If there's an error, default to subscription page
+      window.location.href = '/subscription';
+    }
+  };
+
   const renderDropdown = () => (
     <>
       <a href="#" onClick={handleComingSoonClick('Discord')} className="block px-4 py-2 hover:bg-white/10 text-white">
         Discord
       </a>
       <button 
-        onClick={() => {
-          setDropdownOpen(false);
-          window.location.href = '/api/stripe/create-portal';
-        }} 
+        onClick={handleBillingClick}
         className="block w-full text-left px-4 py-2 hover:bg-white/10 text-white"
       >
         Billing
