@@ -72,7 +72,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   // Add new state variables for similar videos section
   const [competitorVideos, setCompetitorVideos] = useState<Video[]>([]);
   const [similarVideos, setSimilarVideos] = useState<Video[]>([]);
-  const [videoGridColumns, setVideoGridColumns] = useState<number>(6); // Default to 6 columns for video grid
+  const [videoGridColumns, setVideoGridColumns] = useState<number>(4); // Default to 4 columns for video grid
   const [showVideoInfo, setShowVideoInfo] = useState<boolean>(true);
   const [videoSearchQuery, setVideoSearchQuery] = useState<string>('');
   const [activeVideoTab, setActiveVideoTab] = useState<'competitors'>('competitors');
@@ -1347,24 +1347,15 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                         {(() => {
                           const outlierData = calculateOutlierScore(video, getSortedVideos());
                           const performanceLevel = outlierData.performanceLevel;
-                          const isHighVph = video.vph > 100;
-                          
                           return (
                             <span className={`text-xs ${
                               performanceLevel === 'low' ? 'bg-gray-100 dark:bg-gray-900/50 text-gray-800 dark:text-gray-300' : 
                               performanceLevel === 'high' ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300' : 
                               performanceLevel === 'exceptional' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300' : 
                               'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'
-                            } rounded-xl px-2 py-1 font-medium relative group cursor-help`}>
+                            } rounded-xl px-2 py-0.5 font-medium inline-flex items-center`}>
                               {formatNumber(video.vph)} VPH
                               {performanceLevel === 'exceptional' && <span className="ml-1">🔥</span>}
-                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded-xl p-2 w-48 shadow-lg z-10">
-                                <div className="relative">
-                                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
-                                  <p>Views Per Hour (VPH) - A metric showing how quickly this video is gaining views.</p>
-                                  {isHighVph && <p className="mt-1 text-green-300">This video is performing exceptionally well!</p>}
-                                </div>
-                              </div>
                             </span>
                           );
                         })()}
@@ -1377,14 +1368,8 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                                         'bg-gray-200 text-gray-800';
                           
                           return (
-                            <span className={`text-xs font-bold rounded-xl px-2 py-1 ${xColor} relative group cursor-help`}>
+                            <span className={`text-xs font-bold rounded-xl px-2 py-0.5 ${xColor} inline-flex items-center`}>
                               {outlierData.xFactor.toFixed(1)}x
-                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded-xl p-2 w-48 shadow-lg z-10">
-                                <div className="relative">
-                                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
-                                  <p>This video has <b>{outlierData.xFactor.toFixed(1)}x</b> the views of the channel's median video ({outlierData.medianViews.toLocaleString()} views).</p>
-                                </div>
-                              </div>
                             </span>
                           );
                         })()}
@@ -1393,21 +1378,8 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                         {(() => {
                           const performanceScore = calculatePerformanceScore(video, getSortedVideos());
                           return (
-                            <span className="text-xs font-bold rounded-xl px-2 py-1 bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300 relative group cursor-help">
+                            <span className="text-xs font-bold rounded-xl px-2 py-0.5 bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300 inline-flex items-center">
                               {Math.round(performanceScore)} Score
-                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded-xl p-2 w-56 shadow-lg z-10">
-                                <div className="relative">
-                                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
-                                  <p>Performance Score: {Math.round(performanceScore)}/100</p>
-                                  <p className="mt-1">A comprehensive ranking that combines multiple metrics:</p>
-                                  <ul className="list-disc list-inside">
-                                    <li>Outlier score (50%)</li>
-                                    <li>Engagement rate (30%)</li>
-                                    <li>VPH (10%)</li>
-                                    <li>Recency (10%)</li>
-                                  </ul>
-                                </div>
-                              </div>
                             </span>
                           );
                         })()}
