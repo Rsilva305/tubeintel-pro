@@ -7,7 +7,6 @@ import { FaYoutube, FaUser, FaCog } from 'react-icons/fa';
 import { Zap } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { signOut } from '@/lib/supabase';
-import YouTubeApiToggle from './YouTubeApiToggle';
 import RefreshCacheButton from './RefreshCacheButton';
 import Portal from './Portal';
 
@@ -72,9 +71,6 @@ export default function TopNav({ username = 'User' }: TopNavProps): JSX.Element 
 
       {/* User Controls */}
       <div className="flex items-center gap-4">
-        {/* YouTube API Toggle */}
-        <YouTubeApiToggle />
-        
         {/* Refresh Cache Button */}
         <RefreshCacheButton />
         
