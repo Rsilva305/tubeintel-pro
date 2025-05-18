@@ -7,7 +7,6 @@ import { FaYoutube, FaUser, FaCog } from 'react-icons/fa';
 import { Zap } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { signOut } from '@/lib/supabase';
-import RefreshCacheButton from './RefreshCacheButton';
 import Portal from './Portal';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePathname } from 'next/navigation';
@@ -166,9 +165,6 @@ export default function TopNav({ username = 'User' }: TopNavProps): JSX.Element 
 
       {/* User Controls */}
       <div className="flex items-center gap-4">
-        {/* Refresh Cache Button */}
-        <RefreshCacheButton />
-        
         {/* Extension Button */}
         <button 
           onClick={handleComingSoonClick('Browser Extension')}
