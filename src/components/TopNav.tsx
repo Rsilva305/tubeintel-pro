@@ -9,6 +9,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { signOut } from '@/lib/supabase';
 import YouTubeApiToggle from './YouTubeApiToggle';
 import RefreshCacheButton from './RefreshCacheButton';
+import Portal from './Portal';
 
 interface TopNavProps {
   username?: string;
@@ -108,43 +109,48 @@ export default function TopNav({ username = 'User' }: TopNavProps): JSX.Element 
           </button>
           
           {dropdownOpen && (
-            <div className="absolute right-0 mt-2 w-56 bg-white/20 backdrop-blur-md border border-white/30 rounded-lg shadow-lg z-50 py-2">
-              <div className="px-4 py-2 border-b border-white/30 mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-white/20 overflow-hidden flex items-center justify-center">
-                    <FaUser className="h-4 w-4 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-white">{username}</p>
+            <Portal>
+              <div
+                className="fixed right-6 top-16 w-56 bg-white/20 backdrop-blur-md border border-white/30 rounded-lg shadow-lg z-[2147483647] py-2"
+                ref={dropdownRef}
+              >
+                <div className="px-4 py-2 border-b border-white/30 mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-white/20 overflow-hidden flex items-center justify-center">
+                      <FaUser className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-white">{username}</p>
+                    </div>
                   </div>
                 </div>
+                
+                <a href="#" onClick={handleComingSoonClick('Discord')} className="block px-4 py-2 hover:bg-white/10 text-white">
+                  Discord
+                </a>
+                <a href="#" onClick={handleComingSoonClick('Billing')} className="block px-4 py-2 hover:bg-white/10 text-white">
+                  Billing
+                </a>
+                <a href="#" onClick={handleComingSoonClick('Affiliates')} className="block px-4 py-2 hover:bg-white/10 text-white">
+                  Affiliates
+                </a>
+                <a href="#" onClick={handleComingSoonClick('Contact Support')} className="block px-4 py-2 hover:bg-white/10 text-white">
+                  Contact support
+                </a>
+                <a href="#" onClick={handleComingSoonClick('Bug Report')} className="block px-4 py-2 hover:bg-white/10 text-white">
+                  Report a bug
+                </a>
+                
+                <div className="border-t border-white/30 mt-2 pt-2">
+                  <button 
+                    className="block w-full text-left px-4 py-2 hover:bg-white/10 text-white"
+                    onClick={handleLogout}
+                  >
+                    Logout
+                  </button>
+                </div>
               </div>
-              
-              <a href="#" onClick={handleComingSoonClick('Discord')} className="block px-4 py-2 hover:bg-white/10 text-white">
-                Discord
-              </a>
-              <a href="#" onClick={handleComingSoonClick('Billing')} className="block px-4 py-2 hover:bg-white/10 text-white">
-                Billing
-              </a>
-              <a href="#" onClick={handleComingSoonClick('Affiliates')} className="block px-4 py-2 hover:bg-white/10 text-white">
-                Affiliates
-              </a>
-              <a href="#" onClick={handleComingSoonClick('Contact Support')} className="block px-4 py-2 hover:bg-white/10 text-white">
-                Contact support
-              </a>
-              <a href="#" onClick={handleComingSoonClick('Bug Report')} className="block px-4 py-2 hover:bg-white/10 text-white">
-                Report a bug
-              </a>
-              
-              <div className="border-t border-white/30 mt-2 pt-2">
-                <button 
-                  className="block w-full text-left px-4 py-2 hover:bg-white/10 text-white"
-                  onClick={handleLogout}
-                >
-                  Logout
-                </button>
-              </div>
-            </div>
+            </Portal>
           )}
         </div>
       </div>
