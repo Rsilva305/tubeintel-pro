@@ -6,6 +6,8 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
+    console.log('=== SUBSCRIPTION STATUS CHECK START ===');
+    
     // Get user's authentication status
     const supabase = createClient();
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -13,6 +15,13 @@ export async function GET(req: NextRequest) {
     // Try to get user from cookie if session is not available
     let userId = session?.user?.id;
     let authMethod = 'session';
+    
+    console.log('Initial auth check:', {
+      hasSession: !!session,
+      hasUser: !!session?.user,
+      userId: userId ? userId.substring(0, 8) + '...' : 'none',
+      authMethod
+    });
     
     // If no session found, try to extract from auth cookie
     if (!userId) {

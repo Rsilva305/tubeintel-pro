@@ -6,10 +6,10 @@ import { FaArrowLeft, FaPlus, FaTimes, FaYoutube, FaEllipsisV, FaChartBar, FaDow
 import Link from 'next/link';
 import { Competitor, Video } from '@/types';
 import { videosApi } from '@/services/api';
-import { getUseRealApi } from '@/services/api/config';
 import { competitorListsApi } from '@/services/api/competitorLists';
 import { secureYoutubeService } from '@/services/api/youtube-secure';
 import SearchFilters from '@/components/SearchFilters';
+import { calculateOutlierScore, calculatePerformanceScore } from '@/services/metrics/outliers';
 
 // Format number to compact form
 const formatNumber = (num: number): string => {
@@ -41,7 +41,6 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   const [isSearching, setIsSearching] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [useRealApi] = useState(getUseRealApi());
   const [chartMetric, setChartMetric] = useState('Subscribers');
   const [subscribersOnly, setSubscribersOnly] = useState(true);
   const [sortBy, setSortBy] = useState('date');
@@ -73,7 +72,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   // Add new state variables for similar videos section
   const [competitorVideos, setCompetitorVideos] = useState<Video[]>([]);
   const [similarVideos, setSimilarVideos] = useState<Video[]>([]);
-  const [videoGridColumns, setVideoGridColumns] = useState<number>(6); // Default to 6 columns for video grid
+  const [videoGridColumns, setVideoGridColumns] = useState<number>(4); // Default to 4 columns for video grid
   const [showVideoInfo, setShowVideoInfo] = useState<boolean>(true);
   const [videoSearchQuery, setVideoSearchQuery] = useState<string>('');
   const [activeVideoTab, setActiveVideoTab] = useState<'competitors'>('competitors');
@@ -1337,15 +1336,53 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                       </div>
                       
                       <div className="flex flex-wrap gap-2 mt-2">
-                        <span className="text-xs bg-white/10 text-white rounded-xl px-2 py-1">
+                        <span className="text-xs bg-white/20 dark:bg-white/10 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
                           {formatNumber(video.viewCount)} views
                         </span>
-                        <span className="text-xs bg-white/10 text-white rounded-xl px-2 py-1">
+                        <span className="text-xs bg-white/20 dark:bg-white/10 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
                           {formatNumber(video.likeCount)} likes
                         </span>
-                        <span className="text-xs bg-blue-500/20 text-blue-300 rounded-xl px-2 py-1 font-medium">
-                          {video.vph} VPH
-                        </span>
+                        
+                        {/* VPH with performance level */}
+                        {(() => {
+                          const outlierData = calculateOutlierScore(video, getSortedVideos());
+                          const performanceLevel = outlierData.performanceLevel;
+                          return (
+                            <span className={`text-xs ${
+                              performanceLevel === 'low' ? 'bg-gray-100 dark:bg-gray-900/50 text-gray-800 dark:text-gray-300' : 
+                              performanceLevel === 'high' ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300' : 
+                              performanceLevel === 'exceptional' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300' : 
+                              'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'
+                            } rounded-xl px-2 py-0.5 font-medium inline-flex items-center`}>
+                              {formatNumber(video.vph)} VPH
+                              {performanceLevel === 'exceptional' && <span className="ml-1">🔥</span>}
+                            </span>
+                          );
+                        })()}
+                        
+                        {/* Outlier Score Badge */}
+                        {(() => {
+                          const outlierData = calculateOutlierScore(video, getSortedVideos());
+                          const xColor = outlierData.xFactor > 1.2 ? 'bg-blue-200 text-blue-800' : 
+                                        outlierData.xFactor < 0.8 ? 'bg-red-200 text-red-800' : 
+                                        'bg-gray-200 text-gray-800';
+                          
+                          return (
+                            <span className={`text-xs font-bold rounded-xl px-2 py-0.5 ${xColor} inline-flex items-center`}>
+                              {outlierData.xFactor.toFixed(1)}x
+                            </span>
+                          );
+                        })()}
+                        
+                        {/* Performance Score Badge */}
+                        {(() => {
+                          const performanceScore = calculatePerformanceScore(video, getSortedVideos());
+                          return (
+                            <span className="text-xs font-bold rounded-xl px-2 py-0.5 bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300 inline-flex items-center">
+                              {Math.round(performanceScore)} Score
+                            </span>
+                          );
+                        })()}
                       </div>
                     </div>
                   )}

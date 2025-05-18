@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { FaCrown, FaStar } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
+import { useSubscription } from '@/hooks/useSubscription';
 
 type SubscriptionTier = 'free' | 'pro' | 'pro-plus';
 
@@ -17,30 +18,22 @@ export default function UpgradeButton({
   size = 'medium',
   variant = 'inline'
 }: UpgradeButtonProps) {
-  const [currentPlan, setCurrentPlan] = useState<SubscriptionTier>('free');
+  const { plan, isLoading } = useSubscription();
   const [isClient, setIsClient] = useState(false);
   const router = useRouter();
   
   // Once component mounts, set isClient to true
   useEffect(() => {
     setIsClient(true);
-    
-    // Get current subscription from localStorage
-    try {
-      const savedPlan = localStorage.getItem('subscription') as SubscriptionTier || 'free';
-      setCurrentPlan(savedPlan);
-    } catch (error) {
-      console.error('Error getting subscription from localStorage:', error);
-    }
   }, []);
   
-  // Don't render anything during SSR to prevent hydration issues
-  if (!isClient) {
+  // Don't render anything during SSR or while loading to prevent hydration issues
+  if (!isClient || isLoading) {
     return null;
   }
   
-  // If user already has Pro+, don't show upgrade button
-  if (currentPlan === 'pro-plus') {
+  // If user already has Pro or Pro+, don't show upgrade button
+  if (plan === 'pro' || plan === 'pro-plus') {
     return null;
   }
   
@@ -57,10 +50,10 @@ export default function UpgradeButton({
   };
   
   // Icon based on current plan
-  const icon = currentPlan === 'pro' ? <FaStar className="mr-1.5" /> : <FaCrown className="mr-1.5" />;
+  const icon = (plan as SubscriptionTier) === 'pro' ? <FaStar className="mr-1.5" /> : <FaCrown className="mr-1.5" />;
   
   // Button text based on current plan
-  const buttonText = currentPlan === 'pro' ? 'Upgrade to Pro+' : 'Upgrade to Pro';
+  const buttonText = (plan as SubscriptionTier) === 'pro' ? 'Upgrade to Pro+' : 'Upgrade to Pro';
   
   // Return button with appropriate styling
   return (
@@ -70,7 +63,7 @@ export default function UpgradeButton({
         flex items-center justify-center font-medium rounded-full transition-colors
         ${sizeClasses[size]}
         ${variant === 'full' ? 'w-full' : ''}
-        ${currentPlan === 'pro' 
+        ${(plan as SubscriptionTier) === 'pro' 
           ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white' 
           : 'bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-700 hover:to-sky-600 text-white'
         }
