@@ -9,6 +9,9 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { signOut } from '@/lib/supabase';
 import RefreshCacheButton from './RefreshCacheButton';
 import Portal from './Portal';
+import { useAuth } from '@/contexts/AuthContext';
+import { usePathname } from 'next/navigation';
+import { createPortal } from 'react-dom';
 
 interface TopNavProps {
   username?: string;
@@ -16,9 +19,12 @@ interface TopNavProps {
 
 export default function TopNav({ username = 'User' }: TopNavProps): JSX.Element {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
   const router = useRouter();
+  const { user, logout } = useAuth();
+  const pathname = usePathname();
   
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -62,6 +68,59 @@ export default function TopNav({ username = 'User' }: TopNavProps): JSX.Element 
   const bgColor = theme === 'dark' ? 'bg-gray-800' : 'bg-white';
   const borderColor = theme === 'dark' ? 'border-gray-700' : 'border-gray-200';
   const textColor = theme === 'dark' ? 'text-white' : 'text-gray-900';
+
+  const handleSignOut = async () => {
+    try {
+      await logout();
+      router.push('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
+  const isActive = (path: string) => pathname === path;
+
+  const navLinks = [
+    { href: '/dashboard', label: 'Dashboard' },
+    { href: '/dashboard/competitors', label: 'Competitors' },
+    { href: '/dashboard/keywords', label: 'Keywords' },
+    { href: '/dashboard/videos', label: 'Videos' },
+  ];
+
+  const renderDropdown = () => (
+    <>
+      <a href="#" onClick={handleComingSoonClick('Discord')} className="block px-4 py-2 hover:bg-white/10 text-white">
+        Discord
+      </a>
+      <button 
+        onClick={() => {
+          setDropdownOpen(false);
+          window.location.href = '/api/stripe/create-portal';
+        }} 
+        className="block w-full text-left px-4 py-2 hover:bg-white/10 text-white"
+      >
+        Billing
+      </button>
+      <a href="#" onClick={handleComingSoonClick('Affiliates')} className="block px-4 py-2 hover:bg-white/10 text-white">
+        Affiliates
+      </a>
+      <a href="#" onClick={handleComingSoonClick('Contact Support')} className="block px-4 py-2 hover:bg-white/10 text-white">
+        Contact support
+      </a>
+      <a href="#" onClick={handleComingSoonClick('Bug Report')} className="block px-4 py-2 hover:bg-white/10 text-white">
+        Report a bug
+      </a>
+      
+      <div className="border-t border-white/30 mt-2 pt-2">
+        <button 
+          className="block w-full text-left px-4 py-2 hover:bg-white/10 text-white"
+          onClick={handleLogout}
+        >
+          Logout
+        </button>
+      </div>
+    </>
+  );
 
   return (
     <header className="h-16 bg-white/10 backdrop-blur-md border-b border-white/20 flex items-center justify-between px-6 shadow-sm">
@@ -121,30 +180,7 @@ export default function TopNav({ username = 'User' }: TopNavProps): JSX.Element 
                   </div>
                 </div>
                 
-                <a href="#" onClick={handleComingSoonClick('Discord')} className="block px-4 py-2 hover:bg-white/10 text-white">
-                  Discord
-                </a>
-                <a href="#" onClick={handleComingSoonClick('Billing')} className="block px-4 py-2 hover:bg-white/10 text-white">
-                  Billing
-                </a>
-                <a href="#" onClick={handleComingSoonClick('Affiliates')} className="block px-4 py-2 hover:bg-white/10 text-white">
-                  Affiliates
-                </a>
-                <a href="#" onClick={handleComingSoonClick('Contact Support')} className="block px-4 py-2 hover:bg-white/10 text-white">
-                  Contact support
-                </a>
-                <a href="#" onClick={handleComingSoonClick('Bug Report')} className="block px-4 py-2 hover:bg-white/10 text-white">
-                  Report a bug
-                </a>
-                
-                <div className="border-t border-white/30 mt-2 pt-2">
-                  <button 
-                    className="block w-full text-left px-4 py-2 hover:bg-white/10 text-white"
-                    onClick={handleLogout}
-                  >
-                    Logout
-                  </button>
-                </div>
+                {renderDropdown()}
               </div>
             </Portal>
           )}
