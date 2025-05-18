@@ -18,7 +18,6 @@ import {
 import { getChannelTrendData } from '@/services/metrics/history';
 import { calculateOutlierScore, getTopPerformingVideos } from '@/services/metrics/outliers';
 import UpgradeButton from '@/components/UpgradeButton';
-import TestBillingLink from '@/components/TestBillingLink';
 
 // Register ChartJS components
 ChartJS.register(
@@ -600,9 +599,6 @@ export default function DashboardPage() {
               <p className="text-gray-600 dark:text-gray-400">No videos found.</p>
             )}
           </section>
-        </div>
-        <div className="p-4">
-          <TestBillingLink />
         </div>
       </div>
     </div>
