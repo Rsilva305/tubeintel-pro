@@ -26,6 +26,9 @@ const DualSlider: React.FC<DualSliderProps> = ({
   onMaxChange,
   className = ''
 }) => {
+  // Convert step to number if it's a string
+  const stepValue = typeof step === 'string' ? parseFloat(step) : step;
+
   // Ensure minValue doesn't exceed maxValue
   const handleMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = Number(e.target.value);
@@ -38,6 +41,23 @@ const DualSlider: React.FC<DualSliderProps> = ({
   const handleMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = Number(e.target.value);
     if (newValue >= minValue) {
+      onMaxChange(newValue);
+    }
+  };
+
+  // Handle mouse wheel for fine control
+  const handleWheel = (e: React.WheelEvent<HTMLInputElement>, isMin: boolean) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -1 : 1; // Scroll down decreases, up increases
+    
+    // Use the step value for increment
+    const increment = stepValue;
+    const currentValue = isMin ? minValue : maxValue;
+    const newValue = Math.max(min, Math.min(max, currentValue + (delta * increment)));
+    
+    if (isMin && newValue <= maxValue) {
+      onMinChange(newValue);
+    } else if (!isMin && newValue >= minValue) {
       onMaxChange(newValue);
     }
   };
@@ -55,9 +75,10 @@ const DualSlider: React.FC<DualSliderProps> = ({
         type="range"
         min={min}
         max={max}
-        step={step}
+        step={stepValue}
         value={minValue}
         onChange={handleMinChange}
+        onWheel={(e) => handleWheel(e, true)}
         className="absolute w-full thumb-left search-filter-range"
         style={{ height: '100%' }}
       />
@@ -67,9 +88,10 @@ const DualSlider: React.FC<DualSliderProps> = ({
         type="range"
         min={min}
         max={max}
-        step={step}
+        step={stepValue}
         value={maxValue}
         onChange={handleMaxChange}
+        onWheel={(e) => handleWheel(e, false)}
         className="absolute w-full thumb-right search-filter-range"
         style={{ height: '100%' }}
       />
@@ -134,6 +156,22 @@ export default function SearchFilters({
     return parseFloat(value);
   };
 
+  // Helper function to format view numbers
+  const formatViewNumber = (value: number): string => {
+    if (value >= 1000) {
+      return `${(value / 1000).toFixed(0)}K`;
+    }
+    return value.toString();
+  };
+
+  // Helper function to format subscriber numbers
+  const formatSubscriberNumber = (value: number): string => {
+    if (value >= 1000) {
+      return `${(value / 1000).toFixed(0)}K`;
+    }
+    return value.toString();
+  };
+
   // Time range state
   const [timeRange, setTimeRange] = useState<TimeRange>('All Time');
   const [startDate, setStartDate] = useState('2005-02-13');
@@ -149,11 +187,11 @@ export default function SearchFilters({
   const [multiplierMin, setMultiplierMin] = useState('0.0x');
   const [multiplierMax, setMultiplierMax] = useState('500.0x+');
   const [viewsMin, setViewsMin] = useState('0');
-  const [viewsMax, setViewsMax] = useState('1B+');
+  const [viewsMax, setViewsMax] = useState('1M+');
   const [subscribersMin, setSubscribersMin] = useState('0');
-  const [subscribersMax, setSubscribersMax] = useState('500M+');
+  const [subscribersMax, setSubscribersMax] = useState('1M+');
   const [videoDurationMin, setVideoDurationMin] = useState('00:00:00');
-  const [videoDurationMax, setVideoDurationMax] = useState('07:00:00+');
+  const [videoDurationMax, setVideoDurationMax] = useState('01:00:00+');
   
   // When posted checkbox
   const [whenPosted, setWhenPosted] = useState(false);
@@ -524,17 +562,17 @@ export default function SearchFilters({
               <div className="mb-1">
                 <DualSlider
                   min={0}
-                  max={500}
+                  max={100}
                   step={0.1}
                   minValue={parseNumberValue(multiplierMin.replace('x', '')) || 0}
-                  maxValue={parseNumberValue(multiplierMax.replace('x', '').replace('+', '')) || 500}
+                  maxValue={parseNumberValue(multiplierMax.replace('x', '').replace('+', '')) || 100}
                   onMinChange={(value) => setMultiplierMin(`${value.toFixed(1)}x`)}
-                  onMaxChange={(value) => setMultiplierMax(value >= 500 ? '500.0x+' : `${value.toFixed(1)}x`)}
+                  onMaxChange={(value) => setMultiplierMax(value >= 100 ? '100.0x+' : `${value.toFixed(1)}x`)}
                   className="search-filter-range w-full"
                 />
                 <div className="flex justify-between text-xs text-gray-400 mt-1">
                   <span>0.0x</span>
-                  <span>500.0x+</span>
+                  <span>100.0x+</span>
                 </div>
               </div>
               
@@ -572,17 +610,17 @@ export default function SearchFilters({
               <div className="mb-1">
                 <DualSlider
                   min={0}
-                  max={1000000000}
-                  step={10000}
+                  max={1000000}
+                  step={1000}
                   minValue={parseNumberValue(viewsMin) || 0}
-                  maxValue={parseNumberValue(viewsMax.replace('+', '')) || 1000000000}
-                  onMinChange={(value) => setViewsMin(value.toString())}
-                  onMaxChange={(value) => setViewsMax(value >= 1000000000 ? '1B+' : value.toString())}
+                  maxValue={parseNumberValue(viewsMax.replace('+', '')) || 1000000}
+                  onMinChange={(value) => setViewsMin(formatViewNumber(value))}
+                  onMaxChange={(value) => setViewsMax(value >= 1000000 ? '1M+' : formatViewNumber(value))}
                   className="search-filter-range w-full"
                 />
                 <div className="flex justify-between text-xs text-gray-400 mt-1">
                   <span>0</span>
-                  <span>1B+</span>
+                  <span>1M+</span>
                 </div>
               </div>
               
@@ -620,17 +658,17 @@ export default function SearchFilters({
               <div className="mb-1">
                 <DualSlider
                   min={0}
-                  max={500000000}
-                  step={10000}
+                  max={1000000}
+                  step={1000}
                   minValue={parseNumberValue(subscribersMin) || 0}
-                  maxValue={parseNumberValue(subscribersMax.replace('+', '')) || 500000000}
-                  onMinChange={(value) => setSubscribersMin(value.toString())}
-                  onMaxChange={(value) => setSubscribersMax(value >= 500000000 ? '500M+' : value.toString())}
+                  maxValue={parseNumberValue(subscribersMax.replace('+', '')) || 1000000}
+                  onMinChange={(value) => setSubscribersMin(formatSubscriberNumber(value))}
+                  onMaxChange={(value) => setSubscribersMax(value >= 1000000 ? '1M+' : formatSubscriberNumber(value))}
                   className="search-filter-range w-full"
                 />
                 <div className="flex justify-between text-xs text-gray-400 mt-1">
                   <span>0</span>
-                  <span>500M+</span>
+                  <span>1M+</span>
                 </div>
               </div>
               
@@ -668,18 +706,18 @@ export default function SearchFilters({
               <div className="mb-1">
                 <DualSlider
                   min={0}
-                  max={420}
+                  max={60}
                   step={1}
                   minValue={parseDurationValue(videoDurationMin) || 0}
-                  maxValue={parseDurationValue(videoDurationMax.replace('+', '')) || 420}
+                  maxValue={parseDurationValue(videoDurationMax.replace('+', '')) || 60}
                   onMinChange={(value) => {
                     const hours = Math.floor(value / 60);
                     const mins = value % 60;
                     setVideoDurationMin(`${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:00`);
                   }}
                   onMaxChange={(value) => {
-                    if (value >= 420) {
-                      setVideoDurationMax('07:00:00+');
+                    if (value >= 60) {
+                      setVideoDurationMax('01:00:00+');
                     } else {
                       const hours = Math.floor(value / 60);
                       const mins = value % 60;
@@ -690,7 +728,7 @@ export default function SearchFilters({
                 />
                 <div className="flex justify-between text-xs text-gray-400 mt-1">
                   <span>00:00:00</span>
-                  <span>07:00:00+</span>
+                  <span>01:00:00+</span>
                 </div>
               </div>
               
@@ -1003,11 +1041,11 @@ export default function SearchFilters({
                     <DualSlider
                       min={0}
                       max={500}
-                      step={0.1}
+                      step={0.01}
                       minValue={parseNumberValue(viewsToSubsRatioMin) || 0}
                       maxValue={parseNumberValue(viewsToSubsRatioMax.replace('+', '')) || 500}
                       onMinChange={(value) => setViewsToSubsRatioMin(value.toString())}
-                      onMaxChange={(value) => setViewsToSubsRatioMax(value >= 500 ? '500.0+' : value.toString())}
+                      onMaxChange={(value) => setViewsToSubsRatioMax(value >= 500 ? '500.00+' : value.toString())}
                       className="search-filter-range w-full"
                     />
                   </div>
