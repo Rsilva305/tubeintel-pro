@@ -352,6 +352,7 @@ export default function SearchFilters({
     // Set times to beginning and end of day to include the full days
     start.setHours(0, 0, 0, 0);
     end.setHours(23, 59, 59, 999);
+    date.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
     
     // If we're selecting the start date, only highlight the start date
     if (activeField === 'start') {
@@ -833,12 +834,16 @@ export default function SearchFilters({
                       setSelectedMonth(startDateObj.getMonth());
                       setSelectedYear(startDateObj.getFullYear());
                     }}
-                    className="w-full bg-zinc-900 border border-zinc-700 px-2 pl-7 py-1 rounded-full text-white text-xs cursor-pointer"
+                    className="w-full bg-zinc-900 border border-zinc-700 px-2 pl-7 py-1 rounded-full text-white text-xs cursor-pointer relative group"
                     placeholder="Start date"
                     readOnly
+                    title={`Selected start date: ${formatDateForDisplay(startDate)}`}
                   />
                   <div className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400">
                     <FaCalendarAlt size={10} />
+                  </div>
+                  <div className="absolute -top-8 left-0 bg-zinc-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                    {formatDateForDisplay(startDate)}
                   </div>
                 </div>
                 <div className="relative">
@@ -868,12 +873,16 @@ export default function SearchFilters({
                       setSelectedMonth(endDateObj.getMonth());
                       setSelectedYear(endDateObj.getFullYear());
                     }}
-                    className="w-full bg-zinc-900 border border-zinc-700 px-2 pl-7 py-1 rounded-full text-white text-xs cursor-pointer"
+                    className="w-full bg-zinc-900 border border-zinc-700 px-2 pl-7 py-1 rounded-full text-white text-xs cursor-pointer relative group"
                     placeholder="End date"
                     readOnly
+                    title={`Selected end date: ${formatDateForDisplay(endDate)}`}
                   />
                   <div className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400">
                     <FaCalendarAlt size={10} />
+                  </div>
+                  <div className="absolute -top-8 left-0 bg-zinc-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                    {formatDateForDisplay(endDate)}
                   </div>
                 </div>
               </div>
@@ -894,7 +903,11 @@ export default function SearchFilters({
                   <div className="text-xs">
                     {/* Calendar title */}
                     <div className="text-center mb-1 text-gray-300">
-                      Select {activeField === 'start' ? 'Start' : 'End'} Date
+                      {activeField === 'start' ? (
+                        <span>Select Start Date: {formatDateForDisplay(startDate)}</span>
+                      ) : (
+                        <span>Select End Date: {formatDateForDisplay(endDate)}</span>
+                      )}
                     </div>
                     
                     {/* Month & Year Navigation */}
@@ -947,19 +960,41 @@ export default function SearchFilters({
                         <div key={day} className="text-center text-xxs text-gray-400">{day}</div>
                       ))}
                       
-                      {/* Calendar days - more dynamic based on the actual month */}
-                      {calendarDays.map((dateObj, i) => (
-                        <div 
-                          key={i}
-                          onClick={() => handleDateClick(dateObj.day, dateObj.month, dateObj.year)}
-                          className={`text-center py-0.5 text-xxs cursor-pointer hover:bg-red-600/50 rounded-full
-                            ${!dateObj.isCurrentMonth ? 'text-gray-400' : ''}
-                            ${isDateInRange(dateObj.day, dateObj.month, dateObj.year) ? 'bg-red-600' : ''}
-                          `}
-                        >
-                          {dateObj.day}
-                        </div>
-                      ))}
+                      {/* Calendar days */}
+                      {calendarDays.map((dateObj, i) => {
+                        const currentDate = new Date(dateObj.year, dateObj.month, dateObj.day);
+                        const start = new Date(startDate);
+                        const end = new Date(endDate);
+                        
+                        // Set times to beginning and end of day to include the full days
+                        start.setHours(0, 0, 0, 0);
+                        end.setHours(23, 59, 59, 999);
+                        currentDate.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
+                        
+                        const isStartDate = dateObj.day === start.getDate() && 
+                                          dateObj.month === start.getMonth() && 
+                                          dateObj.year === start.getFullYear();
+                        const isEndDate = dateObj.day === end.getDate() && 
+                                        dateObj.month === end.getMonth() && 
+                                        dateObj.year === end.getFullYear();
+                        const isInRange = currentDate >= start && currentDate <= end;
+                        
+                        return (
+                          <div 
+                            key={i}
+                            onClick={() => handleDateClick(dateObj.day, dateObj.month, dateObj.year)}
+                            className={`text-center py-0.5 text-xxs cursor-pointer hover:bg-red-600/50 rounded-full
+                              ${!dateObj.isCurrentMonth ? 'text-gray-400' : ''}
+                              ${isStartDate ? 'bg-red-600 font-bold' : ''}
+                              ${isEndDate ? 'bg-red-600 font-bold' : ''}
+                              ${isInRange && !isStartDate && !isEndDate ? 'bg-red-600/50' : ''}
+                            `}
+                            title={`${dateObj.month + 1}/${dateObj.day}/${dateObj.year}`}
+                          >
+                            {dateObj.day}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -968,480 +1003,16 @@ export default function SearchFilters({
           </div>
         </div>
         
-        {/* Advanced filters toggle - moved to bottom */}
-        <div className="mt-5">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-normal">Advanced filters</h3>
-            <button 
-              onClick={() => setIsAdvancedFiltersOpen(!isAdvancedFiltersOpen)}
-              className="text-red-600 hover:underline flex items-center text-xs"
-            >
-              {isAdvancedFiltersOpen ? 'Hide' : 'Show'}
-              <FaChevronDown 
-                className={`ml-1 transform ${isAdvancedFiltersOpen ? 'rotate-180' : ''}`}
-                size={10}
-              />
-            </button>
-          </div>
-        </div>
-        
-        {/* Advanced filters section - full width */}
-        {isAdvancedFiltersOpen && (
-          <div className="mb-5 border-t border-zinc-800 pt-3 mt-3 rounded-2xl">
-            <div className="grid grid-cols-4 gap-5">
-              {/* First column */}
-              <div>
-                {/* Views : Subs ratio */}
-                <div className="mb-4">
-                  <div className="flex items-center mb-1">
-                    <h4 className="text-xs font-normal">Views : Subs ratio</h4>
-                    <div className="ml-2 text-gray-400 cursor-help">
-                      <FaInfoCircle size={10} />
-                    </div>
-                  </div>
-                  <div className="mb-1">
-                    <DualSlider
-                      min={0}
-                      max={500}
-                      step={0.1}
-                      minValue={parseNumberValue(viewsToSubsRatioMin) || 0}
-                      maxValue={parseNumberValue(viewsToSubsRatioMax.replace('+', '')) || 500}
-                      onMinChange={(value) => setViewsToSubsRatioMin(value.toString())}
-                      onMaxChange={(value) => setViewsToSubsRatioMax(value >= 500 ? '500.0+' : value.toString())}
-                      className="search-filter-range w-full"
-                    />
-                  </div>
-                  <div className="flex justify-between mt-1">
-                    <div>
-                      <input
-                        type="text"
-                        value={viewsToSubsRatioMin}
-                        onChange={(e) => setViewsToSubsRatioMin(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
-                      />
-                    </div>
-                    <div className="flex items-center">
-                      <span className="mx-1 text-gray-400 text-xs">TO</span>
-                    </div>
-                    <div>
-                      <input
-                        type="text"
-                        value={viewsToSubsRatioMax}
-                        onChange={(e) => setViewsToSubsRatioMax(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Channel number of videos */}
-                <div className="mb-4">
-                  <div className="flex items-center mb-1">
-                    <h4 className="text-xs font-normal">Channel number of videos</h4>
-                    <div className="ml-2 text-gray-400 cursor-help">
-                      <FaInfoCircle size={10} />
-                    </div>
-                  </div>
-                  <div className="mb-1">
-                    <DualSlider
-                      min={0}
-                      max={100000}
-                      step={100}
-                      minValue={parseNumberValue(channelVideoCountMin) || 0}
-                      maxValue={parseNumberValue(channelVideoCountMax.replace('+', '').replace('k', '000')) || 100000}
-                      onMinChange={(value) => setChannelVideoCountMin(value.toString())}
-                      onMaxChange={(value) => setChannelVideoCountMax(value >= 100000 ? '100k+' : value.toString())}
-                      className="search-filter-range w-full"
-                    />
-                  </div>
-                  <div className="flex justify-between mt-1">
-                    <div>
-                      <input
-                        type="text"
-                        value={channelVideoCountMin}
-                        onChange={(e) => setChannelVideoCountMin(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
-                      />
-                    </div>
-                    <div className="flex items-center">
-                      <span className="mx-1 text-gray-400 text-xs">TO</span>
-                    </div>
-                    <div>
-                      <input
-                        type="text"
-                        value={channelVideoCountMax}
-                        onChange={(e) => setChannelVideoCountMax(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Second column */}
-              <div>
-                {/* Median views */}
-                <div className="mb-4">
-                  <div className="flex items-center mb-1">
-                    <h4 className="text-xs font-normal">Median views</h4>
-                    <div className="ml-2 text-gray-400 cursor-help">
-                      <FaInfoCircle size={10} />
-                    </div>
-                  </div>
-                  <div className="mb-1">
-                    <DualSlider
-                      min={0}
-                      max={400000000}
-                      step={1000}
-                      minValue={parseNumberValue(medianViewsMin) || 0}
-                      maxValue={parseNumberValue(medianViewsMax.replace('+', '')) || 400000000}
-                      onMinChange={(value) => setMedianViewsMin(value.toString())}
-                      onMaxChange={(value) => setMedianViewsMax(value >= 400000000 ? '400M+' : value.toString())}
-                      className="search-filter-range w-full"
-                    />
-                  </div>
-                  <div className="flex justify-between mt-1">
-                    <div>
-                      <input
-                        type="text"
-                        value={medianViewsMin}
-                        onChange={(e) => setMedianViewsMin(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
-                      />
-                    </div>
-                    <div className="flex items-center">
-                      <span className="mx-1 text-gray-400 text-xs">TO</span>
-                    </div>
-                    <div>
-                      <input
-                        type="text"
-                        value={medianViewsMax}
-                        onChange={(e) => setMedianViewsMax(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Video likes */}
-                <div className="mb-4">
-                  <div className="flex items-center mb-1">
-                    <h4 className="text-xs font-normal">Video likes</h4>
-                    <div className="ml-2 text-gray-400 cursor-help">
-                      <FaInfoCircle size={10} />
-                    </div>
-                  </div>
-                  <div className="mb-1">
-                    <DualSlider
-                      min={0}
-                      max={50000000}
-                      step={1000}
-                      minValue={parseNumberValue(videoLikesMin) || 0}
-                      maxValue={parseNumberValue(videoLikesMax.replace('+', '')) || 50000000}
-                      onMinChange={(value) => setVideoLikesMin(value.toString())}
-                      onMaxChange={(value) => setVideoLikesMax(value >= 50000000 ? '50M+' : value.toString())}
-                      className="search-filter-range w-full"
-                    />
-                  </div>
-                  <div className="flex justify-between mt-1">
-                    <div>
-                      <input
-                        type="text"
-                        value={videoLikesMin}
-                        onChange={(e) => setVideoLikesMin(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
-                      />
-                    </div>
-                    <div className="flex items-center">
-                      <span className="mx-1 text-gray-400 text-xs">TO</span>
-                    </div>
-                    <div>
-                      <input
-                        type="text"
-                        value={videoLikesMax}
-                        onChange={(e) => setVideoLikesMax(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Third column */}
-              <div>
-                {/* Channel total views */}
-                <div className="mb-4">
-                  <div className="flex items-center mb-1">
-                    <h4 className="text-xs font-normal">Channel total views</h4>
-                    <div className="ml-2 text-gray-400 cursor-help">
-                      <FaInfoCircle size={10} />
-                    </div>
-                  </div>
-                  <div className="mb-1">
-                    <DualSlider
-                      min={0}
-                      max={100000000000}
-                      step={10000}
-                      minValue={parseNumberValue(channelTotalViewsMin) || 0}
-                      maxValue={parseNumberValue(channelTotalViewsMax.replace('+', '').replace('B', '000000000')) || 100000000000}
-                      onMinChange={(value) => setChannelTotalViewsMin(value.toString())}
-                      onMaxChange={(value) => setChannelTotalViewsMax(value >= 100000000000 ? '100B+' : value.toString())}
-                      className="search-filter-range w-full"
-                    />
-                  </div>
-                  <div className="flex justify-between mt-1">
-                    <div>
-                      <input
-                        type="text"
-                        value={channelTotalViewsMin}
-                        onChange={(e) => setChannelTotalViewsMin(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
-                      />
-                    </div>
-                    <div className="flex items-center">
-                      <span className="mx-1 text-gray-400 text-xs">TO</span>
-                    </div>
-                    <div>
-                      <input
-                        type="text"
-                        value={channelTotalViewsMax}
-                        onChange={(e) => setChannelTotalViewsMax(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Video comments */}
-                <div className="mb-4">
-                  <div className="flex items-center mb-1">
-                    <h4 className="text-xs font-normal">Video comments</h4>
-                    <div className="ml-2 text-gray-400 cursor-help">
-                      <FaInfoCircle size={10} />
-                    </div>
-                  </div>
-                  <div className="mb-1">
-                    <DualSlider
-                      min={0}
-                      max={5000000}
-                      step={100}
-                      minValue={parseNumberValue(videoCommentsMin) || 0}
-                      maxValue={parseNumberValue(videoCommentsMax.replace('+', '')) || 5000000}
-                      onMinChange={(value) => setVideoCommentsMin(value.toString())}
-                      onMaxChange={(value) => setVideoCommentsMax(value >= 5000000 ? '5M+' : value.toString())}
-                      className="search-filter-range w-full"
-                    />
-                  </div>
-                  <div className="flex justify-between mt-1">
-                    <div>
-                      <input
-                        type="text"
-                        value={videoCommentsMin}
-                        onChange={(e) => setVideoCommentsMin(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
-                      />
-                    </div>
-                    <div className="flex items-center">
-                      <span className="mx-1 text-gray-400 text-xs">TO</span>
-                    </div>
-                    <div>
-                      <input
-                        type="text"
-                        value={videoCommentsMax}
-                        onChange={(e) => setVideoCommentsMax(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Fourth column */}
-              <div>
-                {/* Engagement rate */}
-                <div className="mb-4">
-                  <div className="flex items-center mb-1">
-                    <h4 className="text-xs font-normal">Engagement rate</h4>
-                    <div className="ml-2 text-gray-400 cursor-help">
-                      <FaInfoCircle size={10} />
-                    </div>
-                  </div>
-                  <div className="mb-1">
-                    <DualSlider
-                      min={0}
-                      max={100}
-                      step={1}
-                      minValue={parseNumberValue(engagementRateMin) || 0}
-                      maxValue={parseNumberValue(engagementRateMax.replace('+', '')) || 100}
-                      onMinChange={(value) => setEngagementRateMin(value.toString())}
-                      onMaxChange={(value) => setEngagementRateMax(value >= 100 ? '100+' : value.toString())}
-                      className="search-filter-range w-full"
-                    />
-                  </div>
-                  <div className="flex justify-between mt-1">
-                    <div>
-                      <input
-                        type="text"
-                        value={engagementRateMin}
-                        onChange={(e) => setEngagementRateMin(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
-                      />
-                    </div>
-                    <div className="flex items-center">
-                      <span className="mx-1 text-gray-400 text-xs">TO</span>
-                    </div>
-                    <div>
-                      <input
-                        type="text"
-                        value={engagementRateMax}
-                        onChange={(e) => setEngagementRateMax(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Channel age */}
-                <div className="mb-4">
-                  <div className="flex items-center mb-1">
-                    <h4 className="text-xs font-normal">Channel age</h4>
-                    <div className="ml-2 text-gray-400 cursor-help">
-                      <FaInfoCircle size={10} />
-                    </div>
-                  </div>
-                  <div className="mb-1">
-                    <DualSlider
-                      min={0}
-                      max={20}
-                      step={1}
-                      minValue={channelAgeMin === 'Brand new' ? 0 : parseNumberValue(channelAgeMin) || 0}
-                      maxValue={parseNumberValue(channelAgeMax.replace('+', '').replace(' years ago', '')) || 20}
-                      onMinChange={(value) => setChannelAgeMin(value === 0 ? 'Brand new' : value.toString())}
-                      onMaxChange={(value) => setChannelAgeMax(value >= 20 ? '20 years ago+' : `${value} years ago`)}
-                      className="search-filter-range w-full"
-                    />
-                  </div>
-                  <div className="flex justify-between mt-1">
-                    <div>
-                      <input
-                        type="text"
-                        value={channelAgeMin}
-                        onChange={(e) => setChannelAgeMin(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
-                      />
-                    </div>
-                    <div className="flex items-center">
-                      <span className="mx-1 text-gray-400 text-xs">TO</span>
-                    </div>
-                    <div>
-                      <input
-                        type="text"
-                        value={channelAgeMax}
-                        onChange={(e) => setChannelAgeMax(e.target.value)}
-                        className="w-20 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded-full text-white text-center text-xs"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Include/Exclude row - 2 columns */}
-            <div className="grid grid-cols-2 gap-5 mt-2">
-              <div>
-                {/* Include these channels */}
-                <div className="mb-4">
-                  <div className="flex items-center mb-1">
-                    <h4 className="text-xs font-normal">Include these channels</h4>
-                    <div className="ml-2 text-gray-400 cursor-help">
-                      <FaInfoCircle size={10} />
-                    </div>
-                  </div>
-                  <input
-                    type="text"
-                    value={includeChannels}
-                    onChange={(e) => setIncludeChannels(e.target.value)}
-                    className="w-full bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-xs"
-                    placeholder="@Channels separated by space, comma or enter."
-                  />
-                </div>
-                
-                {/* Exclude channels */}
-                <div>
-                  <div className="flex items-center mb-1">
-                    <h4 className="text-xs font-normal">Exclude channels</h4>
-                    <div className="ml-2 text-gray-400 cursor-help">
-                      <FaInfoCircle size={10} />
-                    </div>
-                  </div>
-                  <input
-                    type="text"
-                    value={excludeChannels}
-                    onChange={(e) => setExcludeChannels(e.target.value)}
-                    className="w-full bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-xs"
-                    placeholder="@Channels separated by space, comma or enter."
-                  />
-                </div>
-              </div>
-              
-              <div>
-                {/* Include these keywords */}
-                <div className="mb-4">
-                  <div className="flex items-center mb-1">
-                    <h4 className="text-xs font-normal">Include these keywords</h4>
-                    <div className="ml-2 text-gray-400 cursor-help">
-                      <FaInfoCircle size={10} />
-                    </div>
-                  </div>
-                  <input
-                    type="text"
-                    value={includeKeywords}
-                    onChange={(e) => setIncludeKeywords(e.target.value)}
-                    className="w-full bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-xs"
-                    placeholder="Keywords separated by comma or enter."
-                  />
-                </div>
-                
-                {/* Exclude keywords */}
-                <div>
-                  <div className="flex items-center mb-1">
-                    <h4 className="text-xs font-normal">Exclude keywords</h4>
-                    <div className="ml-2 text-gray-400 cursor-help">
-                      <FaInfoCircle size={10} />
-                    </div>
-                  </div>
-                  <input
-                    type="text"
-                    value={excludeKeywords}
-                    onChange={(e) => setExcludeKeywords(e.target.value)}
-                    className="w-full bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-xs"
-                    placeholder="Keywords separated by comma or enter."
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* Footer with actions */}
-        <div className="mt-3 flex justify-end items-center">
-          <div className="flex space-x-3">  
-            <button 
-              onClick={onReset}
-              className="bg-zinc-800 hover:bg-zinc-700 text-white px-3 py-1 rounded-full text-xs"
-            >
-              Reset
-            </button>
-            
-            <button 
-              onClick={handleApply}
-              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-full text-xs"
-            >
-              Apply
-            </button>
-          </div>
+        {/* Apply button */}
+        <div className="mt-4 flex justify-end">
+          <button
+            onClick={handleApply}
+            className="bg-red-600 text-white px-4 py-2 rounded-full"
+          >
+            Apply
+          </button>
         </div>
       </div>
     </div>
   );
-} 
+}
