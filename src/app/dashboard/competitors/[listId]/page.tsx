@@ -32,6 +32,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   const searchParams = useSearchParams();
   const listName = searchParams.get('name') || 'Competitor List';
   
+  // Basic states
   const [competitors, setCompetitors] = useState<Competitor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -41,57 +42,50 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   const [isSearching, setIsSearching] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Chart and filter states
   const [chartMetric, setChartMetric] = useState('Subscribers');
   const [subscribersOnly, setSubscribersOnly] = useState(true);
-  const [sortBy, setSortBy] = useState('date');
+  const [sortBy, setSortBy] = useState<'date' | 'likes' | 'views'>('date');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTimeFrame, setSelectedTimeFrame] = useState<'30d' | '90d' | '180d' | '365d' | '3y' | 'all'>('30d');
+  const [filteredCompetitorVideos, setFilteredCompetitorVideos] = useState<Video[]>([]);
+  const [activeFilters, setActiveFilters] = useState<any>(null);
   
-  // Modified filter states (changed from range arrays to single values)
-  const [viewsThreshold, setViewsThreshold] = useState<number>(10000000); // Default to 10M
-  const [subscribersThreshold, setSubscribersThreshold] = useState<number>(100000); // Default to 100K
-  const [videoDurationThreshold, setVideoDurationThreshold] = useState<number>(60); // Default to 60 minutes (1 hour)
+  // Video states
+  const [competitorVideos, setCompetitorVideos] = useState<Video[]>([]);
+  const [similarVideos, setSimilarVideos] = useState<Video[]>([]);
+  const [videoGridColumns, setVideoGridColumns] = useState<number>(4);
+  const [showVideoInfo, setShowVideoInfo] = useState<boolean>(true);
+  const [videoSearchQuery, setVideoSearchQuery] = useState<string>('');
+  const [activeVideoTab, setActiveVideoTab] = useState<'competitors'>('competitors');
+  
+  // Context menu states
+  const [showVideoContextMenu, setShowVideoContextMenu] = useState<boolean>(false);
+  const [contextMenuPosition, setContextMenuPosition] = useState<{x: number, y: number}>({x: 0, y: 0});
+  const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
+  const contextMenuRef = useRef<HTMLDivElement>(null);
+
+  // Filter states
+  const [minSubscribers, setMinSubscribers] = useState<number>(0);
+  const [viewsThreshold, setViewsThreshold] = useState<number>(10000000);
+  const [subscribersThreshold, setSubscribersThreshold] = useState<number>(100000);
+  const [videoDurationThreshold, setVideoDurationThreshold] = useState<number>(60);
   const [dateRange, setDateRange] = useState<[string, string]>([
-    new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days ago
-    new Date().toISOString().split('T')[0] // today
+    new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    new Date().toISOString().split('T')[0]
   ]);
-
-  // Add new state for view multiplier
-  const [viewMultiplierThreshold, setViewMultiplierThreshold] = useState<number>(1.5); // Default to 1.5x
-
-  // State for advanced filters
+  const [viewMultiplierThreshold, setViewMultiplierThreshold] = useState<number>(1.5);
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState<boolean>(false);
-  const [channelAgeThreshold, setChannelAgeThreshold] = useState<number>(12); // Default to 12 months
+  const [channelAgeThreshold, setChannelAgeThreshold] = useState<number>(12);
   const [videoCommentsThreshold, setVideoCommentsThreshold] = useState<number>(1000);
   const [videoLikesThreshold, setVideoLikesThreshold] = useState<number>(5000);
   const [videoCountThreshold, setVideoCountThreshold] = useState<number>(50);
   const [totalChannelViewsThreshold, setTotalChannelViewsThreshold] = useState<number>(1000000);
   const [includeKeywords, setIncludeKeywords] = useState<string>("");
   const [excludeKeywords, setExcludeKeywords] = useState<string>("");
-
-  // Add new state variables for similar videos section
-  const [competitorVideos, setCompetitorVideos] = useState<Video[]>([]);
-  const [similarVideos, setSimilarVideos] = useState<Video[]>([]);
-  const [videoGridColumns, setVideoGridColumns] = useState<number>(4); // Default to 4 columns for video grid
-  const [showVideoInfo, setShowVideoInfo] = useState<boolean>(true);
-  const [videoSearchQuery, setVideoSearchQuery] = useState<string>('');
-  const [activeVideoTab, setActiveVideoTab] = useState<'competitors'>('competitors');
-  
-  // Add states for the video context menu
-  const [showVideoContextMenu, setShowVideoContextMenu] = useState<boolean>(false);
-  const [contextMenuPosition, setContextMenuPosition] = useState<{x: number, y: number}>({x: 0, y: 0});
-  const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
-  const contextMenuRef = useRef<HTMLDivElement>(null);
-
-  // State for filter settings
-  const [minSubscribers, setMinSubscribers] = useState<number>(0);
-  
-  // State for loading videos
   const [isVideoLoading, setIsVideoLoading] = useState<boolean>(false);
-
-  // Add a new state variable for filtered videos
-  const [filteredCompetitorVideos, setFilteredCompetitorVideos] = useState<Video[]>([]);
-  const [activeFilters, setActiveFilters] = useState<any>(null);
 
   // Helper function to render engagement rate with deterministic values
   const renderEngagementRate = (channelId: string) => {
@@ -894,10 +888,18 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
       
   // Removed the channel grouping functionality and renamed to getSortedVideos
   const getSortedVideos = () => {
-    // Sort videos by published date (newest first)
-    return filteredVideos.sort((a, b) => 
-      new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
-    );
+    return filteredVideos.sort((a, b) => {
+      switch (sortBy) {
+        case 'date':
+          return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+        case 'likes':
+          return b.likeCount - a.likeCount;
+        case 'views':
+          return b.viewCount - a.viewCount;
+        default:
+          return 0;
+      }
+    });
   };
 
   // Add a new search function for channels
@@ -968,6 +970,11 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
 
   const handleCloseFilters = () => {
     setIsFilterOpen(false);
+  };
+
+  // Add handler for sort change
+  const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSortBy(e.target.value as 'date' | 'likes' | 'views');
   };
 
   if (isLoading) {
@@ -1152,17 +1159,50 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                 <FaFilter size={18} />
                 {activeFilters && (
                   <span className="absolute -top-2 -right-2 bg-indigo-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {Object.keys(activeFilters).filter(key => {
-                      if (key === 'advancedFilters') {
-                        return Object.values(activeFilters.advancedFilters).some(val => 
-                          val !== '' && val !== null && val !== undefined
-                        );
+                    {(() => {
+                      let count = 0;
+                      
+                      // Count time range only if it's explicitly selected and not 'All Time'
+                      if (activeFilters.timeRange && activeFilters.timeRange !== 'All Time') {
+                        count++;
                       }
-                      if (key === 'timeRange') return activeFilters[key] !== 'All Time';
-                      if (key === 'viewsMin') return activeFilters[key] !== '0';
-                      if (key === 'subscribersMin') return activeFilters[key] !== '0';
-                      return activeFilters[key] !== null && activeFilters[key] !== undefined && activeFilters[key] !== '';
-                    }).length}
+                      
+                      // Count basic filters
+                      if (activeFilters.viewsMin !== '0') count++;
+                      if (activeFilters.viewsMax !== '1M+') count++;
+                      if (activeFilters.subscribersMin !== '0') count++;
+                      if (activeFilters.subscribersMax !== '1M+') count++;
+                      if (activeFilters.videoDurationMin !== '00:00:00') count++;
+                      if (activeFilters.videoDurationMax !== '07:00:00+') count++;
+                      if (activeFilters.whenPosted) count++;
+                      
+                      // Count advanced filters
+                      if (activeFilters.advancedFilters) {
+                        const adv = activeFilters.advancedFilters;
+                        if (adv.viewsToSubsRatioMin !== '0.0') count++;
+                        if (adv.viewsToSubsRatioMax !== '50.0+') count++;
+                        if (adv.medianViewsMin !== '0') count++;
+                        if (adv.medianViewsMax !== '10M+') count++;
+                        if (adv.channelTotalViewsMin !== '0') count++;
+                        if (adv.channelTotalViewsMax !== '1B+') count++;
+                        if (adv.channelVideoCountMin !== '0') count++;
+                        if (adv.channelVideoCountMax !== '1k+') count++;
+                        if (adv.videoLikesMin !== '0') count++;
+                        if (adv.videoLikesMax !== '1M+') count++;
+                        if (adv.videoCommentsMin !== '0') count++;
+                        if (adv.videoCommentsMax !== '100K+') count++;
+                        if (adv.engagementRateMin !== '0') count++;
+                        if (adv.engagementRateMax !== '20+') count++;
+                        if (adv.channelAgeMin !== 'Brand new') count++;
+                        if (adv.channelAgeMax !== '20 years ago+') count++;
+                        if (adv.includeChannels) count++;
+                        if (adv.excludeChannels) count++;
+                        if (adv.includeKeywords) count++;
+                        if (adv.excludeKeywords) count++;
+                      }
+                      
+                      return count;
+                    })()}
                   </span>
                 )}
               </button>
@@ -1279,6 +1319,20 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Sort Dropdown */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500 dark:text-gray-400">Sort by:</span>
+              <select
+                value={sortBy}
+                onChange={handleSortChange}
+                className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-xl text-sm border-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="date">Date</option>
+                <option value="likes">Likes</option>
+                <option value="views">Views</option>
+              </select>
             </div>
             
             <button 

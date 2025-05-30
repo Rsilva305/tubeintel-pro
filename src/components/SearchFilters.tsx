@@ -114,6 +114,15 @@ export default function SearchFilters({
     
     return parseFloat(value);
   };
+
+  const formatNumber = (value: number): string => {
+    if (value >= 1000000) {
+      return `${(value / 1000000).toFixed(1)}M`;
+    } else if (value >= 1000) {
+      return `${(value / 1000).toFixed(1)}K`;
+    }
+    return value.toString();
+  };
   
   const parseDurationValue = (value: string): number | null => {
     if (!value) return null;
@@ -135,7 +144,7 @@ export default function SearchFilters({
   };
 
   // Time range state
-  const [timeRange, setTimeRange] = useState<TimeRange>('All Time');
+  const [timeRange, setTimeRange] = useState<TimeRange | null>(null);
   const [startDate, setStartDate] = useState('2005-02-13');
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
@@ -147,11 +156,11 @@ export default function SearchFilters({
   
   // Range sliders state
   const [multiplierMin, setMultiplierMin] = useState('0.0x');
-  const [multiplierMax, setMultiplierMax] = useState('500.0x+');
+  const [multiplierMax, setMultiplierMax] = useState('100.0x+');
   const [viewsMin, setViewsMin] = useState('0');
-  const [viewsMax, setViewsMax] = useState('1B+');
+  const [viewsMax, setViewsMax] = useState('1M+');
   const [subscribersMin, setSubscribersMin] = useState('0');
-  const [subscribersMax, setSubscribersMax] = useState('500M+');
+  const [subscribersMax, setSubscribersMax] = useState('1M+');
   const [videoDurationMin, setVideoDurationMin] = useState('00:00:00');
   const [videoDurationMax, setVideoDurationMax] = useState('07:00:00+');
   
@@ -161,19 +170,19 @@ export default function SearchFilters({
   // Advanced filters state
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
   const [viewsToSubsRatioMin, setViewsToSubsRatioMin] = useState('0.0');
-  const [viewsToSubsRatioMax, setViewsToSubsRatioMax] = useState('500.0+');
+  const [viewsToSubsRatioMax, setViewsToSubsRatioMax] = useState('50.0+');
   const [medianViewsMin, setMedianViewsMin] = useState('0');
-  const [medianViewsMax, setMedianViewsMax] = useState('400M+');
+  const [medianViewsMax, setMedianViewsMax] = useState('10M+');
   const [channelTotalViewsMin, setChannelTotalViewsMin] = useState('0');
-  const [channelTotalViewsMax, setChannelTotalViewsMax] = useState('100B+');
+  const [channelTotalViewsMax, setChannelTotalViewsMax] = useState('1B+');
   const [channelVideoCountMin, setChannelVideoCountMin] = useState('0');
-  const [channelVideoCountMax, setChannelVideoCountMax] = useState('100k+');
+  const [channelVideoCountMax, setChannelVideoCountMax] = useState('1k+');
   const [videoLikesMin, setVideoLikesMin] = useState('0');
-  const [videoLikesMax, setVideoLikesMax] = useState('50M+');
+  const [videoLikesMax, setVideoLikesMax] = useState('1M+');
   const [videoCommentsMin, setVideoCommentsMin] = useState('0');
-  const [videoCommentsMax, setVideoCommentsMax] = useState('5M+');
+  const [videoCommentsMax, setVideoCommentsMax] = useState('100K+');
   const [engagementRateMin, setEngagementRateMin] = useState('0');
-  const [engagementRateMax, setEngagementRateMax] = useState('100+');
+  const [engagementRateMax, setEngagementRateMax] = useState('20+');
   const [channelAgeMin, setChannelAgeMin] = useState('Brand new');
   const [channelAgeMax, setChannelAgeMax] = useState('20 years ago+');
   const [includeChannels, setIncludeChannels] = useState('');
@@ -373,6 +382,12 @@ export default function SearchFilters({
   };
 
   const handleTimeRangeSelect = (range: TimeRange) => {
+    // If clicking the same range that's already selected, unselect it
+    if (timeRange === range) {
+      setTimeRange(null);
+      return;
+    }
+    
     setTimeRange(range);
     
     // If selecting a preset time range, calculate and set the appropriate date range
@@ -416,42 +431,21 @@ export default function SearchFilters({
     start.setHours(0, 0, 0, 0); // Start of day
     setStartDate(start.toISOString().split('T')[0]);
     setEndDate(now.toISOString().split('T')[0]);
-    
-    // If the selected month/year contains either the start or end date,
-    // update the selected dates for proper highlighting
-    const startDay = start.getDate();
-    const endDay = now.getDate();
-    const startMonth = start.getMonth();
-    const endMonth = now.getMonth();
-    const startYear = start.getFullYear();
-    const endYear = now.getFullYear();
-    
-    // If the selected month/year matches either date, update the selectedDates
-    if ((startMonth === selectedMonth && startYear === selectedYear) || 
-        (endMonth === selectedMonth && endYear === selectedYear)) {
-      
-      // If both start and end dates are in the current month view
-      if (startMonth === selectedMonth && startYear === selectedYear && 
-          endMonth === selectedMonth && endYear === selectedYear) {
-        setSelectedDates([startDay, endDay]);
-      } 
-      // If only the start date is in the current month view
-      else if (startMonth === selectedMonth && startYear === selectedYear) {
-        setSelectedDates([startDay]);
-      }
-      // If only the end date is in the current month view
-      else if (endMonth === selectedMonth && endYear === selectedYear) {
-        setSelectedDates([endDay]);
-      }
-    } else {
-      // Neither date is in the current month view
-      setSelectedDates([]);
-    }
   };
+
+  // Reset all filters when opening the modal
+  useEffect(() => {
+    if (isOpen) {
+      setTimeRange(null);
+      setStartDate('2005-02-13');
+      setEndDate(new Date().toISOString().split('T')[0]);
+      // ... reset other filters ...
+    }
+  }, [isOpen]);
 
   const handleApply = () => {
     const filters = {
-      timeRange,
+      timeRange: timeRange || 'All Time', // Use 'All Time' as default if no range selected
       startDate,
       endDate,
       multiplierMin,
@@ -525,17 +519,17 @@ export default function SearchFilters({
               <div className="mb-1">
                 <DualSlider
                   min={0}
-                  max={500}
+                  max={100}
                   step={0.1}
                   minValue={parseNumberValue(multiplierMin.replace('x', '')) || 0}
-                  maxValue={parseNumberValue(multiplierMax.replace('x', '').replace('+', '')) || 500}
+                  maxValue={parseNumberValue(multiplierMax.replace('x', '').replace('+', '')) || 100}
                   onMinChange={(value) => setMultiplierMin(`${value.toFixed(1)}x`)}
-                  onMaxChange={(value) => setMultiplierMax(value >= 500 ? '500.0x+' : `${value.toFixed(1)}x`)}
+                  onMaxChange={(value) => setMultiplierMax(value >= 100 ? '100.0x+' : `${value.toFixed(1)}x`)}
                   className="search-filter-range w-full"
                 />
                 <div className="flex justify-between text-xs text-gray-400 mt-1">
                   <span>0.0x</span>
-                  <span>500.0x+</span>
+                  <span>100.0x+</span>
                 </div>
               </div>
               
@@ -573,17 +567,17 @@ export default function SearchFilters({
               <div className="mb-1">
                 <DualSlider
                   min={0}
-                  max={1000000000}
-                  step={10000}
+                  max={1000000}
+                  step={1000}
                   minValue={parseNumberValue(viewsMin) || 0}
-                  maxValue={parseNumberValue(viewsMax.replace('+', '')) || 1000000000}
-                  onMinChange={(value) => setViewsMin(value.toString())}
-                  onMaxChange={(value) => setViewsMax(value >= 1000000000 ? '1B+' : value.toString())}
+                  maxValue={parseNumberValue(viewsMax.replace('+', '')) || 1000000}
+                  onMinChange={(value) => setViewsMin(formatNumber(value))}
+                  onMaxChange={(value) => setViewsMax(value >= 1000000 ? '1M+' : formatNumber(value))}
                   className="search-filter-range w-full"
                 />
                 <div className="flex justify-between text-xs text-gray-400 mt-1">
                   <span>0</span>
-                  <span>1B+</span>
+                  <span>1M+</span>
                 </div>
               </div>
               
@@ -621,17 +615,17 @@ export default function SearchFilters({
               <div className="mb-1">
                 <DualSlider
                   min={0}
-                  max={500000000}
-                  step={10000}
+                  max={1000000}
+                  step={1000}
                   minValue={parseNumberValue(subscribersMin) || 0}
-                  maxValue={parseNumberValue(subscribersMax.replace('+', '')) || 500000000}
-                  onMinChange={(value) => setSubscribersMin(value.toString())}
-                  onMaxChange={(value) => setSubscribersMax(value >= 500000000 ? '500M+' : value.toString())}
+                  maxValue={parseNumberValue(subscribersMax.replace('+', '')) || 1000000}
+                  onMinChange={(value) => setSubscribersMin(formatNumber(value))}
+                  onMaxChange={(value) => setSubscribersMax(value >= 1000000 ? '1M+' : formatNumber(value))}
                   className="search-filter-range w-full"
                 />
                 <div className="flex justify-between text-xs text-gray-400 mt-1">
                   <span>0</span>
-                  <span>500M+</span>
+                  <span>1M+</span>
                 </div>
               </div>
               
@@ -1012,6 +1006,400 @@ export default function SearchFilters({
             Apply
           </button>
         </div>
+
+        {/* Show more options button */}
+        <div className="mt-4 flex justify-center">
+          <button
+            onClick={() => setIsAdvancedFiltersOpen(!isAdvancedFiltersOpen)}
+            className="text-red-600 hover:text-red-500"
+          >
+            {isAdvancedFiltersOpen ? 'Show less options' : 'Show more options'}
+          </button>
+        </div>
+
+        {/* Advanced filters section */}
+        {isAdvancedFiltersOpen && (
+          <div className="mt-4">
+            <h3 className="text-sm font-normal mb-2">Advanced Filters</h3>
+            <div className="grid grid-cols-2 gap-x-10 gap-y-3">
+              {/* Views to Subs Ratio */}
+              <div className="mb-3">
+                <div className="flex items-center mb-1">
+                  <h3 className="text-sm font-normal">Views : Subs Ratio</h3>
+                  <div className="ml-2 text-gray-400 cursor-help">
+                    <FaInfoCircle size={12} />
+                  </div>
+                </div>
+                <div className="mb-1">
+                  <DualSlider
+                    min={0}
+                    max={50}
+                    step={0.1}
+                    minValue={parseNumberValue(viewsToSubsRatioMin) || 0}
+                    maxValue={parseNumberValue(viewsToSubsRatioMax.replace('+', '')) || 50}
+                    onMinChange={(value) => setViewsToSubsRatioMin(value.toFixed(1))}
+                    onMaxChange={(value) => setViewsToSubsRatioMax(value >= 50 ? '50.0+' : value.toFixed(1))}
+                    className="search-filter-range w-full"
+                  />
+                  <div className="flex justify-between text-xs text-gray-400 mt-1">
+                    <span>0.0</span>
+                    <span>50.0+</span>
+                  </div>
+                </div>
+                <div className="flex justify-between mt-1">
+                  <input
+                    type="text"
+                    value={viewsToSubsRatioMin}
+                    onChange={e => setViewsToSubsRatioMin(e.target.value)}
+                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-center text-sm"
+                  />
+                  <span className="mx-2 text-gray-400 text-xs">TO</span>
+                  <input
+                    type="text"
+                    value={viewsToSubsRatioMax}
+                    onChange={e => setViewsToSubsRatioMax(e.target.value)}
+                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-center text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Median Views */}
+              <div className="mb-3">
+                <div className="flex items-center mb-1">
+                  <h3 className="text-sm font-normal">Median Views</h3>
+                  <div className="ml-2 text-gray-400 cursor-help">
+                    <FaInfoCircle size={12} />
+                  </div>
+                </div>
+                <div className="mb-1">
+                  <DualSlider
+                    min={0}
+                    max={10000000}
+                    step={1000}
+                    minValue={parseNumberValue(medianViewsMin) || 0}
+                    maxValue={parseNumberValue(medianViewsMax.replace('+', '')) || 10000000}
+                    onMinChange={(value) => setMedianViewsMin(formatNumber(value))}
+                    onMaxChange={(value) => setMedianViewsMax(value >= 10000000 ? '10M+' : formatNumber(value))}
+                    className="search-filter-range w-full"
+                  />
+                  <div className="flex justify-between text-xs text-gray-400 mt-1">
+                    <span>0</span>
+                    <span>10M+</span>
+                  </div>
+                </div>
+                <div className="flex justify-between mt-1">
+                  <input
+                    type="text"
+                    value={medianViewsMin}
+                    onChange={e => setMedianViewsMin(e.target.value)}
+                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-center text-sm"
+                  />
+                  <span className="mx-2 text-gray-400 text-xs">TO</span>
+                  <input
+                    type="text"
+                    value={medianViewsMax}
+                    onChange={e => setMedianViewsMax(e.target.value)}
+                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-center text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Channel Total Views */}
+              <div className="mb-3">
+                <div className="flex items-center mb-1">
+                  <h3 className="text-sm font-normal">Channel Total Views</h3>
+                  <div className="ml-2 text-gray-400 cursor-help">
+                    <FaInfoCircle size={12} />
+                  </div>
+                </div>
+                <div className="mb-1">
+                  <DualSlider
+                    min={0}
+                    max={1000000000}
+                    step={100000}
+                    minValue={parseNumberValue(channelTotalViewsMin) || 0}
+                    maxValue={parseNumberValue(channelTotalViewsMax.replace('+', '')) || 1000000000}
+                    onMinChange={(value) => setChannelTotalViewsMin(formatNumber(value))}
+                    onMaxChange={(value) => setChannelTotalViewsMax(value >= 1000000000 ? '1B+' : formatNumber(value))}
+                    className="search-filter-range w-full"
+                  />
+                  <div className="flex justify-between text-xs text-gray-400 mt-1">
+                    <span>0</span>
+                    <span>1B+</span>
+                  </div>
+                </div>
+                <div className="flex justify-between mt-1">
+                  <input
+                    type="text"
+                    value={channelTotalViewsMin}
+                    onChange={e => setChannelTotalViewsMin(e.target.value)}
+                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-center text-sm"
+                  />
+                  <span className="mx-2 text-gray-400 text-xs">TO</span>
+                  <input
+                    type="text"
+                    value={channelTotalViewsMax}
+                    onChange={e => setChannelTotalViewsMax(e.target.value)}
+                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-center text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Channel Video Count */}
+              <div className="mb-3">
+                <div className="flex items-center mb-1">
+                  <h3 className="text-sm font-normal">Channel Video Count</h3>
+                  <div className="ml-2 text-gray-400 cursor-help">
+                    <FaInfoCircle size={12} />
+                  </div>
+                </div>
+                <div className="mb-1">
+                  <DualSlider
+                    min={0}
+                    max={1000}
+                    step={10}
+                    minValue={parseNumberValue(channelVideoCountMin) || 0}
+                    maxValue={parseNumberValue(channelVideoCountMax.replace('+', '')) || 1000}
+                    onMinChange={(value) => setChannelVideoCountMin(value.toString())}
+                    onMaxChange={(value) => setChannelVideoCountMax(value >= 1000 ? '1k+' : value.toString())}
+                    className="search-filter-range w-full"
+                  />
+                  <div className="flex justify-between text-xs text-gray-400 mt-1">
+                    <span>0</span>
+                    <span>1k+</span>
+                  </div>
+                </div>
+                <div className="flex justify-between mt-1">
+                  <input
+                    type="text"
+                    value={channelVideoCountMin}
+                    onChange={e => setChannelVideoCountMin(e.target.value)}
+                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-center text-sm"
+                  />
+                  <span className="mx-2 text-gray-400 text-xs">TO</span>
+                  <input
+                    type="text"
+                    value={channelVideoCountMax}
+                    onChange={e => setChannelVideoCountMax(e.target.value)}
+                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-center text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Video Likes */}
+              <div className="mb-3">
+                <div className="flex items-center mb-1">
+                  <h3 className="text-sm font-normal">Video Likes</h3>
+                  <div className="ml-2 text-gray-400 cursor-help">
+                    <FaInfoCircle size={12} />
+                  </div>
+                </div>
+                <div className="mb-1">
+                  <DualSlider
+                    min={0}
+                    max={1000000}
+                    step={1000}
+                    minValue={parseNumberValue(videoLikesMin) || 0}
+                    maxValue={parseNumberValue(videoLikesMax.replace('+', '')) || 1000000}
+                    onMinChange={(value) => setVideoLikesMin(formatNumber(value))}
+                    onMaxChange={(value) => setVideoLikesMax(value >= 1000000 ? '1M+' : formatNumber(value))}
+                    className="search-filter-range w-full"
+                  />
+                  <div className="flex justify-between text-xs text-gray-400 mt-1">
+                    <span>0</span>
+                    <span>1M+</span>
+                  </div>
+                </div>
+                <div className="flex justify-between mt-1">
+                  <input
+                    type="text"
+                    value={videoLikesMin}
+                    onChange={e => setVideoLikesMin(e.target.value)}
+                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-center text-sm"
+                  />
+                  <span className="mx-2 text-gray-400 text-xs">TO</span>
+                  <input
+                    type="text"
+                    value={videoLikesMax}
+                    onChange={e => setVideoLikesMax(e.target.value)}
+                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-center text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Video Comments */}
+              <div className="mb-3">
+                <div className="flex items-center mb-1">
+                  <h3 className="text-sm font-normal">Video Comments</h3>
+                  <div className="ml-2 text-gray-400 cursor-help">
+                    <FaInfoCircle size={12} />
+                  </div>
+                </div>
+                <div className="mb-1">
+                  <DualSlider
+                    min={0}
+                    max={100000}
+                    step={100}
+                    minValue={parseNumberValue(videoCommentsMin) || 0}
+                    maxValue={parseNumberValue(videoCommentsMax.replace('+', '')) || 100000}
+                    onMinChange={(value) => setVideoCommentsMin(formatNumber(value))}
+                    onMaxChange={(value) => setVideoCommentsMax(value >= 100000 ? '100K+' : formatNumber(value))}
+                    className="search-filter-range w-full"
+                  />
+                  <div className="flex justify-between text-xs text-gray-400 mt-1">
+                    <span>0</span>
+                    <span>100K+</span>
+                  </div>
+                </div>
+                <div className="flex justify-between mt-1">
+                  <input
+                    type="text"
+                    value={videoCommentsMin}
+                    onChange={e => setVideoCommentsMin(e.target.value)}
+                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-center text-sm"
+                  />
+                  <span className="mx-2 text-gray-400 text-xs">TO</span>
+                  <input
+                    type="text"
+                    value={videoCommentsMax}
+                    onChange={e => setVideoCommentsMax(e.target.value)}
+                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-center text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Engagement Rate */}
+              <div className="mb-3">
+                <div className="flex items-center mb-1">
+                  <h3 className="text-sm font-normal">Engagement Rate</h3>
+                  <div className="ml-2 text-gray-400 cursor-help">
+                    <FaInfoCircle size={12} />
+                  </div>
+                </div>
+                <div className="mb-1">
+                  <DualSlider
+                    min={0}
+                    max={20}
+                    step={0.1}
+                    minValue={parseNumberValue(engagementRateMin) || 0}
+                    maxValue={parseNumberValue(engagementRateMax.replace('+', '')) || 20}
+                    onMinChange={(value) => setEngagementRateMin(value.toFixed(1))}
+                    onMaxChange={(value) => setEngagementRateMax(value >= 20 ? '20+' : value.toFixed(1))}
+                    className="search-filter-range w-full"
+                  />
+                  <div className="flex justify-between text-xs text-gray-400 mt-1">
+                    <span>0</span>
+                    <span>20+</span>
+                  </div>
+                </div>
+                <div className="flex justify-between mt-1">
+                  <input
+                    type="text"
+                    value={engagementRateMin}
+                    onChange={e => setEngagementRateMin(e.target.value)}
+                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-center text-sm"
+                  />
+                  <span className="mx-2 text-gray-400 text-xs">TO</span>
+                  <input
+                    type="text"
+                    value={engagementRateMax}
+                    onChange={e => setEngagementRateMax(e.target.value)}
+                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-center text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Channel Age */}
+              <div className="mb-3">
+                <div className="flex items-center mb-1">
+                  <h3 className="text-sm font-normal">Channel Age</h3>
+                  <div className="ml-2 text-gray-400 cursor-help">
+                    <FaInfoCircle size={12} />
+                  </div>
+                </div>
+                <div className="mb-1">
+                  <DualSlider
+                    min={0}
+                    max={20}
+                    step={1}
+                    minValue={channelAgeMin === 'Brand new' ? 0 : parseNumberValue(channelAgeMin) || 0}
+                    maxValue={channelAgeMax.includes('+') ? 20 : parseNumberValue(channelAgeMax) || 20}
+                    onMinChange={(value) => setChannelAgeMin(value === 0 ? 'Brand new' : `${value} years ago`)}
+                    onMaxChange={(value) => setChannelAgeMax(value >= 20 ? '20 years ago+' : `${value} years ago`)}
+                    className="search-filter-range w-full"
+                  />
+                  <div className="flex justify-between text-xs text-gray-400 mt-1">
+                    <span>Brand new</span>
+                    <span>20 years ago+</span>
+                  </div>
+                </div>
+                <div className="flex justify-between mt-1">
+                  <input
+                    type="text"
+                    value={channelAgeMin}
+                    onChange={e => setChannelAgeMin(e.target.value)}
+                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-center text-sm"
+                  />
+                  <span className="mx-2 text-gray-400 text-xs">TO</span>
+                  <input
+                    type="text"
+                    value={channelAgeMax}
+                    onChange={e => setChannelAgeMax(e.target.value)}
+                    className="w-24 bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-center text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Include Channels */}
+              <div className="mb-3">
+                <label className="text-xs text-gray-300 mb-1 block">Include Channels</label>
+                <input
+                  type="text"
+                  value={includeChannels}
+                  onChange={e => setIncludeChannels(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-sm"
+                  placeholder="Enter channel names"
+                />
+              </div>
+
+              {/* Exclude Channels */}
+              <div className="mb-3">
+                <label className="text-xs text-gray-300 mb-1 block">Exclude Channels</label>
+                <input
+                  type="text"
+                  value={excludeChannels}
+                  onChange={e => setExcludeChannels(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-sm"
+                  placeholder="Enter channel names"
+                />
+              </div>
+
+              {/* Include Keywords */}
+              <div className="mb-3">
+                <label className="text-xs text-gray-300 mb-1 block">Include Keywords</label>
+                <input
+                  type="text"
+                  value={includeKeywords}
+                  onChange={e => setIncludeKeywords(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-sm"
+                  placeholder="Enter keywords"
+                />
+              </div>
+
+              {/* Exclude Keywords */}
+              <div className="mb-3">
+                <label className="text-xs text-gray-300 mb-1 block">Exclude Keywords</label>
+                <input
+                  type="text"
+                  value={excludeKeywords}
+                  onChange={e => setExcludeKeywords(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-700 px-3 py-1 rounded-full text-white text-sm"
+                  placeholder="Enter keywords"
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
