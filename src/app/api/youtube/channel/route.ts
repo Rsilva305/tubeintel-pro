@@ -46,9 +46,26 @@ export async function GET(request: Request) {
       console.log('Getting channel ID for username:', cleanUsername);
       
       try {
-        const channelId = await youtubeService.getChannelIdByUsername(cleanUsername);
-        console.log('Found channel ID:', channelId);
-        return NextResponse.json({ channelId });
+        // First try with forUsername parameter
+        const response = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=id&forUsername=${cleanUsername}&key=${process.env.YOUTUBE_API_KEY}`);
+        const data = await response.json();
+        
+        if (data.items && data.items.length > 0) {
+          console.log('Found channel ID:', data.items[0].id);
+          return NextResponse.json({ channelId: data.items[0].id });
+        }
+        
+        // If no results, try searching
+        const searchResponse = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=@${cleanUsername}&type=channel&maxResults=1&key=${process.env.YOUTUBE_API_KEY}`);
+        const searchData = await searchResponse.json();
+        
+        if (searchData.items && searchData.items.length > 0) {
+          const channelId = searchData.items[0].id.channelId;
+          console.log('Found channel ID from search:', channelId);
+          return NextResponse.json({ channelId });
+        }
+        
+        throw new Error('Channel not found');
       } catch (error) {
         console.error('Error getting channel ID:', error);
         return NextResponse.json(

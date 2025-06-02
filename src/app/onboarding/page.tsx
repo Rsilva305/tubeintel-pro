@@ -27,6 +27,9 @@ export default function OnboardingPage() {
   const [searchResults, setSearchResults] = useState<ChannelSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
+  // Add this state near the other state declarations
+  const [showHelpModal, setShowHelpModal] = useState(false);
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -71,8 +74,15 @@ export default function OnboardingPage() {
     checkAuth();
   }, [router]);
 
-  const extractChannelId = async (url: string) => {
+  // Add this helper function after the imports
+  const getChannelIdFromUrl = async (url: string): Promise<string> => {
     try {
+      // Clean the URL
+      url = url.trim();
+      if (!url.startsWith('http')) {
+        url = 'https://' + url;
+      }
+
       const urlObj = new URL(url);
       
       // Handle different YouTube URL formats
@@ -83,7 +93,6 @@ export default function OnboardingPage() {
           const index = parts.indexOf('channel');
           if (index !== -1 && index + 1 < parts.length) {
             const channelId = parts[index + 1];
-            // Validate channel ID format (should start with UC and be 24 characters)
             if (channelId.startsWith('UC') && channelId.length === 24) {
               return channelId;
             }
@@ -92,48 +101,54 @@ export default function OnboardingPage() {
         
         // Format: youtube.com/@username
         if (urlObj.pathname.startsWith('/@')) {
-          const username = urlObj.pathname.substring(2); // Remove the @ symbol
+          const username = urlObj.pathname.substring(2);
           if (username) {
-            try {
-              // Fetch channel ID using YouTube API
-              const response = await fetch(`/api/youtube/channel?username=${encodeURIComponent(username)}`);
-              if (!response.ok) {
-                throw new Error('Failed to fetch channel ID');
-              }
-              const data = await response.json();
-              return data.channelId;
-            } catch (error) {
-              console.error('Error fetching channel ID:', error);
-              throw new Error('Could not find channel ID for this username');
+            const response = await fetch(`/api/youtube/channel?username=${encodeURIComponent(username)}`);
+            if (!response.ok) {
+              throw new Error('Could not find channel for this username');
             }
+            const data = await response.json();
+            return data.channelId;
           }
         }
 
         // Format: youtube.com/c/ChannelName
         if (urlObj.pathname.startsWith('/c/')) {
-          const customUrl = urlObj.pathname.substring(3); // Remove the c/ prefix
+          const customUrl = urlObj.pathname.substring(3);
           if (customUrl) {
-            try {
-              // Fetch channel ID using YouTube API
-              const response = await fetch(`/api/youtube/channel?customUrl=${encodeURIComponent(customUrl)}`);
-              if (!response.ok) {
-                throw new Error('Failed to fetch channel ID');
-              }
-              const data = await response.json();
-              return data.channelId;
-            } catch (error) {
-              console.error('Error fetching channel ID:', error);
-              throw new Error('Could not find channel ID for this custom URL');
+            const response = await fetch(`/api/youtube/channel?customUrl=${encodeURIComponent(customUrl)}`);
+            if (!response.ok) {
+              throw new Error('Could not find channel for this custom URL');
             }
+            const data = await response.json();
+            return data.channelId;
           }
         }
       }
-    } catch (error) {
-      console.error('Error parsing URL:', error);
+      
       throw new Error('Invalid YouTube URL format');
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`Failed to get channel ID: ${error.message}`);
+      }
+      throw new Error('Failed to process YouTube URL');
     }
-    
-    throw new Error('Could not extract a valid YouTube channel ID');
+  };
+
+  // Replace the existing extractChannelId function with this improved version
+  const extractChannelId = async (url: string) => {
+    try {
+      // If it's already a channel ID, return it
+      if (url.startsWith('UC') && url.length === 24) {
+        return url;
+      }
+
+      // Try to get channel ID from URL
+      return await getChannelIdFromUrl(url);
+    } catch (error) {
+      console.error('Error extracting channel ID:', error);
+      throw error;
+    }
   };
 
   const handleUrlChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -269,6 +284,41 @@ export default function OnboardingPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Add this new component before the return statement
+  const ChannelIdHelpModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+    if (!isOpen) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-lg w-full mx-4">
+          <h3 className="text-xl font-bold mb-4 dark:text-white">How to Find Your Channel ID</h3>
+          <div className="space-y-4">
+            <p className="text-gray-600 dark:text-gray-300">
+              Follow these steps to find your YouTube channel ID:
+            </p>
+            <ol className="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-300">
+              <li>Go to your YouTube channel page</li>
+              <li>Right-click anywhere on the page and select "View Page Source"</li>
+              <li>Press Ctrl+F (or Cmd+F on Mac) to open the search box</li>
+              <li>Search for "channelId"</li>
+              <li>You'll find a string that starts with "UC" followed by 22 characters</li>
+              <li>Copy the entire string (it should be 24 characters long)</li>
+            </ol>
+            <p className="text-gray-600 dark:text-gray-300">
+              Alternatively, you can use your channel URL or search for your channel name above.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="mt-6 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -407,6 +457,16 @@ export default function OnboardingPage() {
               </p>
             </div>
             
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={() => setShowHelpModal(true)}
+                className="text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+              >
+                How to find my channel ID?
+              </button>
+            </div>
+            
             <button
               type="submit"
               disabled={isLoading}
@@ -424,6 +484,9 @@ export default function OnboardingPage() {
           </p>
         </div>
       </div>
+
+      {/* Add this new component before the return statement */}
+      <ChannelIdHelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
     </div>
   );
 } 
