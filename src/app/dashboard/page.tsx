@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Video } from '@/types';
-import { videosApi } from '@/services/api';
+import { Video, Channel } from '@/types';
+import { videosApi, channelsApi } from '@/services/api';
 import { FaTable, FaThLarge, FaChartLine, FaArrowUp, FaArrowDown } from 'react-icons/fa';
 import { Line } from 'react-chartjs-2';
 import {
@@ -50,6 +50,7 @@ const formatNumber = (num: number): string => {
 
 export default function DashboardPage() {
   const [user, setUser] = useState<{ username: string } | null>(null);
+  const [channel, setChannel] = useState<Channel | null>(null);
   const [recentVideos, setRecentVideos] = useState<Video[]>([]);
   const [topVideos, setTopVideos] = useState<Video[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,6 +75,17 @@ export default function DashboardPage() {
         console.error('Error parsing user from localStorage:', error);
       }
     }
+
+    // Get channel information
+    const fetchChannel = async () => {
+      try {
+        const channelData = await channelsApi.getMyChannel();
+        setChannel(channelData);
+      } catch (error) {
+        console.error('Error fetching channel:', error);
+      }
+    };
+    fetchChannel();
   }, []);
 
   // Function to get date range based on selected time frame
@@ -337,9 +349,20 @@ export default function DashboardPage() {
       <div className="container mx-auto p-8">
         <header className="mb-10">
           <div className="flex flex-wrap justify-between items-center mb-4">
-            <div>
-              <h1 className="text-3xl font-bold dark:text-white">Welcome to TubeIntel Pro{user ? `, ${user.username}` : ''}!</h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-2">Here's an overview of your channel performance</p>
+            <div className="flex items-center space-x-4">
+              {channel && (
+                <img 
+                  src={channel.thumbnailUrl} 
+                  alt={channel.name}
+                  className="w-16 h-16 rounded-full object-cover border-2 border-white/20"
+                />
+              )}
+              <div>
+                <h1 className="text-3xl font-bold dark:text-white">
+                  Welcome to TubeIntel Pro{channel ? `, ${channel.name}` : ''}!
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400 mt-2">Here's an overview of your channel performance</p>
+              </div>
             </div>
             <div className="mt-4 md:mt-0">
               <UpgradeButton size="large" className="shadow-md" />
