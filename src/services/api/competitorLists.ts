@@ -283,71 +283,114 @@ export const competitorListsApi = {
       viewCount?: number;
     }
   ): Promise<TrackedCompetitor> => {
-    const user = await getCurrentUser();
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
-    
-    // First verify user owns this list
-    const { data: listData, error: listError } = await supabase
-      .from('competitor_lists')
-      .select('id')
-      .eq('id', listId)
-      .eq('user_id', user.id)
-      .single();
+    try {
+      console.log('Starting addCompetitorToList with:', { listId, competitor });
       
-    if (listError || !listData) {
-      console.error('Error verifying list ownership:', listError);
-      throw new Error('List not found or access denied');
-    }
-    
-    // Validate and prepare data
-    if (!competitor.youtubeId) {
-      throw new Error('YouTube ID is required');
-    }
-    
-    if (!competitor.name) {
-      throw new Error('Channel name is required');
-    }
-    
-    // Make sure all optional fields have appropriate default values
-    const dataToInsert = {
-      list_id: listId,
-      youtube_id: competitor.youtubeId,
-      name: competitor.name,
-      thumbnail_url: competitor.thumbnailUrl || null,
-      subscriber_count: typeof competitor.subscriberCount === 'number' ? competitor.subscriberCount : 0,
-      video_count: typeof competitor.videoCount === 'number' ? competitor.videoCount : 0,
-      view_count: typeof competitor.viewCount === 'number' ? competitor.viewCount : 0
-    };
-    
-    console.log('Inserting competitor data into Supabase:', dataToInsert);
-    
-    // Add the competitor
-    const { data, error } = await supabase
-      .from('tracked_competitors')
-      .insert([dataToInsert])
-      .select()
-      .single();
+      const user = await getCurrentUser();
+      if (!user) {
+        console.error('User not authenticated');
+        throw new Error('User not authenticated');
+      }
       
-    if (error) {
-      console.error('Error adding competitor to list:', error);
-      throw error;
+      // First verify user owns this list
+      const { data: listData, error: listError } = await supabase
+        .from('competitor_lists')
+        .select('id')
+        .eq('id', listId)
+        .eq('user_id', user.id)
+        .single();
+        
+      if (listError) {
+        console.error('Error verifying list ownership:', listError);
+        throw new Error(`List not found or access denied: ${listError.message}`);
+      }
+      
+      if (!listData) {
+        console.error('List not found');
+        throw new Error('List not found');
+      }
+      
+      // Validate and prepare data
+      if (!competitor.youtubeId) {
+        console.error('Missing YouTube ID');
+        throw new Error('YouTube ID is required');
+      }
+      
+      if (!competitor.name) {
+        console.error('Missing channel name');
+        throw new Error('Channel name is required');
+      }
+      
+      // Check if competitor already exists in this list
+      const { data: existingCompetitor, error: checkError } = await supabase
+        .from('tracked_competitors')
+        .select('id')
+        .eq('list_id', listId)
+        .eq('youtube_id', competitor.youtubeId)
+        .single();
+        
+      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+        console.error('Error checking for existing competitor:', checkError);
+        throw new Error(`Failed to check for existing competitor: ${checkError.message}`);
+      }
+      
+      if (existingCompetitor) {
+        console.error('Competitor already exists in list');
+        throw new Error('This channel is already in your competitor list');
+      }
+      
+      // Make sure all optional fields have appropriate default values
+      const dataToInsert = {
+        list_id: listId,
+        youtube_id: competitor.youtubeId,
+        name: competitor.name,
+        thumbnail_url: competitor.thumbnailUrl || null,
+        subscriber_count: typeof competitor.subscriberCount === 'number' ? competitor.subscriberCount : 0,
+        video_count: typeof competitor.videoCount === 'number' ? competitor.videoCount : 0,
+        view_count: typeof competitor.viewCount === 'number' ? competitor.viewCount : 0
+      };
+      
+      console.log('Inserting competitor data into Supabase:', dataToInsert);
+      
+      // Add the competitor
+      const { data, error } = await supabase
+        .from('tracked_competitors')
+        .insert([dataToInsert])
+        .select()
+        .single();
+        
+      if (error) {
+        console.error('Error adding competitor to list:', error);
+        throw new Error(`Failed to add competitor: ${error.message}`);
+      }
+      
+      if (!data) {
+        console.error('No data returned after insert');
+        throw new Error('Failed to add competitor: No data returned');
+      }
+      
+      console.log('Competitor added successfully:', data);
+      
+      // Convert database fields to camelCase for frontend
+      return {
+        id: data.id as string,
+        list_id: data.list_id as string,
+        youtubeId: data.youtube_id as string,
+        name: data.name as string,
+        thumbnailUrl: data.thumbnail_url as string | null,
+        subscriberCount: data.subscriber_count as number | null,
+        videoCount: data.video_count as number | null,
+        viewCount: data.view_count as number | null,
+        created_at: data.created_at as string,
+        updated_at: data.updated_at as string
+      };
+    } catch (error) {
+      console.error('Error in addCompetitorToList:', error);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Failed to add competitor: Unknown error');
     }
-    
-    // Convert database fields to camelCase for frontend
-    return {
-      id: data.id as string,
-      list_id: data.list_id as string,
-      youtubeId: data.youtube_id as string,
-      name: data.name as string,
-      thumbnailUrl: data.thumbnail_url as string | null,
-      subscriberCount: data.subscriber_count as number | null,
-      videoCount: data.video_count as number | null,
-      viewCount: data.view_count as number | null,
-      created_at: data.created_at as string,
-      updated_at: data.updated_at as string
-    };
   },
   
   // Remove a competitor from a list
