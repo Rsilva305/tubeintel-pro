@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { FaYoutube, FaCopy, FaLink, FaQuestionCircle } from 'react-icons/fa';
+import { FaYoutube, FaCopy, FaLink, FaQuestionCircle, FaSearch } from 'react-icons/fa';
 import { supabase, isAuthenticated, getCurrentUser } from '@/lib/supabase';
 
 interface ChannelPreview {
@@ -16,14 +16,15 @@ interface ChannelPreview {
 export default function OnboardingPage() {
   const router = useRouter();
   const [channelId, setChannelId] = useState('');
-  const [channelUrl, setChannelUrl] = useState('');
+  const [channelSearchQuery, setChannelSearchQuery] = useState('');
+  const [channelSearchResults, setChannelSearchResults] = useState<ChannelPreview[]>([]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [channelPreview, setChannelPreview] = useState<ChannelPreview | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
-  const [copySuccess, setCopySuccess] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -69,88 +70,65 @@ export default function OnboardingPage() {
     checkAuth();
   }, [router]);
 
-  const getChannelIdFromUrl = async (url: string): Promise<string> => {
-    try {
-      url = url.trim();
-      if (!url.startsWith('http')) {
-        url = 'https://' + url;
-      }
-
-      const urlObj = new URL(url);
-      
-      if (urlObj.hostname.includes('youtube.com')) {
-        if (urlObj.pathname.includes('/channel/')) {
-          const parts = urlObj.pathname.split('/');
-          const index = parts.indexOf('channel');
-          if (index !== -1 && index + 1 < parts.length) {
-            const channelId = parts[index + 1];
-            if (channelId.startsWith('UC') && channelId.length === 24) {
-              return channelId;
-            }
-          }
-        }
-        
-        if (urlObj.pathname.startsWith('/@')) {
-          const username = urlObj.pathname.substring(2);
-          if (username) {
-            const response = await fetch(`/api/youtube/channel?username=${encodeURIComponent(username)}`);
-            if (!response.ok) {
-              throw new Error('Could not find channel for this username');
-            }
-            const data = await response.json();
-            return data.channelId;
-          }
-        }
-
-        if (urlObj.pathname.startsWith('/c/')) {
-          const customUrl = urlObj.pathname.substring(3);
-          if (customUrl) {
-            const response = await fetch(`/api/youtube/channel?customUrl=${encodeURIComponent(customUrl)}`);
-            if (!response.ok) {
-              throw new Error('Could not find channel for this custom URL');
-            }
-            const data = await response.json();
-            return data.channelId;
-          }
-        }
-      }
-      
-      throw new Error('Invalid YouTube URL format');
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(`Failed to get channel ID: ${error.message}`);
-      }
-      throw new Error('Failed to process YouTube URL');
-    }
-  };
-
-  const handleUrlSubmit = async () => {
-    if (!channelUrl) {
-      setError('Please enter a YouTube URL');
+  // Add a new search function for channels
+  const searchChannels = async (query: string) => {
+    if (!query || query.length < 3) {
+      setChannelSearchResults([]);
       return;
     }
-
-    setIsLoading(true);
-    setError('');
-
+    
+    setIsSearching(true);
     try {
-      const extractedId = await getChannelIdFromUrl(channelUrl);
-      if (extractedId) {
-        setChannelId(extractedId);
-        setChannelUrl('');
-        fetchChannelPreview(extractedId);
+      const response = await fetch(`/api/youtube/search?q=${encodeURIComponent(query)}&type=channel&maxResults=5`);
+      if (!response.ok) {
+        throw new Error('Search failed');
       }
-    } catch (err: any) {
-      setError(err.message);
+      
+      const data = await response.json();
+      
+      // Format results
+      const formattedResults: ChannelPreview[] = data.items.map((item: any) => ({
+        id: item.id.channelId,
+        title: item.snippet.title,
+        description: item.snippet.description,
+        thumbnailUrl: item.snippet.thumbnails.default.url
+      }));
+      
+      setChannelSearchResults(formattedResults);
+    } catch (error) {
+      console.error('Error searching channels:', error);
+      setError('Failed to search channels. Please try again.');
     } finally {
-      setIsLoading(false);
+      setIsSearching(false);
     }
   };
 
-  const handleChannelIdChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Debounce search function
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (channelSearchQuery) {
+        searchChannels(channelSearchQuery);
+      }
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [channelSearchQuery]);
+
+  // Select a channel from search results
+  const selectChannel = (channel: ChannelPreview) => {
+    setChannelId(channel.id);
+    setChannelSearchQuery(channel.title);
+    setChannelSearchResults([]);
+    fetchChannelPreview(channel.id);
+  };
+
+  // Handle direct channel ID input changes
+  const handleChannelIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newId = e.target.value;
     setChannelId(newId);
     setError('');
+    setChannelSearchQuery('');
+    setChannelSearchResults([]);
 
     if (newId.startsWith('UC') && newId.length === 24) {
       fetchChannelPreview(newId);
@@ -185,16 +163,6 @@ export default function OnboardingPage() {
       setError('Failed to fetch channel information');
     } finally {
       setIsPreviewLoading(false);
-    }
-  };
-
-  const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(channelId);
-      setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 2000);
-    } catch (err) {
-      setError('Failed to copy to clipboard');
     }
   };
 
@@ -298,7 +266,7 @@ export default function OnboardingPage() {
         </div>
         
         {/* Onboarding Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
           <h2 className="text-2xl font-bold text-center mb-6 dark:text-white">Channel Setup</h2>
           
           {user && (
@@ -315,36 +283,62 @@ export default function OnboardingPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* URL to ID Converter */}
+            {/* Channel Search */}
             <div>
-              <label htmlFor="channelUrl" className="block text-gray-700 dark:text-gray-300 mb-2">
-                Convert YouTube URL to Channel ID
+              <label htmlFor="channelSearch" className="block text-gray-700 dark:text-gray-300 mb-2">
+                Search for your YouTube Channel
               </label>
-              <div className="flex gap-2">
+              <div className="relative">
                 <input
-                  id="channelUrl"
+                  id="channelSearch"
                   type="text"
-                  value={channelUrl}
-                  onChange={(e) => setChannelUrl(e.target.value)}
-                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
-                  placeholder="Paste YouTube channel or video URL"
+                  value={channelSearchQuery}
+                  onChange={(e) => setChannelSearchQuery(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white pl-10"
+                  placeholder="Enter channel name..."
                 />
-                <button
-                  type="button"
-                  onClick={handleUrlSubmit}
-                  disabled={isLoading}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md flex items-center gap-2"
-                >
-                  <FaLink />
-                  Convert
-                </button>
+                {isSearching && (
+                  <div className="absolute right-3 top-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600"></div>
+                  </div>
+                )}
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500">
+                  <FaSearch />
+                </div>
+                
+                {channelSearchResults.length > 0 && !channelId && (
+                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg">
+                    <ul className="max-h-60 overflow-y-auto">
+                      {channelSearchResults.map((channel) => (
+                        <li 
+                          key={channel.id}
+                          onClick={() => selectChannel(channel)}
+                          className="flex items-center p-3 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer"
+                        >
+                          <img 
+                            src={channel.thumbnailUrl} 
+                            alt={channel.title} 
+                            className="w-10 h-10 rounded-full mr-3"
+                          />
+                          <div>
+                            <p className="font-medium dark:text-white">{channel.title}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 truncate">{channel.description}</p>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Search for your channel by name to find and select it
+              </p>
             </div>
 
             {/* Channel ID Input */}
             <div>
               <label htmlFor="channelId" className="block text-gray-700 dark:text-gray-300 mb-2">
-                YouTube Channel ID
+                Or enter YouTube Channel ID directly
               </label>
               <div className="flex gap-2">
                 <input
@@ -355,14 +349,6 @@ export default function OnboardingPage() {
                   className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
                   placeholder="UC..."
                 />
-                <button
-                  type="button"
-                  onClick={copyToClipboard}
-                  className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-md flex items-center gap-2"
-                >
-                  <FaCopy />
-                  {copySuccess ? 'Copied!' : 'Copy'}
-                </button>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Enter your YouTube channel ID (starts with "UC")
@@ -376,7 +362,7 @@ export default function OnboardingPage() {
               </div>
             )}
 
-            {channelPreview && !isPreviewLoading && (
+            {channelPreview && (
               <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                 <div className="flex items-start gap-4">
                   <img 
@@ -418,7 +404,7 @@ export default function OnboardingPage() {
         </div>
         
         {/* Info Box */}
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-4 mt-6">
+        <div className="mt-4 text-center">
           <p className="text-sm text-blue-800 dark:text-blue-300">
             <span className="font-semibold">Note:</span> Your channel ID will be securely stored and used to fetch analytics data about your channel only.
           </p>

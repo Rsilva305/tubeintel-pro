@@ -284,11 +284,16 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
         
         // Verify all required fields are present
         if (!channelData || !channelData.youtubeId || !channelData.name) {
+          console.error('Invalid channel data:', channelData);
           throw new Error('Invalid channel data received from YouTube. Missing required fields.');
         }
       } catch (channelError) {
         console.error('Error fetching channel data from YouTube:', channelError);
-        setError('Could not fetch channel information. Please check the channel ID and try again.');
+        if (channelError instanceof Error) {
+          setError(`Could not fetch channel information: ${channelError.message}`);
+        } else {
+          setError('Could not fetch channel information. Please check the channel ID and try again.');
+        }
         setIsAdding(false);
         return;
       }
@@ -308,10 +313,13 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
       
       try {
         // Add to competitor list in Supabase
+        console.log('Adding competitor to list:', params.listId);
         const competitor = await competitorListsApi.addCompetitorToList(
           params.listId,
           competitorData
         );
+        
+        console.log('Competitor added successfully:', competitor);
         
         // Convert from the TrackedCompetitor type to Competitor type for UI
         const newCompetitor: Competitor = {
@@ -331,18 +339,20 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
           // Set video loading indicator to true
           setIsVideoLoading(true);
           
+          console.log('Fetching videos for new competitor:', newCompetitor.youtubeId);
           const videos = await secureYoutubeService.getVideosByChannelId(newCompetitor.youtubeId, 10);
+          console.log('Videos fetched successfully:', videos.length);
           
-          // Sort the videos by published date (newest first) to match the same sorting we use elsewhere
+          // Sort the videos by published date (newest first)
           const sortedVideos = videos.sort((a, b) => 
             new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
           );
           
-          // Update both competitorVideos and filteredCompetitorVideos to ensure UI reflects new videos
+          // Update both competitorVideos and filteredCompetitorVideos
           setCompetitorVideos(prev => [...sortedVideos, ...prev]);
           setFilteredCompetitorVideos(prev => [...sortedVideos, ...prev]);
           
-          // If there's an active search, we need to filter the videos again
+          // If there's an active search, filter the videos again
           if (videoSearchQuery.trim()) {
             const query = videoSearchQuery.toLowerCase();
             const newFiltered = [...sortedVideos, ...competitorVideos].filter(video =>
@@ -351,25 +361,30 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
             );
             setFilteredCompetitorVideos(newFiltered);
           }
-          
-          // Set video loading indicator back to false
-          setIsVideoLoading(false);
         } catch (videoError) {
           console.error('Error fetching videos for new competitor:', videoError);
-          // Set video loading indicator back to false even if there's an error
-          setIsVideoLoading(false);
           // Continue even if we can't fetch videos - we've already added the competitor
+        } finally {
+          setIsVideoLoading(false);
         }
         
         setNewCompetitorId('');
         setIsModalOpen(false);
       } catch (apiError) {
         console.error('Error adding competitor to Supabase:', apiError);
-        setError(`Failed to save competitor: ${apiError instanceof Error ? apiError.message : 'Unknown error'}`);
+        if (apiError instanceof Error) {
+          setError(`Failed to save competitor: ${apiError.message}`);
+        } else {
+          setError('Failed to save competitor. Please try again.');
+        }
       }
     } catch (error) {
       console.error('Error in handleAddCompetitor:', error);
-      setError('Could not add this channel. Please check the ID and try again.');
+      if (error instanceof Error) {
+        setError(`Could not add this channel: ${error.message}`);
+      } else {
+        setError('Could not add this channel. Please check the ID and try again.');
+      }
     } finally {
       setIsAdding(false);
     }

@@ -1,28 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchFromYouTubeApi } from '../utils';
-import { headers } from 'next/headers';
 
 // Server-side search cache to retain results even if quota is exceeded
 const searchCache = new Map<string, { data: any, timestamp: number }>();
 const SEARCH_CACHE_DURATION = 8 * 60 * 60 * 1000; // 8 hours
 
-// Helper to get the base URL
-function getBaseUrl(req: NextRequest): string {
-  // For development environment
-  if (process.env.NODE_ENV === 'development') {
-    return `http://${req.headers.get('host')}`;
-  }
-  // For production, use the host from the headers
-  const host = headers().get('host') || req.headers.get('host') || 'localhost:3000';
-  const protocol = host.includes('localhost') ? 'http' : 'https';
-  return `${protocol}://${host}`;
-}
-
 // GET /api/youtube/videos
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const baseUrl = getBaseUrl(request);
     
     // Extract parameters
     const id = searchParams.get('id');
