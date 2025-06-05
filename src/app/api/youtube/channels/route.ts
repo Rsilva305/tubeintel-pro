@@ -18,7 +18,6 @@ function getBaseUrl(req: NextRequest): string {
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const baseUrl = getBaseUrl(request);
     
     // Extract parameters
     const id = searchParams.get('id');
@@ -32,53 +31,68 @@ export async function GET(request: NextRequest) {
         part,
         id
       });
-    } else if (forUsername) {
-      // Get channel by username (legacy)
-      return fetchFromYouTubeApi('channels', {
-        part,
-        forUsername
-      });
-    } else if (username) {
-      // First try with forUsername parameter
-      const cleanUsername = username.startsWith('@') ? username.substring(1) : username;
+    } else if (forUsername || username) {
+      // Get channel by username
+      const rawUsername = forUsername || username || '';
+      const cleanUsername = rawUsername.startsWith('@') 
+        ? rawUsername.substring(1) 
+        : rawUsername;
       
-      // Try with forUsername first
-      const channelUrl = `${baseUrl}/api/youtube/channels?forUsername=${cleanUsername}&part=${part}`;
-      const response = await fetch(channelUrl);
-      const data = await response.json();
+      // Try multiple search approaches
+      const searchQueries = [
+        cleanUsername,                    // Direct name
+        `@${cleanUsername}`,             // With @ symbol
+        `${cleanUsername} channel`,       // With "channel" suffix
+        `${cleanUsername} youtube`        // With "youtube" suffix
+      ];
       
-      if (data.items && data.items.length > 0) {
-        return NextResponse.json(data);
+      let channelId = null;
+      
+      // Try each search query until we find a match
+      for (const query of searchQueries) {
+        try {
+          const searchParams: Record<string, string> = {
+            q: query,
+            type: 'channel',
+            part: 'snippet',
+            maxResults: '5'
+          };
+          
+          const searchResponse = await fetchFromYouTubeApi('search', searchParams);
+          const searchData = await searchResponse.json();
+          
+          if (searchData.items && searchData.items.length > 0) {
+            // Get channel IDs from search results
+            const channelIds = searchData.items
+              .map((item: any) => item.id.channelId)
+              .join(',');
+            
+            // Get full channel details
+            const channelResponse = await fetchFromYouTubeApi('channels', {
+              part,
+              id: channelIds
+            });
+            
+            const channelData = await channelResponse.json();
+            
+            if (channelData.items && channelData.items.length > 0) {
+              // Return the first matching channel
+              return NextResponse.json(channelData);
+            }
+          }
+        } catch (error) {
+          console.error(`Error with search query "${query}":`, error);
+          // Continue to next query if this one fails
+          continue;
+        }
       }
       
-      // If no results, try searching
-      const searchParams = new URLSearchParams({
-        q: `@${cleanUsername}`,
-        type: 'channel',
-        part: 'snippet',
-        maxResults: '5'
-      });
-      
-      const searchUrl = `${baseUrl}/api/youtube/search?${searchParams}`;
-      const searchResponse = await fetch(searchUrl);
-      const searchData = await searchResponse.json();
-      
-      if (searchData.items && searchData.items.length > 0) {
-        // Get channel IDs from search results
-        const channelIds = searchData.items
-          .map((item: any) => item.id.channelId)
-          .join(',');
-        
-        // Get full channel details
-        return fetch(`${baseUrl}/api/youtube/channels?id=${channelIds}&part=${part}`);
-      }
-      
-      // No results found
+      // No results found after trying all queries
       return NextResponse.json({ items: [] });
     } else {
       // Bad request - no identifier provided
       return NextResponse.json(
-        { error: 'Missing channel identifier. Please provide id, username, or forUsername parameter.' },
+        { error: 'Missing channel identifier. Please provide id or username parameter.' },
         { status: 400 }
       );
     }

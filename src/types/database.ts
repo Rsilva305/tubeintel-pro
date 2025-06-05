@@ -13,6 +13,7 @@ export interface Profile {
   avatar_url?: string;
   youtube_channel_id?: string;
   has_completed_onboarding: boolean; // New column
+  channel_change_cooldown?: string; // ISO timestamp of last channel change
 }
 
 /**

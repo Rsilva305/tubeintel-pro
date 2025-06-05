@@ -24,8 +24,9 @@ export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
   const [connectedChannel, setConnectedChannel] = useState<Channel | null>(null);
+  const [cooldownEndTime, setCooldownEndTime] = useState<Date | null>(null);
 
-  // Load current channel on mount
+  // Load current channel and cooldown status on mount
   useEffect(() => {
     const loadChannel = async () => {
       try {
@@ -34,58 +35,29 @@ export default function SettingsPage() {
           throw new Error('User not authenticated');
         }
 
-        // Get channel ID from Supabase with more robust error handling
-        let profile = null;
-        try {
-          // First try with .single()
-          const { data: singleProfile, error: singleError } = await supabase
-            .from('profiles')
-            .select('youtube_channel_id')
-            .eq('id', user.id)
-            .single<Pick<Profile, 'youtube_channel_id'>>();
+        // Get channel ID and cooldown from Supabase
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('youtube_channel_id, channel_change_cooldown')
+          .eq('id', user.id)
+          .single();
           
-          if (!singleError) {
-            profile = singleProfile;
-          } else {
-            console.warn('Error with single profile query:', singleError.message);
-            
-            // If single fails, try to get all profiles for the user
-            const { data: profiles, error: profilesError } = await supabase
-              .from('profiles')
-              .select('youtube_channel_id')
-              .eq('id', user.id);
-              
-            if (profilesError) {
-              throw new Error('Failed to load profile: ' + profilesError.message);
-            }
-            
-            // If we have exactly one profile, use it
-            if (profiles && profiles.length === 1) {
-              profile = profiles[0];
-            } else if (profiles && profiles.length > 1) {
-              // Multiple profiles found - use the first one with a channel ID
-              const profileWithChannel = profiles.find(p => p.youtube_channel_id);
-              if (profileWithChannel) {
-                profile = profileWithChannel;
-                console.warn('Multiple profiles found for user, using the first one with a channel ID');
-              } else {
-                // No profiles with channel ID, use the first one
-                profile = profiles[0];
-                console.warn('Multiple profiles found for user, using the first one (no channel ID found)');
-              }
-            }
-            // We don't create a profile here because that's handled by the signup process
-          }
-        } catch (profileError) {
-          console.error('Profile retrieval error:', profileError);
-          throw new Error('Failed to load profile: ' + (profileError instanceof Error ? profileError.message : String(profileError)));
+        if (profileError) {
+          throw new Error('Failed to load profile: ' + profileError.message);
         }
 
-        if (profile?.youtube_channel_id) {
-          setChannelId(profile.youtube_channel_id as string);
+        if (profile?.youtube_channel_id && typeof profile.youtube_channel_id === 'string') {
+          setChannelId(profile.youtube_channel_id);
           setIsLoading(true);
           const channel = await channelsApi.getMyChannel();
           setConnectedChannel(channel);
+        }
+
+        // Set cooldown end time if it exists
+        if (profile?.channel_change_cooldown && typeof profile.channel_change_cooldown === 'string') {
+          const cooldownDate = new Date(profile.channel_change_cooldown);
+          cooldownDate.setDate(cooldownDate.getDate() + 7); // Add 7 days
+          setCooldownEndTime(cooldownDate);
         }
       } catch (error) {
         console.error('Error loading channel:', error);
@@ -100,6 +72,20 @@ export default function SettingsPage() {
 
     loadChannel();
   }, []);
+
+  // Check if channel change is allowed
+  const canChangeChannel = () => {
+    if (!cooldownEndTime) return true;
+    return new Date() > cooldownEndTime;
+  };
+
+  // Format cooldown message
+  const getCooldownMessage = () => {
+    if (!cooldownEndTime) return null;
+    if (canChangeChannel()) return null;
+    
+    return `You can change your connected YouTube channel once every 7 days. Your next change will be available on ${cooldownEndTime.toLocaleString()}.`;
+  };
 
   const extractChannelId = async (input: string) => {
     try {
@@ -182,6 +168,15 @@ export default function SettingsPage() {
       return;
     }
 
+    // Check cooldown
+    if (!canChangeChannel()) {
+      setMessage({
+        type: 'error',
+        text: getCooldownMessage() || 'Channel change is currently on cooldown.'
+      });
+      return;
+    }
+
     setIsLoading(true);
     setMessage(null);
 
@@ -195,94 +190,28 @@ export default function SettingsPage() {
         throw new Error('User not authenticated');
       }
 
-      // TEMPORARY WORKAROUND:
-      // First import the profile manager
-      const { storeChannelId } = await import('@/lib/profile-manager');
-      let updateSucceeded = false;
-      
-      try {
-        // Try to find the profile first to handle possible duplicates
-        const { data: profiles, error: findError } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('id', user.id);
-          
-        if (findError) {
-          console.warn('Failed to check profile:', findError.message);
-        } else {
-          let updateError = null;
-          
-          if (!profiles || profiles.length === 0) {
-            // No profile exists, create one
-            const { error: insertError } = await supabase
-              .from('profiles')
-              .insert({ 
-                id: user.id,
-                email: user.email,
-                username: user.email?.split('@')[0] || null,
-                youtube_channel_id: extractedChannelId
-              });
-              
-            updateError = insertError;
-          } else if (profiles.length === 1) {
-            // One profile exists, update it
-            const { error: singleUpdateError } = await supabase
-              .from('profiles')
-              .update({ 
-                youtube_channel_id: extractedChannelId
-              })
-              .eq('id', user.id);
-              
-            updateError = singleUpdateError;
-          } else {
-            // Multiple profiles exist, update all of them
-            // Note: This is a rare edge case but good to handle
-            console.warn(`Found ${profiles.length} profiles for user ${user.id}, updating all`);
-            
-            for (const profile of profiles) {
-              if (!profile || typeof profile.id !== 'string') {
-                console.error('Invalid profile object:', profile);
-                continue;
-              }
-              
-              const { error: multiUpdateError } = await supabase
-                .from('profiles')
-                .update({ 
-                  youtube_channel_id: extractedChannelId
-                })
-                .eq('id', profile.id);
-                
-              if (multiUpdateError) {
-                console.error(`Error updating profile ${profile.id}:`, multiUpdateError);
-                updateError = multiUpdateError;
-                break;
-              }
-            }
-          }
-          
-          // Check if update was successful
-          updateSucceeded = !updateError;
-          
-          if (updateError) {
-            console.warn('Supabase update failed:', updateError.message);
-          }
-        }
-      } catch (error) {
-        console.warn('Error during Supabase update attempt:', error);
-      }
-      
-      // If Supabase update failed, use localStorage fallback
-      if (!updateSucceeded) {
-        // Store in localStorage as a workaround
-        await storeChannelId(extractedChannelId as string);
-        console.log('Successfully stored channel ID in localStorage as fallback');
+      // Update profile with new channel ID and cooldown timestamp
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ 
+          youtube_channel_id: extractedChannelId,
+          channel_change_cooldown: new Date().toISOString()
+        })
+        .eq('id', user.id);
+        
+      if (updateError) {
+        throw new Error('Failed to update profile: ' + updateError.message);
       }
 
+      // Update cooldown end time
+      const newCooldownEndTime = new Date();
+      newCooldownEndTime.setDate(newCooldownEndTime.getDate() + 7);
+      setCooldownEndTime(newCooldownEndTime);
+
       // Fetch channel info to verify and display
-      // The channelsApi is already set up to use localStorage as a fallback
       const channel = await channelsApi.getMyChannel();
       setConnectedChannel(channel);
-      setChannelId(extractedChannelId); // Update input with the actual channel ID
+      setChannelId(extractedChannelId);
       
       setMessage({
         type: 'success',
@@ -316,6 +245,11 @@ export default function SettingsPage() {
       
       const data = await response.json();
       
+      if (!data.items || data.items.length === 0) {
+        setSearchResults([]);
+        return;
+      }
+      
       // Format results
       const formattedResults: ChannelSearchResult[] = data.items.map((item: any) => ({
         id: item.id.channelId,
@@ -331,6 +265,7 @@ export default function SettingsPage() {
         type: 'error',
         text: 'Failed to search channels. Please try again.'
       });
+      setSearchResults([]);
     } finally {
       setIsSearching(false);
     }
@@ -354,7 +289,7 @@ export default function SettingsPage() {
     setSearchResults([]);
   };
 
-  // Handle direct channelId input changes
+  // Handle direct channel ID input changes
   const handleChannelIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setChannelId(e.target.value);
     // Clear the search query if user is manually entering a channel ID
@@ -400,8 +335,16 @@ export default function SettingsPage() {
             </div>
           </div>
         )}
+
+        {!canChangeChannel() && (
+          <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+            <p className="text-yellow-800 dark:text-yellow-300">
+              {getCooldownMessage()}
+            </p>
+          </div>
+        )}
         
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="mb-4">
             <label htmlFor="channelSearch" className="block text-gray-700 dark:text-gray-300 mb-2">
               Search for your YouTube Channel:
@@ -424,17 +367,14 @@ export default function SettingsPage() {
                 </div>
               )}
               
-              {/* Only show search results if there are results AND user hasn't selected a channel yet */}
-              {searchResults.length > 0 && !channelId && (
+              {/* Show search results if there are any */}
+              {searchResults.length > 0 && (
                 <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg">
                   <ul className="max-h-60 overflow-y-auto">
                     {searchResults.map((channel) => (
                       <li 
                         key={channel.id} 
-                        onClick={(e: React.MouseEvent<HTMLLIElement>) => {
-                          e.stopPropagation();
-                          selectChannel(channel);
-                        }}
+                        onClick={() => selectChannel(channel)}
                         className="flex items-center p-3 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer"
                       >
                         <img 
@@ -484,7 +424,7 @@ export default function SettingsPage() {
           <div className="flex space-x-3">
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !canChangeChannel()}
               className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md disabled:opacity-50"
             >
               {isLoading ? 'Connecting...' : 'Connect Channel'}

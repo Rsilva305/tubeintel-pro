@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
-import { SERVER_YOUTUBE_API_KEY, hasServerYouTubeApiKey } from '@/lib/env';
 
-const BASE_URL = 'https://www.googleapis.com/youtube/v3';
+const RAPID_API_HOST = process.env.RAPID_API_HOST || 'youtube-v311.p.rapidapi.com';
+const RAPID_API_KEY = process.env.RAPID_API_KEY;
+
+if (!RAPID_API_KEY) {
+  console.error('RapidAPI key is not configured. Please set RAPID_API_KEY in your environment variables.');
+}
 
 // Server-side cache implementation
 const cache = new Map<string, { data: any, timestamp: number }>();
@@ -28,17 +32,9 @@ const EXTENDED_CACHE_DURATIONS = {
 
 export async function fetchFromYouTubeApi(endpoint: string, params: Record<string, string>) {
   try {
-    // Check if API key is configured
-    if (!hasServerYouTubeApiKey) {
-      console.error('YouTube API key missing or invalid:', {
-        keyLength: SERVER_YOUTUBE_API_KEY?.length || 0,
-        hasKey: !!SERVER_YOUTUBE_API_KEY,
-        environment: process.env.NODE_ENV,
-        keyPrefix: SERVER_YOUTUBE_API_KEY?.substring(0, 5) || 'none',
-        keySuffix: SERVER_YOUTUBE_API_KEY?.substring(SERVER_YOUTUBE_API_KEY.length - 5) || 'none'
-      });
+    if (!RAPID_API_KEY) {
       return NextResponse.json(
-        { error: 'YouTube API key is not configured properly' },
+        { error: 'RapidAPI key is not configured' },
         { status: 500 }
       );
     }
@@ -84,34 +80,36 @@ export async function fetchFromYouTubeApi(endpoint: string, params: Record<strin
       }
       
       try {
-        // Build URL with parameters and API key
-        const searchParams = new URLSearchParams({
-          ...params,
-          key: SERVER_YOUTUBE_API_KEY
-        });
+        // Build URL with parameters
+        const searchParams = new URLSearchParams(params);
+        const url = `https://${RAPID_API_HOST}/${endpoint}?${searchParams.toString()}`;
         
-        const url = `${BASE_URL}/${endpoint}?${searchParams.toString()}`;
-        
-        // Make the request
-        console.log('Fetching from YouTube API:', {
+        // Make the request with RapidAPI headers
+        console.log('Fetching from RapidAPI YouTube:', {
           endpoint,
-          url: url.replace(SERVER_YOUTUBE_API_KEY, 'REDACTED'),
-          params: { ...params, key: 'REDACTED' }
+          url,
+          params
         });
-        const response = await fetch(url);
+        
+        const response = await fetch(url, {
+          headers: {
+            'X-RapidAPI-Key': RAPID_API_KEY,
+            'X-RapidAPI-Host': RAPID_API_HOST
+          }
+        });
         
         if (!response.ok) {
           const errorData = await response.json();
-          console.error('YouTube API Error:', {
+          console.error('RapidAPI YouTube Error:', {
             status: response.status,
             statusText: response.statusText,
             error: errorData,
             endpoint,
-            params: { ...params, key: 'REDACTED' }
+            params
           });
           
-          // If quota exceeded (403) and we have stale data, use it
-          if (response.status === 403 && isStaleData) {
+          // If quota exceeded (429) and we have stale data, use it
+          if (response.status === 429 && isStaleData) {
             console.log('Using stale cached data due to quota limits. Data age:', Math.round(dataAge / (60 * 60 * 1000)), 'hours');
             // Update timestamp to reduce frequency of future API calls during quota error
             cache.set(cacheKey, {
@@ -122,7 +120,7 @@ export async function fetchFromYouTubeApi(endpoint: string, params: Record<strin
           }
           
           return NextResponse.json(
-            { error: `YouTube API Error: ${response.statusText}`, details: errorData },
+            { error: `RapidAPI YouTube Error: ${response.statusText}`, details: errorData },
             { status: response.status }
           );
         }
@@ -148,34 +146,36 @@ export async function fetchFromYouTubeApi(endpoint: string, params: Record<strin
     
     // No cache or expired cache beyond extended TTL, must fetch fresh data
     
-    // Build URL with parameters and API key
-    const searchParams = new URLSearchParams({
-      ...params,
-      key: SERVER_YOUTUBE_API_KEY
-    });
+    // Build URL with parameters
+    const searchParams = new URLSearchParams(params);
+    const url = `https://${RAPID_API_HOST}/${endpoint}?${searchParams.toString()}`;
     
-    const url = `${BASE_URL}/${endpoint}?${searchParams.toString()}`;
-    
-    // Make the request
-    console.log('Fetching from YouTube API:', {
+    // Make the request with RapidAPI headers
+    console.log('Fetching from RapidAPI YouTube:', {
       endpoint,
-      url: url.replace(SERVER_YOUTUBE_API_KEY, 'REDACTED'),
-      params: { ...params, key: 'REDACTED' }
+      url,
+      params
     });
-    const response = await fetch(url);
+    
+    const response = await fetch(url, {
+      headers: {
+        'X-RapidAPI-Key': RAPID_API_KEY,
+        'X-RapidAPI-Host': RAPID_API_HOST
+      }
+    });
     
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('YouTube API Error:', {
+      console.error('RapidAPI YouTube Error:', {
         status: response.status,
         statusText: response.statusText,
         error: errorData,
         endpoint,
-        params: { ...params, key: 'REDACTED' }
+        params
       });
       
       return NextResponse.json(
-        { error: `YouTube API Error: ${response.statusText}`, details: errorData },
+        { error: `RapidAPI YouTube Error: ${response.statusText}`, details: errorData },
         { status: response.status }
       );
     }
@@ -190,9 +190,9 @@ export async function fetchFromYouTubeApi(endpoint: string, params: Record<strin
     
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Server error in YouTube API request:', error);
+    console.error('Server error in RapidAPI YouTube request:', error);
     return NextResponse.json(
-      { error: 'Internal server error processing YouTube API request' },
+      { error: 'Internal server error processing RapidAPI YouTube request' },
       { status: 500 }
     );
   }
