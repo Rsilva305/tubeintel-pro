@@ -4,8 +4,9 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FaYoutube } from 'react-icons/fa';
 import Link from 'next/link';
-import { signIn, isAuthenticated } from '@/lib/supabase';
+import { signIn } from '@/lib/supabase';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Define interface for the extended sign-in result
 interface SignInResult {
@@ -30,55 +31,34 @@ function LoginContent() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { theme } = useTheme();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   
   // Get redirect URL if present
   const redirectTo = searchParams.get('redirectTo') || '/dashboard';
 
-  // Check if user is already logged in
+  // Check if user is already logged in using AuthContext
   useEffect(() => {
-    const checkAuth = async () => {
-      const authenticated = await isAuthenticated();
-      if (authenticated) {
-        // User is already logged in, check if they need onboarding
-        const currentUserId = localStorage.getItem('currentUserId');
-        if (currentUserId) {
-          const userJson = localStorage.getItem(`user_${currentUserId}`);
-          if (userJson) {
-            try {
-              const userData = JSON.parse(userJson);
-              // Check for user-specific channel ID
-              const hasChannel = !!localStorage.getItem(`user_${currentUserId}_youtubeChannelId`);
-              
-              // Check if there's a redirectTo parameter to use instead
-              if (redirectTo && redirectTo !== '/dashboard') {
-                router.push(redirectTo);
-                return;
-              }
-              
-              // If the user has completed onboarding or has a YouTube channel ID, go to dashboard
-              if (userData.hasCompletedOnboarding || hasChannel) {
-                router.push('/dashboard');
-              } else {
-                router.push('/onboarding');
-              }
-            } catch (e) {
-              console.error('Error parsing user data:', e);
-              // If there's an error, direct to onboarding to be safe
-              router.push('/onboarding');
-            }
-          } else {
-            // No user data but authenticated, go to onboarding
-            router.push('/onboarding');
-          }
-        } else {
-          // No current user ID, go to onboarding
-          router.push('/onboarding');
-        }
-      }
-    };
+    // Wait for auth context to finish loading
+    if (authLoading) return;
     
-    checkAuth();
-  }, [router, redirectTo]);
+    if (isAuthenticated && user) {
+      // User is already logged in, check onboarding status
+      console.log('User already authenticated:', user);
+      
+      // Check if there's a redirectTo parameter to use instead
+      if (redirectTo && redirectTo !== '/dashboard') {
+        router.push(redirectTo);
+        return;
+      }
+      
+             // Use the hasCompletedOnboarding from the secure user object
+       if ((user as any).hasCompletedOnboarding) {
+        router.push('/dashboard');
+      } else {
+        router.push('/onboarding');
+      }
+    }
+  }, [router, redirectTo, isAuthenticated, user, authLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,9 +86,8 @@ function LoginContent() {
         return;
       }
       
-      // Check if user has completed onboarding based on return value or localStorage
-      const hasChannel = !!localStorage.getItem(`user_${result.user.id}_youtubeChannelId`);
-      if (result.hasCompletedOnboarding || hasChannel) {
+      // Check if user has completed onboarding based on return value
+      if (result.hasCompletedOnboarding) {
         router.push('/dashboard');
       } else {
         router.push('/onboarding');
