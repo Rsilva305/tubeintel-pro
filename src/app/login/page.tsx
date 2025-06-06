@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FaYoutube } from 'react-icons/fa';
 import Link from 'next/link';
-import { signIn } from '@/lib/supabase';
+
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -31,7 +31,7 @@ function LoginContent() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { theme } = useTheme();
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading, login } = useAuth();
   
   // Get redirect URL if present
   const redirectTo = searchParams.get('redirectTo') || '/dashboard';
@@ -71,27 +71,15 @@ function LoginContent() {
     setError('');
 
     try {
-      // Real Supabase authentication
-      const result = await signIn(email, password) as SignInResult;
+      // Use AuthContext login method for consistency
+      await login(email, password);
       
-      if (!result.user) {
-        throw new Error('Authentication failed. No user returned.');
-      }
+      console.log('Login successful via AuthContext');
       
-      console.log('Login successful:', result.user, 'Onboarding completed:', result.hasCompletedOnboarding);
+      // The useEffect will handle the redirect based on AuthContext state
+      // No need to manually redirect here since the AuthContext will update
+      // and trigger the useEffect that handles routing
       
-      // Check if we need to redirect to a specific page (like subscription)
-      if (redirectTo && redirectTo !== '/dashboard') {
-        router.push(redirectTo);
-        return;
-      }
-      
-      // Check if user has completed onboarding based on return value
-      if (result.hasCompletedOnboarding) {
-        router.push('/dashboard');
-      } else {
-        router.push('/onboarding');
-      }
     } catch (err: any) {
       console.error('Login error:', err);
       setError(err.message || 'Invalid email or password. Please try again.');
