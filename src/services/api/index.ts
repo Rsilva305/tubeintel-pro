@@ -13,6 +13,7 @@ import { secureYoutubeService as youtubeApiService } from './youtube-secure';
 import { competitorListsApi } from './competitorLists';
 import { getCurrentUser } from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
+import { getChannelWithCache, getChannelIdForVideos, clearChannelCache } from './optimized-channels';
 
 // Auth API
 const authApi = {
@@ -39,121 +40,8 @@ const authApi = {
 const channelsApi = {
   getMyChannel: async (): Promise<Channel> => {
     try {
-      // Get current user
-      const user = await getCurrentUser();
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-
-      // First, try to get the channel ID from user-specific localStorage
-      let channelId = null;
-      const currentUserId = localStorage.getItem('currentUserId');
-      
-      if (typeof window !== 'undefined' && currentUserId) {
-        // Try user-specific storage first
-        channelId = localStorage.getItem(`user_${currentUserId}_youtubeChannelId`);
-        
-        // Fall back to legacy storage if needed
-        if (!channelId) {
-          channelId = localStorage.getItem('youtubeChannelId');
-          
-          // If we found a channel ID in legacy storage, migrate it to the user-specific storage
-          if (channelId) {
-            localStorage.setItem(`user_${currentUserId}_youtubeChannelId`, channelId);
-          }
-        }
-      }
-
-      // If we didn't find it in localStorage, try to get it from Supabase
-      if (!channelId) {
-        try {
-          // Get channel ID from Supabase with more robust error handling
-          let profile = null;
-          try {
-            // First try with .single()
-            const { data: singleProfile, error: singleError } = await supabase
-              .from('profiles')
-              .select('youtube_channel_id')
-              .eq('id', user.id)
-              .single<Pick<Profile, 'youtube_channel_id'>>();
-            
-            if (!singleError) {
-              profile = singleProfile;
-            } else {
-              console.warn('Error with single profile query:', singleError.message);
-              
-              // If single fails, try to get all profiles for the user
-              const { data: profiles, error: profilesError } = await supabase
-                .from('profiles')
-                .select('youtube_channel_id')
-                .eq('id', user.id);
-                
-              if (profilesError) {
-                throw new Error('Failed to load profile: ' + profilesError.message);
-              }
-              
-              // If we have exactly one profile, use it
-              if (profiles && profiles.length === 1) {
-                profile = profiles[0];
-              } else if (profiles && profiles.length > 1) {
-                // Multiple profiles found - use the first one with a channel ID
-                const profileWithChannel = profiles.find(p => p.youtube_channel_id);
-                if (profileWithChannel) {
-                  profile = profileWithChannel;
-                  
-                  console.warn('Multiple profiles found for user, using the first one with a channel ID');
-                } else {
-                  // No profiles with channel ID, use the first one
-                  profile = profiles[0];
-                  console.warn('Multiple profiles found for user, using the first one (no channel ID found)');
-                }
-              } else {
-                // No profiles found, create one
-                const { data: newProfile, error: insertError } = await supabase
-                  .from('profiles')
-                  .insert({
-                    id: user.id,
-                    email: user.email,
-                    username: user.email?.split('@')[0] || null
-                  })
-                  .select()
-                  .single();
-                  
-                if (insertError) {
-                  throw new Error('Failed to create profile: ' + insertError.message);
-                }
-                
-                profile = newProfile;
-                console.log('Created new profile for user');
-              }
-            }
-          } catch (profileError) {
-            console.error('Profile retrieval error:', profileError);
-            // Don't throw here, we'll check localStorage next
-          }
-
-          // If we found a profile with a channel ID, use that
-          if (profile?.youtube_channel_id) {
-            channelId = profile.youtube_channel_id as string; // Type assertion to fix linter error
-            
-            // Also store it in localStorage for future use
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('youtubeChannelId', channelId);
-            }
-          }
-        } catch (error) {
-          console.error('Error fetching channel ID from Supabase:', error);
-          // Continue to try localStorage or default as a fallback
-        }
-      }
-
-      // If we still don't have a channel ID, throw an error
-      if (!channelId) {
-        throw new Error('No channel ID found. Please connect your YouTube channel first.');
-      }
-      
-      // Get channel info from the YouTube API
-      return await youtubeApiService.getChannelById(channelId);
+      // Use the optimized cached version
+      return await getChannelWithCache();
     } catch (error) {
       console.error('Error fetching channel from YouTube API:', error);
       throw error;
@@ -176,10 +64,9 @@ const channelsApi = {
 const videosApi = {
   getAllVideos: async (): Promise<Video[]> => {
     try {
-      // Get channel first
-      const channel = await channelsApi.getMyChannel();
-      // Then get videos for that channel
-      return await youtubeApiService.getVideosByChannelId(channel.youtubeId);
+      // Get channel ID directly (cached) instead of full channel data
+      const channelId = await getChannelIdForVideos();
+      return await youtubeApiService.getVideosByChannelId(channelId);
     } catch (error) {
       console.error('Error fetching videos from YouTube API:', error);
       return mockVideos; // Fallback to mock data
@@ -197,8 +84,9 @@ const videosApi = {
   
   getRecentVideos: async (limit: number = 5): Promise<Video[]> => {
     try {
-      const channel = await channelsApi.getMyChannel();
-      const videos = await youtubeApiService.getVideosByChannelId(channel.youtubeId, limit);
+      // Get channel ID directly (cached) instead of full channel data
+      const channelId = await getChannelIdForVideos();
+      const videos = await youtubeApiService.getVideosByChannelId(channelId, limit);
       return videos.sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime());
     } catch (error) {
       console.error('Error fetching recent videos from YouTube API:', error);
