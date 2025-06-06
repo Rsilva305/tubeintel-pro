@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Video, Channel } from '@/types';
 import { videosApi, channelsApi } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { FaTable, FaThLarge, FaChartLine, FaArrowUp, FaArrowDown } from 'react-icons/fa';
 import { Line } from 'react-chartjs-2';
 import {
@@ -49,7 +50,6 @@ const formatNumber = (num: number): string => {
 };
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<{ username: string } | null>(null);
   const [channel, setChannel] = useState<Channel | null>(null);
   const [recentVideos, setRecentVideos] = useState<Video[]>([]);
   const [topVideos, setTopVideos] = useState<Video[]>([]);
@@ -65,17 +65,10 @@ export default function DashboardPage() {
   const [likesTrend, setLikesTrend] = useState<TrendData>({ current: 0, previous: 0, percentage: 0 });
   const [vphTrend, setVphTrend] = useState<TrendData>({ current: 0, previous: 0, percentage: 0 });
 
-  useEffect(() => {
-    // Get user from localStorage
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error('Error parsing user from localStorage:', error);
-      }
-    }
+  // Use secure authentication context
+  const { user } = useAuth();
 
+  useEffect(() => {
     // Get channel information
     const fetchChannel = async () => {
       try {
