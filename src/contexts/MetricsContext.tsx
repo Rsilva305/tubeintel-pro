@@ -32,9 +32,30 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
 
   // Watch for authentication changes and initialize metrics scheduler
   useEffect(() => {
+    let userCache: any = null;
+    let lastCheck = 0;
+    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
+    
     async function checkAndInit() {
+      const now = Date.now();
+      
+      // Use cached user if within cache duration
+      if (userCache && (now - lastCheck) < CACHE_DURATION) {
+        if (userCache && !isInitialized) {
+          console.log('Initializing metrics scheduler with cached user...');
+          initializeMetricsScheduler();
+          setIsInitialized(true);
+          setLastCollectionDate(new Date().toISOString().split('T')[0]);
+        }
+        return;
+      }
+      
+      // Only fetch user if cache is expired
       const currentUser = await getCurrentUser();
+      userCache = currentUser;
+      lastCheck = now;
       setUser(currentUser);
+      
       if (currentUser && !isInitialized) {
         console.log('Initializing metrics scheduler after authentication...');
         initializeMetricsScheduler();
@@ -42,9 +63,10 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
         setLastCollectionDate(new Date().toISOString().split('T')[0]);
       }
     }
+    
     checkAndInit();
-    // Optionally, set up an interval to re-check authentication every few seconds
-    const interval = setInterval(checkAndInit, 3000);
+    // Reduced frequency and with caching - check every 30 seconds instead of 3
+    const interval = setInterval(checkAndInit, 30000);
     return () => clearInterval(interval);
   }, [isInitialized]);
   

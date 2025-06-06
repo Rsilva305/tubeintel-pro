@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthState } from '@/types';
-import { authApi } from '@/services/api';
+import { secureAuth } from '@/lib/secure-auth';
 
 interface AuthContextType extends AuthState {
   login: (username: string, password: string) => Promise<void>;
@@ -21,9 +21,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const user = await authApi.getCurrentUser();
+        const user = await secureAuth.getCurrentUser();
         setAuthState({
-          user,
+          user: user as any, // Type compatibility - SecureUser should match User
           isAuthenticated: !!user,
           isLoading: false,
         });
@@ -43,9 +43,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthState(prev => ({ ...prev, isLoading: true }));
     
     try {
-      const user = await authApi.login(username, password);
+      const result = await secureAuth.signIn(username, password);
+      if (result.error) {
+        throw new Error(result.error);
+      }
       setAuthState({
-        user,
+        user: result.user as any, // Type compatibility - SecureUser should match User
         isAuthenticated: true,
         isLoading: false,
       });
@@ -63,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthState(prev => ({ ...prev, isLoading: true }));
     
     try {
-      await authApi.logout();
+      await secureAuth.signOut();
       setAuthState({
         user: null,
         isAuthenticated: false,
