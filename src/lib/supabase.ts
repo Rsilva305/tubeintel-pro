@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { secureStorage } from './secure-storage';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './env';
 
 // Create a single supabase client for the entire app
@@ -192,18 +193,26 @@ export const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     
-    // Clear all user-specific localStorage items
-    if (currentUserId) {
-      localStorage.removeItem(`user_${currentUserId}`);
-      localStorage.removeItem(`user_${currentUserId}_youtubeChannelId`);
-      localStorage.removeItem(`profile_${currentUserId}`);
-      localStorage.removeItem(`profile_${currentUserId}_time`);
+    // Clear any remaining legacy localStorage items
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (
+        key.startsWith('user_') || 
+        key.startsWith('profile_') || 
+        key === 'currentUserId' || 
+        key === 'youtubeChannelId' || 
+        key === 'user'
+      )) {
+        keysToRemove.push(key);
+      }
     }
     
-    // Clear general localStorage items
-    localStorage.removeItem('currentUserId');
-    localStorage.removeItem('youtubeChannelId'); // Remove legacy item too
-    localStorage.removeItem('user'); // Remove legacy item too
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    // Clear secure preferences related to user session
+    secureStorage.setPreference('hasYouTubeChannel', false);
+    secureStorage.clearAllPreferences();
     
     // Clear user cache
     clearUserCache();
@@ -232,23 +241,12 @@ export const getCurrentUser = async (skipCache = false) => {
     
     // If we have a Supabase authenticated user, use that
     if (supabaseUser) {
-      // Check if we have cached profile data in localStorage first
-      const cachedProfile = localStorage.getItem(`profile_${supabaseUser.id}`);
-      const cachedProfileTime = localStorage.getItem(`profile_${supabaseUser.id}_time`);
-      
       let hasCompletedOnboarding = false;
       
-      // Use cached profile if available and less than 5 minutes old
-      if (cachedProfile && cachedProfileTime && 
-          (Date.now() - parseInt(cachedProfileTime)) < USER_CACHE_DURATION) {
-        const profileData = JSON.parse(cachedProfile);
-        if (profileData.youtube_channel_id) {
-          hasCompletedOnboarding = true;
-          localStorage.setItem(`user_${supabaseUser.id}_youtubeChannelId`, String(profileData.youtube_channel_id));
-        }
-        if (profileData.has_completed_onboarding) {
-          hasCompletedOnboarding = true;
-        }
+      // Check if we have a safe preference cached
+      const hasYouTubeChannel = secureStorage.getPreference('hasYouTubeChannel');
+      if (hasYouTubeChannel) {
+        hasCompletedOnboarding = true;
       } else {
         // Only fetch from database if cache is expired
         try {
@@ -260,13 +258,15 @@ export const getCurrentUser = async (skipCache = false) => {
             .single();
             
           if (!profileError && profileData) {
-            // Cache the profile data
-            localStorage.setItem(`profile_${supabaseUser.id}`, JSON.stringify(profileData));
-            localStorage.setItem(`profile_${supabaseUser.id}_time`, Date.now().toString());
+            // DON'T cache profile data in localStorage anymore - security risk
+            // Just use the data directly without storing sensitive information
             
             if (profileData.youtube_channel_id) {
               hasCompletedOnboarding = true;
-              localStorage.setItem(`user_${supabaseUser.id}_youtubeChannelId`, String(profileData.youtube_channel_id));
+              // Store only a safe boolean flag, not the actual channel ID
+              if (typeof window !== 'undefined') {
+                secureStorage?.setPreference('hasYouTubeChannel', true);
+              }
             }
             
             if (profileData.has_completed_onboarding) {
@@ -287,9 +287,9 @@ export const getCurrentUser = async (skipCache = false) => {
         hasCompletedOnboarding: hasCompletedOnboarding
       };
       
-      // Store in localStorage for easier access - with user ID
-      localStorage.setItem('currentUserId', supabaseUser.id);
-      localStorage.setItem(`user_${supabaseUser.id}`, JSON.stringify(userData));
+      // Don't store sensitive user data in localStorage anymore
+      // Just keep the safe session preference
+      secureStorage.setPreference('lastLoginTime', Date.now());
       
       // Update cache
       userCache = userData;
@@ -298,18 +298,7 @@ export const getCurrentUser = async (skipCache = false) => {
       return userData;
     }
     
-    // If no Supabase auth, check localStorage as fallback
-    const currentUserId = localStorage.getItem('currentUserId');
-    if (currentUserId) {
-      const storedUser = localStorage.getItem(`user_${currentUserId}`);
-      if (storedUser) {
-        const userData = JSON.parse(storedUser);
-        // Update cache
-        userCache = userData;
-        userCacheTimestamp = Date.now();
-        return userData;
-      }
-    }
+    // No Supabase auth and no cached user - user is not authenticated
     
     // No user found, clear cache
     userCache = null;

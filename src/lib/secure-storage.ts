@@ -21,6 +21,7 @@ interface SafeLocalStorageData {
   featureFlagsCache?: Record<string, boolean>;
   lastLoginTime?: number;
   securityMigrationCompleted?: boolean;
+  hasYouTubeChannel?: boolean;
 }
 
 interface SessionData {
