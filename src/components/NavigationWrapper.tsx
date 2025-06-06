@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useAuth } from '@/contexts/AuthContext';
 import Sidebar from './Sidebar';
 import TopNav from './TopNav';
 
@@ -11,40 +12,13 @@ interface NavigationWrapperProps {
 
 export default function NavigationWrapper({ children }: NavigationWrapperProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const [username, setUsername] = useState('User');
   const { theme } = useTheme();
+  const { user, isLoading } = useAuth();
   
-  // Get username from localStorage if available
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      // Get the current user ID first
-      const currentUserId = localStorage.getItem('currentUserId');
-      
-      if (currentUserId) {
-        // Use the user-specific storage key
-        const storedUser = localStorage.getItem(`user_${currentUserId}`);
-        if (storedUser) {
-          try {
-            const userData = JSON.parse(storedUser);
-            setUsername(userData.username || userData.email?.split('@')[0] || 'User');
-          } catch (error) {
-            console.error('Error parsing user from localStorage:', error);
-          }
-        }
-      } else {
-        // For backward compatibility, try the old key
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          try {
-            const userData = JSON.parse(storedUser);
-            setUsername(userData.username || userData.email?.split('@')[0] || 'User');
-          } catch (error) {
-            console.error('Error parsing user from localStorage:', error);
-          }
-        }
-      }
-    }
-  }, []);
+  // Get username from authenticated user (secure)
+  const username = isLoading 
+    ? 'Loading...' 
+    : user?.username || user?.email?.split('@')[0] || 'User';
   
   const toggleSidebar = () => {
     setCollapsed(!collapsed);

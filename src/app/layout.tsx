@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/contexts/Providers';
+import '@/utils/manual-security-cleanup'; // Import for immediate cleanup access
 
 const inter = Inter({ subsets: ['latin'] });
 

@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaYoutube, FaCopy, FaLink, FaQuestionCircle, FaSearch } from 'react-icons/fa';
-import { supabase, isAuthenticated, getCurrentUser } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ChannelPreview {
   id: string;
@@ -20,55 +21,51 @@ export default function OnboardingPage() {
   const [channelSearchResults, setChannelSearchResults] = useState<ChannelPreview[]>([]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [user, setUser] = useState<any>(null);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [channelPreview, setChannelPreview] = useState<ChannelPreview | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  
+  // Use AuthContext for secure authentication
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
-    const checkAuth = async () => {
+    // Wait for auth loading to complete
+    if (authLoading) return;
+    
+    if (!isAuthenticated || !user) {
+      // Not authenticated, redirect to login
+      console.log('Not authenticated, redirecting to login from onboarding');
+      router.push('/login');
+      return;
+    }
+    
+    // Check if user has already completed onboarding
+    const checkOnboardingStatus = async () => {
       try {
-        const authenticated = await isAuthenticated();
-        if (!authenticated) {
-          // Not authenticated, redirect to login
-          router.push('/login');
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('youtube_channel_id')
+          .eq('id', user.id)
+          .single();
+
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
           return;
         }
-        
-        // Get current user
-        const currentUser = await getCurrentUser();
-        if (currentUser) {
-          setUser(currentUser);
-          
-          // Check if user has already completed onboarding in Supabase
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('youtube_channel_id')
-            .eq('id', currentUser.id)
-            .single();
 
-          if (profileError) {
-            console.error('Error fetching profile:', profileError);
-            return;
-          }
-
-          if (profile?.youtube_channel_id) {
-            // User has already completed onboarding, redirect to dashboard
-            router.push('/dashboard');
-          }
-        } else {
-          // No user found, redirect to login
-          router.push('/login');
+        if (profile?.youtube_channel_id) {
+          // User has already completed onboarding, redirect to dashboard
+          console.log('User already completed onboarding, redirecting to dashboard');
+          router.push('/dashboard');
         }
       } catch (error) {
-        console.error('Error checking authentication:', error);
-        router.push('/login');
+        console.error('Error checking onboarding status:', error);
       }
     };
     
-    checkAuth();
-  }, [router]);
+    checkOnboardingStatus();
+  }, [router, isAuthenticated, user, authLoading]);
 
   // Add a new search function for channels
   const searchChannels = async (query: string) => {
@@ -168,6 +165,12 @@ export default function OnboardingPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user) {
+      setError('Authentication required. Please log in again.');
+      router.push('/login');
+      return;
+    }
     
     if (!channelId) {
       setError('Please enter your YouTube channel ID');
