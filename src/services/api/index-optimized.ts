@@ -324,7 +324,8 @@ const profileApi = {
     if (!user) return null;
     
     try {
-      return await supabaseService.getUserProfile(user.id);
+      const profile = await supabaseService.getUserProfile(user.id);
+      return profile as unknown as Profile;
     } catch (error) {
       console.error('Error fetching user profile:', error);
       return null;
