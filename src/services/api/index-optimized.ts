@@ -29,12 +29,12 @@ const usersApi = {
         const user = await getCurrentUser();
         if (!user) return null;
         
-        // Convert Supabase user to our User type
+        // Convert our user object to the User type
         return {
-          id: user.id,
-          email: user.email || '',
-          name: user.user_metadata?.name || user.email || '',
-          avatar: user.user_metadata?.avatar_url || ''
+          id: user.id as string,
+          username: user.username as string || (user.email as string)?.split('@')[0] || 'user',
+          email: (user.email as string) || '',
+          createdAt: new Date(user.createdAt as string)
         };
       },
       'profile'
@@ -52,10 +52,10 @@ const usersApi = {
         if (!profile) return null;
         
         return {
-          id: profile.id,
-          email: profile.email || '',
-          name: profile.name || profile.email || '',
-          avatar: profile.avatar_url || ''
+          id: profile.id as string,
+          username: (profile.username as string) || (profile.email as string)?.split('@')[0] || 'user',
+          email: (profile.email as string) || '',
+          createdAt: new Date(profile.created_at as string)
         };
       },
       'profile'
@@ -67,7 +67,7 @@ const usersApi = {
 const channelsApi = {
   getMyChannel: async (): Promise<Channel> => {
     // Use the optimized channel function that caches intelligently
-    return getOptimizedChannel();
+    return getChannelWithCache();
   },
   
   getChannelById: async (id: string): Promise<Channel | null> => {
@@ -350,7 +350,7 @@ const profileApi = {
     // Invalidate profile cache
     apiCache.invalidate(`profile:${user.id}`);
     
-    return data;
+    return data as unknown as Profile;
   }
 };
 
