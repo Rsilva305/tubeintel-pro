@@ -177,6 +177,12 @@ export const signIn = async (email: string, password: string): Promise<SignInRes
   }
 };
 
+// Function to clear user cache
+export const clearUserCache = () => {
+  userCache = null;
+  userCacheTimestamp = 0;
+};
+
 export const signOut = async () => {
   try {
     // Get current user ID before signing out
@@ -190,12 +196,17 @@ export const signOut = async () => {
     if (currentUserId) {
       localStorage.removeItem(`user_${currentUserId}`);
       localStorage.removeItem(`user_${currentUserId}_youtubeChannelId`);
+      localStorage.removeItem(`profile_${currentUserId}`);
+      localStorage.removeItem(`profile_${currentUserId}_time`);
     }
     
     // Clear general localStorage items
     localStorage.removeItem('currentUserId');
     localStorage.removeItem('youtubeChannelId'); // Remove legacy item too
     localStorage.removeItem('user'); // Remove legacy item too
+    
+    // Clear user cache
+    clearUserCache();
     
     return true;
   } catch (error) {
@@ -204,37 +215,67 @@ export const signOut = async () => {
   }
 };
 
-export const getCurrentUser = async () => {
+// Cache for getCurrentUser to prevent excessive database queries
+let userCache: any = null;
+let userCacheTimestamp = 0;
+const USER_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
+
+export const getCurrentUser = async (skipCache = false) => {
   try {
+    // Use cache if available and not expired (unless skipCache is true)
+    if (!skipCache && userCache && (Date.now() - userCacheTimestamp) < USER_CACHE_DURATION) {
+      return userCache;
+    }
+
     // First check with Supabase directly if the user is authenticated
     const { data: { user: supabaseUser } } = await supabase.auth.getUser();
     
     // If we have a Supabase authenticated user, use that
     if (supabaseUser) {
-      // Get profile data if needed
+      // Check if we have cached profile data in localStorage first
+      const cachedProfile = localStorage.getItem(`profile_${supabaseUser.id}`);
+      const cachedProfileTime = localStorage.getItem(`profile_${supabaseUser.id}_time`);
+      
       let hasCompletedOnboarding = false;
       
-      try {
-        // Check if there's a profile with a YouTube channel ID
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('youtube_channel_id, has_completed_onboarding')
-          .eq('id', supabaseUser.id)
-          .single();
-          
-        if (!profileError && profileData) {
-          if (profileData.youtube_channel_id) {
-            hasCompletedOnboarding = true;
-            // Store the channel ID in localStorage with user-specific key to prevent leaking between accounts
-            localStorage.setItem(`user_${supabaseUser.id}_youtubeChannelId`, String(profileData.youtube_channel_id));
-          }
-          
-          if (profileData.has_completed_onboarding) {
-            hasCompletedOnboarding = true;
-          }
+      // Use cached profile if available and less than 5 minutes old
+      if (cachedProfile && cachedProfileTime && 
+          (Date.now() - parseInt(cachedProfileTime)) < USER_CACHE_DURATION) {
+        const profileData = JSON.parse(cachedProfile);
+        if (profileData.youtube_channel_id) {
+          hasCompletedOnboarding = true;
+          localStorage.setItem(`user_${supabaseUser.id}_youtubeChannelId`, String(profileData.youtube_channel_id));
         }
-      } catch (profileError) {
-        console.error('Error checking profile:', profileError);
+        if (profileData.has_completed_onboarding) {
+          hasCompletedOnboarding = true;
+        }
+      } else {
+        // Only fetch from database if cache is expired
+        try {
+          // Check if there's a profile with a YouTube channel ID
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('youtube_channel_id, has_completed_onboarding')
+            .eq('id', supabaseUser.id)
+            .single();
+            
+          if (!profileError && profileData) {
+            // Cache the profile data
+            localStorage.setItem(`profile_${supabaseUser.id}`, JSON.stringify(profileData));
+            localStorage.setItem(`profile_${supabaseUser.id}_time`, Date.now().toString());
+            
+            if (profileData.youtube_channel_id) {
+              hasCompletedOnboarding = true;
+              localStorage.setItem(`user_${supabaseUser.id}_youtubeChannelId`, String(profileData.youtube_channel_id));
+            }
+            
+            if (profileData.has_completed_onboarding) {
+              hasCompletedOnboarding = true;
+            }
+          }
+        } catch (profileError) {
+          console.error('Error checking profile:', profileError);
+        }
       }
       
       // Format user data
@@ -250,7 +291,10 @@ export const getCurrentUser = async () => {
       localStorage.setItem('currentUserId', supabaseUser.id);
       localStorage.setItem(`user_${supabaseUser.id}`, JSON.stringify(userData));
       
-      console.log("Using authenticated Supabase user:", supabaseUser.id);
+      // Update cache
+      userCache = userData;
+      userCacheTimestamp = Date.now();
+      
       return userData;
     }
     
@@ -259,10 +303,17 @@ export const getCurrentUser = async () => {
     if (currentUserId) {
       const storedUser = localStorage.getItem(`user_${currentUserId}`);
       if (storedUser) {
-        return JSON.parse(storedUser);
+        const userData = JSON.parse(storedUser);
+        // Update cache
+        userCache = userData;
+        userCacheTimestamp = Date.now();
+        return userData;
       }
     }
     
+    // No user found, clear cache
+    userCache = null;
+    userCacheTimestamp = 0;
     return null;
   } catch (error) {
     console.error('Error getting current user:', error);
