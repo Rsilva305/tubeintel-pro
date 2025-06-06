@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { secureStorage, runSecurityAudit, securityRecommendations } from '@/lib/secure-storage';
+import { checkSecurityViolations, cleanAuthTokens } from '@/utils/security-cleanup';
 
 export default function SecurityAuditPage() {
   const [auditResults, setAuditResults] = useState<{
@@ -55,10 +56,20 @@ export default function SecurityAuditPage() {
   const handleCleanup = () => {
     if (confirm('This will remove all sensitive data from localStorage. Continue?')) {
       secureStorage.cleanupSensitiveData();
+      cleanAuthTokens(); // Enhanced cleanup for auth tokens
       // Refresh the audit
       window.location.reload();
     }
   };
+
+  const handleQuickCleanup = () => {
+    cleanAuthTokens();
+    // Refresh the audit
+    window.location.reload();
+  };
+
+  // Check for real-time violations
+  const currentViolations = checkSecurityViolations();
 
   const isRiskyKey = (key: string): boolean => {
     const riskyPatterns = [
@@ -81,6 +92,43 @@ export default function SecurityAuditPage() {
           <p className="text-gray-600">
             Review browser storage security for your SaaS application
           </p>
+          
+          {/* Real-time Security Status */}
+          <div className={`mt-4 p-4 rounded-lg ${
+            currentViolations.length > 0 
+              ? 'bg-red-100 border border-red-300' 
+              : 'bg-green-100 border border-green-300'
+          }`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                {currentViolations.length > 0 ? (
+                  <>
+                    <span className="text-red-600 font-semibold">⚠️ Real-time Security Alert</span>
+                    <span className="ml-2 bg-red-200 text-red-800 px-2 py-1 rounded text-sm">
+                      {currentViolations.length} violations
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-green-600 font-semibold">✅ Security Status: Clear</span>
+                )}
+              </div>
+              
+              {currentViolations.length > 0 && (
+                <button
+                  onClick={handleQuickCleanup}
+                  className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
+                >
+                  Quick Clean
+                </button>
+              )}
+            </div>
+            
+            {currentViolations.length > 0 && (
+              <div className="mt-2 text-sm text-red-700">
+                Detected tokens: {currentViolations.join(', ')}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Audit Results */}
