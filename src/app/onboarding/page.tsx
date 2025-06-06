@@ -166,6 +166,12 @@ export default function OnboardingPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!user) {
+      setError('Authentication required. Please log in again.');
+      router.push('/login');
+      return;
+    }
+    
     if (!channelId) {
       setError('Please enter your YouTube channel ID');
       return;
