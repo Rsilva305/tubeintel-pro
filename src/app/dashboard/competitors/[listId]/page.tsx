@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { FaArrowLeft, FaPlus, FaTimes, FaYoutube, FaEllipsisV, FaChartBar, FaDownload, FaFilter, FaChevronDown, FaStar, FaRocket, FaTrophy, FaCheck, FaCalendarAlt, FaEye, FaEyeSlash, FaThLarge, FaSearch, FaExternalLinkAlt, FaPlay, FaBookmark, FaClipboard, FaChartLine, FaListUl, FaTh, FaInfoCircle, FaRegClock, FaLink } from 'react-icons/fa';
+import { FaArrowLeft, FaPlus, FaTimes, FaYoutube, FaEllipsisV, FaChartBar, FaDownload, FaFilter, FaChevronDown, FaStar, FaRocket, FaTrophy, FaCheck, FaCalendarAlt, FaEye, FaEyeSlash, FaThLarge, FaSearch, FaExternalLinkAlt, FaPlay, FaBookmark, FaClipboard, FaChartLine, FaListUl, FaTh, FaInfoCircle, FaRegClock, FaLink, FaCrown, FaLock } from 'react-icons/fa';
 import Link from 'next/link';
 import { Competitor, Video } from '@/types';
 import { videosApi } from '@/services/api';
@@ -10,6 +10,7 @@ import { competitorListsApi } from '@/services/api/competitorLists';
 import { secureYoutubeService } from '@/services/api/youtube-secure';
 import SearchFilters from '@/components/SearchFilters';
 import { calculateOutlierScore, calculatePerformanceScore } from '@/services/metrics/outliers';
+import { useSubscription } from '@/hooks/useSubscription';
 
 // Format number to compact form
 const formatNumber = (num: number): string => {
@@ -31,6 +32,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   const router = useRouter();
   const searchParams = useSearchParams();
   const listName = searchParams.get('name') || 'Competitor List';
+  const { plan, isSubscribed, isLoading: subscriptionLoading } = useSubscription();
   
   // Basic states
   const [competitors, setCompetitors] = useState<Competitor[]>([]);
@@ -42,6 +44,30 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   const [isSearching, setIsSearching] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  
+  // Free tier limits
+  const FREE_TIER_CHANNEL_LIMIT = 5;
+
+  // Check if user can add more channels
+  const canAddChannel = () => {
+    if (isSubscribed || plan !== 'free') return true;
+    return competitors.length < FREE_TIER_CHANNEL_LIMIT;
+  };
+
+  // Show upgrade modal for channel limit
+  const showChannelUpgradePrompt = () => {
+    setShowUpgradeModal(true);
+  };
+
+  // Modified openModal function to check channel limits
+  const openAddChannelModal = () => {
+    if (!canAddChannel()) {
+      showChannelUpgradePrompt();
+      return;
+    }
+    setIsModalOpen(true);
+  };
   
   // Chart and filter states
   const [chartMetric, setChartMetric] = useState('Subscribers');
@@ -1024,15 +1050,39 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
+            {/* Free tier channel limit indicator */}
+            {plan === 'free' && !subscriptionLoading && (
+              <div className="bg-amber-500/20 text-amber-300 px-2 py-1 rounded text-xs border border-amber-500/30">
+                {competitors.length}/{FREE_TIER_CHANNEL_LIMIT} channels
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2">
-            <button 
-              className="flex items-center gap-1 bg-white/10 dark:bg-indigo-600/80 backdrop-blur-sm hover:bg-white/20 dark:hover:bg-indigo-700 text-white px-3 py-1.5 rounded-full text-sm transition-colors"
-              onClick={() => setIsModalOpen(true)}
-            >
-              <FaPlus size={14} />
-              <span className="text-xs sm:text-sm">Add channel</span>
-            </button>
+            {canAddChannel() ? (
+              <button 
+                className="flex items-center gap-1 bg-white/10 dark:bg-indigo-600/80 backdrop-blur-sm hover:bg-white/20 dark:hover:bg-indigo-700 text-white px-3 py-1.5 rounded-full text-sm transition-colors"
+                onClick={openAddChannelModal}
+              >
+                <FaPlus size={14} />
+                <span className="text-xs sm:text-sm">Add channel</span>
+              </button>
+            ) : (
+              <div className="flex flex-col items-end gap-1">
+                <button 
+                  className="flex items-center gap-1 bg-gray-500/20 text-gray-400 px-3 py-1.5 rounded-full text-sm cursor-not-allowed"
+                  disabled
+                >
+                  <FaLock size={14} />
+                  <span className="text-xs sm:text-sm">Channel limit reached</span>
+                </button>
+                <button 
+                  onClick={showChannelUpgradePrompt}
+                  className="text-xs text-blue-400 hover:text-blue-300 underline"
+                >
+                  Upgrade to Pro
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1115,7 +1165,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
             <div className="text-center py-8">
               <p className="text-white/70">No channels tracked yet.</p>
               <button 
-                onClick={() => setIsModalOpen(true)}
+                onClick={openAddChannelModal}
                 className="mt-4 bg-white/10 dark:bg-indigo-600/80 backdrop-blur-sm hover:bg-white/20 dark:hover:bg-indigo-700 text-white px-4 py-2 rounded-full text-sm transition-colors"
               >
                 Add your first channel
@@ -1663,6 +1713,42 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
             <FaChartLine size={14} />
             Analyze performance
           </button>
+        </div>
+      )}
+
+      {/* Upgrade Modal */}
+      {showUpgradeModal && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          onClick={(e) => e.target === e.currentTarget && setShowUpgradeModal(false)}
+        >
+          <div className="bg-[#00264d]/90 backdrop-blur-md border border-blue-400/20 rounded-xl max-w-md w-full p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-amber-500/20 mb-4">
+                <FaCrown className="h-6 w-6 text-amber-400" />
+              </div>
+              <h3 className="text-lg font-medium text-white mb-2">
+                Channel Limit Reached
+              </h3>
+              <p className="text-sm text-gray-300 mb-6">
+                You have reached your channel limit on the Free plan. Upgrade to Pro to track more channels.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowUpgradeModal(false)}
+                  className="flex-1 px-4 py-2 text-sm font-medium text-white/80 hover:bg-[#02386e]/50 rounded-full border border-white/20"
+                >
+                  Cancel
+                </button>
+                <Link 
+                  href="/subscription"
+                  className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600/80 hover:bg-blue-600 rounded-full text-center"
+                >
+                  Upgrade to Pro
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
