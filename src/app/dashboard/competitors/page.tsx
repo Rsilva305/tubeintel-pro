@@ -3,11 +3,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { competitorsApi, competitorListsApi } from '@/services/api';
 import { Competitor } from '@/types';
-import { FaPlus, FaTimes, FaEllipsisV, FaThumbtack, FaPencilAlt, FaCopy, FaTrash, FaYoutube, FaChartLine, FaUsers, FaGlobe, FaGamepad, FaLaptop, FaFilm, FaMusic, FaRegStar } from 'react-icons/fa';
+import { FaPlus, FaTimes, FaEllipsisV, FaThumbtack, FaPencilAlt, FaCopy, FaTrash, FaYoutube, FaChartLine, FaUsers, FaGlobe, FaGamepad, FaLaptop, FaFilm, FaMusic, FaRegStar, FaCrown, FaLock } from 'react-icons/fa';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import CompetitorsDebug from './debug';
+import { useSubscription } from '@/hooks/useSubscription';
 
 // Interface for competitor lists
 interface CompetitorList {
@@ -19,6 +20,7 @@ interface CompetitorList {
 
 export default function CompetitorsPage() {
   const router = useRouter();
+  const { plan, isSubscribed, isLoading: subscriptionLoading } = useSubscription();
   const [competitorLists, setCompetitorLists] = useState<CompetitorList[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -28,7 +30,25 @@ export default function CompetitorsPage() {
   const [error, setError] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [listCategory, setListCategory] = useState('default');
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeReason, setUpgradeReason] = useState<'folders' | 'channels'>('folders');
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Free tier limits
+  const FREE_TIER_FOLDER_LIMIT = 1;
+  const FREE_TIER_CHANNEL_LIMIT = 5;
+
+  // Check if user can create more folders
+  const canCreateFolder = () => {
+    if (isSubscribed || plan !== 'free') return true;
+    return competitorLists.length < FREE_TIER_FOLDER_LIMIT;
+  };
+
+  // Show upgrade modal for folder limit
+  const showFolderUpgradePrompt = () => {
+    setUpgradeReason('folders');
+    setShowUpgradeModal(true);
+  };
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -200,6 +220,12 @@ export default function CompetitorsPage() {
   }, []);
 
   const openModal = (listId?: string) => {
+    // Check if creating a new folder and user is on free tier
+    if (listId === undefined && !canCreateFolder()) {
+      showFolderUpgradePrompt();
+      return;
+    }
+
     if (listId !== undefined) {
       setEditingListId(listId);
       const list = competitorLists.find(l => l.id === listId);
@@ -431,8 +457,18 @@ export default function CompetitorsPage() {
     <div className="w-full max-w-[1200px] mx-auto">
       <CompetitorsDebug />
       
-      <div className="mb-6">
+      <div className="mb-6 flex justify-between items-center">
         <h1 className="text-2xl font-bold dark:text-white">Tracked Competitors</h1>
+        
+        {/* Free tier status indicator */}
+        {plan === 'free' && !subscriptionLoading && (
+          <div className="flex items-center gap-2 text-sm">
+            <div className="bg-amber-500/20 text-amber-300 px-3 py-1 rounded-full border border-amber-500/30">
+              <FaCrown size={12} className="inline mr-1" />
+              Free Plan: {competitorLists.length}/{FREE_TIER_FOLDER_LIMIT} folders
+            </div>
+          </div>
+        )}
       </div>
       
       {competitorLists.length === 0 ? (
@@ -454,19 +490,41 @@ export default function CompetitorsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Create new competitor list button - Always first */}
           <div 
-            className="border border-dashed border-gray-300 dark:border-white/20 rounded-xl p-5 cursor-pointer hover:bg-white/10 backdrop-blur-sm transition-colors"
+            className={`border border-dashed rounded-xl p-5 transition-colors ${
+              canCreateFolder() 
+                ? 'border-gray-300 dark:border-white/20 cursor-pointer hover:bg-white/10 backdrop-blur-sm' 
+                : 'border-gray-500/50 dark:border-gray-600/50 cursor-not-allowed bg-gray-500/10'
+            }`}
             onClick={(e) => {
               e.stopPropagation();
               openModal();
             }}
           >
             <div className="flex justify-between items-start">
-              <div className="flex items-center gap-2 text-indigo-400">
-                <FaPlus size={18} />
-                <span className="font-medium">Create new competitor list</span>
+              <div className={`flex items-center gap-2 ${canCreateFolder() ? 'text-indigo-400' : 'text-gray-500'}`}>
+                {canCreateFolder() ? <FaPlus size={18} /> : <FaLock size={18} />}
+                <span className="font-medium">
+                  {canCreateFolder() ? 'Create new competitor list' : 'Folder limit reached'}
+                </span>
               </div>
             </div>
-            <p className="text-gray-300 text-sm mt-1">Add a new collection</p>
+            <p className={`text-sm mt-1 ${canCreateFolder() ? 'text-gray-300' : 'text-gray-500'}`}>
+              {canCreateFolder() 
+                ? 'Add a new collection' 
+                : `Free plan allows ${FREE_TIER_FOLDER_LIMIT} folder${FREE_TIER_FOLDER_LIMIT === 1 ? '' : 's'}`
+              }
+            </p>
+            {!canCreateFolder() && (
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  showFolderUpgradePrompt();
+                }}
+                className="mt-2 text-xs text-blue-400 hover:text-blue-300 underline"
+              >
+                Upgrade to Pro
+              </button>
+            )}
           </div>
           
           {/* Competitor lists */}
@@ -478,6 +536,11 @@ export default function CompetitorsPage() {
                     <div className="flex items-center gap-2">
                       {getListIcon(list)}
                       <h3 className="text-white font-medium text-lg">{list.name}</h3>
+                      {plan === 'free' && (
+                        <div className="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded border border-amber-500/30">
+                          {list.competitors.length}/{FREE_TIER_CHANNEL_LIMIT}
+                        </div>
+                      )}
                     </div>
                     <button 
                       onClick={(e) => toggleMenu(list.id, e)}
@@ -550,6 +613,45 @@ export default function CompetitorsPage() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Upgrade Modal */}
+      {showUpgradeModal && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          onClick={(e) => e.target === e.currentTarget && setShowUpgradeModal(false)}
+        >
+          <div className="bg-[#00264d]/90 backdrop-blur-md border border-blue-400/20 rounded-xl max-w-md w-full p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-amber-500/20 mb-4">
+                <FaCrown className="h-6 w-6 text-amber-400" />
+              </div>
+              <h3 className="text-lg font-medium text-white mb-2">
+                {upgradeReason === 'folders' ? 'Folder Limit Reached' : 'Channel Limit Reached'}
+              </h3>
+              <p className="text-sm text-gray-300 mb-6">
+                {upgradeReason === 'folders' 
+                  ? `You have reached your folder limit on the Free plan. Upgrade to Pro to create more folders.`
+                  : `You have reached your channel limit on the Free plan. Upgrade to Pro to track more channels.`
+                }
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowUpgradeModal(false)}
+                  className="flex-1 px-4 py-2 text-sm font-medium text-white/80 hover:bg-[#02386e]/50 rounded-full border border-white/20"
+                >
+                  Cancel
+                </button>
+                <Link 
+                  href="/subscription"
+                  className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600/80 hover:bg-blue-600 rounded-full text-center"
+                >
+                  Upgrade to Pro
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
