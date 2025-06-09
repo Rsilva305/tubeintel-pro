@@ -127,7 +127,13 @@ export default function TopNav({ username = 'User' }: TopNavProps): JSX.Element 
 
   const renderDropdown = () => (
     <>
-      <a href="#" onClick={handleComingSoonClick('Discord')} className="block px-4 py-2 hover:bg-white/10 text-white">
+      <a 
+        href="https://discord.gg/asghh6CJra" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="block px-4 py-2 hover:bg-white/10 text-white"
+        onClick={() => setDropdownOpen(false)}
+      >
         Discord
       </a>
       <button 

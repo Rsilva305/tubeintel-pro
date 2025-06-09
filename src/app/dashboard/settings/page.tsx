@@ -5,7 +5,6 @@ import { channelsApi } from '@/services/api';
 import { Channel, Profile } from '@/types';
 import { supabase } from '@/lib/supabase';
 import { getCurrentUser } from '@/lib/supabase';
-import ProfileDebugger from '@/components/ProfileDebugger';
 
 // Define the search result type
 interface ChannelSearchResult {
@@ -444,7 +443,7 @@ export default function SettingsPage() {
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
         <h2 className="text-xl font-semibold mb-4 dark:text-white">Help & Resources</h2>
         <div className="space-y-3 dark:text-gray-300">
-          <p>To use TubeIntel Pro effectively:</p>
+          <p>To use ClikStats effectively:</p>
           <ol className="list-decimal pl-5 space-y-2">
             <li>Connect your YouTube channel using your channel ID</li>
             <li>Add competitor channels on the Competitors page</li>
@@ -462,11 +461,6 @@ export default function SettingsPage() {
             </a>
           </p>
         </div>
-      </div>
-      
-      {/* Add ProfileDebugger component for troubleshooting */}
-      <div className="mt-6 text-center">
-        <ProfileDebugger />
       </div>
     </div>
   );

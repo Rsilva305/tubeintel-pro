@@ -95,7 +95,7 @@ function LoginContent() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-2">
             <FaYoutube className="text-red-500 text-4xl mr-2" />
-            <h1 className="text-3xl font-bold dark:text-white">TubeIntel Pro</h1>
+            <h1 className="text-3xl font-bold dark:text-white">ClikStats</h1>
           </div>
           <p className="text-gray-600 dark:text-gray-400">Your YouTube Analytics Dashboard</p>
         </div>

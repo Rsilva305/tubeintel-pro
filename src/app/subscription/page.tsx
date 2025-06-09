@@ -343,7 +343,7 @@ export default function SubscriptionPage() {
               </div>
               <p className="mt-1 text-gray-600 dark:text-gray-400">Advanced analytics and tools</p>
               <div className="mt-4">
-                <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">$9.99</span>
+                <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">$29.99</span>
                 <span className="text-gray-600 dark:text-gray-400 ml-1">/month</span>
               </div>
             </div>
@@ -378,6 +378,13 @@ export default function SubscriptionPage() {
           
           {/* Pro Plus Plan */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden transform transition-transform hover:shadow-lg relative">
+            {/* Coming Soon Watermark */}
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-xl">
+              <div className="bg-purple-600 text-white px-6 py-3 rounded-full font-bold text-lg shadow-lg transform -rotate-12">
+                COMING SOON
+              </div>
+            </div>
+            
             {/* Highlight if current plan */}
             {currentPlan === 'pro-plus' && (
               <div className="absolute top-0 inset-x-0 h-1 bg-purple-500"></div>
@@ -396,7 +403,7 @@ export default function SubscriptionPage() {
               </div>
               <p className="mt-1 text-gray-600 dark:text-gray-400">Premium AI-powered insights</p>
               <div className="mt-4">
-                <span className="text-4xl font-bold text-purple-600 dark:text-purple-400">$19.99</span>
+                <span className="text-4xl font-bold text-purple-600 dark:text-purple-400">$39.99</span>
                 <span className="text-gray-600 dark:text-gray-400 ml-1">/month</span>
               </div>
             </div>
@@ -417,14 +424,10 @@ export default function SubscriptionPage() {
               
               <button 
                 onClick={() => handleSubscribe('pro-plus')}
-                disabled={isLoading || currentPlan === 'pro-plus'}
-                className={`mt-6 w-full py-2 px-4 rounded-full font-medium transition-colors ${
-                  currentPlan === 'pro-plus'
-                    ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 cursor-default'
-                    : 'bg-purple-600 hover:bg-purple-700 text-white'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                disabled={true}
+                className="mt-6 w-full py-2 px-4 rounded-full font-medium transition-colors bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
               >
-                {isLoading ? 'Processing...' : currentPlan === 'pro-plus' ? 'Current Plan' : 'Upgrade to Pro+'}
+                Coming Soon
               </button>
             </div>
           </div>
