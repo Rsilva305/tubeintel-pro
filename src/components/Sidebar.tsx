@@ -154,7 +154,7 @@ export default function Sidebar({ collapsed, toggleSidebar }: SidebarProps): JSX
             <div className="text-red-500">
               <FaYoutube className="h-7 w-7" />
             </div>
-            <span className={`font-bold text-xl ${textColor}`}>TubeIntel</span>
+            <span className={`font-bold text-xl ${textColor}`}>ClikStats</span>
             {subscriptionTier !== 'free' && (
               <span className={`${
                 subscriptionTier === 'pro-plus' 
@@ -233,7 +233,16 @@ export default function Sidebar({ collapsed, toggleSidebar }: SidebarProps): JSX
       
       {/* Pro Plus Features */}
       <SectionDivider label="PRO+ FEATURES" collapsed={collapsed} />
-      <div className="flex flex-col gap-1 px-2">
+      <div className="flex flex-col gap-1 px-2 relative">
+        {/* Coming Soon Overlay for Pro+ Features */}
+        {!collapsed && (
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-lg mx-1">
+            <div className="bg-purple-600 text-white px-3 py-1 rounded-full font-bold text-xs shadow-lg transform -rotate-12">
+              COMING SOON
+            </div>
+          </div>
+        )}
+        
         <SidebarItem 
           icon={<FaStar size={18} className="text-purple-400" />} 
           label="AI Recommendations" 
@@ -264,7 +273,7 @@ export default function Sidebar({ collapsed, toggleSidebar }: SidebarProps): JSX
       <div className="mt-auto px-4">
         {!collapsed && (
           <div className={`border-t ${borderColor} pt-4`}>
-            <p className={`${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'} text-xs`}>© 2024 TubeIntel Pro</p>
+            <p className={`${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'} text-xs`}>© 2024 ClikStats</p>
           </div>
         )}
       </div>
