@@ -63,7 +63,7 @@ export const PRODUCTS = {
   PRO: {
     name: 'Pro',
     id: 'prod_SK8lQHJNjndiEO', // Your Stripe product ID
-    priceId: 'price_1RPUTvC02Im4s7TPMUqG7ql6', // Your Stripe price ID
+    priceId: 'price_1RY4QjC02Im4s7TPr2nMPptU', // Your Stripe price ID
     features: [
       'Track unlimited competitors',
       'Advanced Trend Analysis',

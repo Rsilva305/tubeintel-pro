@@ -352,7 +352,7 @@ export default function DashboardPage() {
               )}
               <div>
                 <h1 className="text-3xl font-bold dark:text-white">
-                  Welcome to TubeIntel Pro{channel ? `, ${channel.name}` : ''}!
+                  Welcome to ClikStats{channel ? `, ${channel.name}` : ''}!
                 </h1>
                 <p className="text-gray-600 dark:text-gray-400 mt-2">Here's an overview of your channel performance</p>
               </div>
@@ -607,7 +607,7 @@ export default function DashboardPage() {
             </div>
             {sortedRecentVideos.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {sortedRecentVideos.map((video) => (
+                {sortedRecentVideos.slice(0, 20).map((video) => (
                   <VideoGridCard key={video.id} video={video} showVph allVideos={recentVideos} />
                 ))}
               </div>

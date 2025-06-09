@@ -7,7 +7,7 @@ import '@/utils/manual-security-cleanup'; // Import for immediate cleanup access
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'TubeIntel Pro',
+  title: 'ClikStats',
   description: 'Advanced YouTube Analytics Dashboard',
 };
 
