@@ -186,13 +186,13 @@ export async function POST(req: NextRequest) {
         let newPlanType: 'free' | 'pro' = 'pro'; // Default to pro for any paid subscription
         
         // Get the previous plan for upgrade detection
-        const { data: userData } = await supabase
+        const { data: userDetails } = await supabase
           .from('users')
           .select('subscription_tier')
-          .eq('id', userId)
+          .eq('id', userData.user_id)
           .single();
         
-        const previousPlan = userData?.subscription_tier || 'free';
+        const previousPlan = userDetails?.subscription_tier || 'free';
         
         // Check if this is an upgrade (free -> pro)
         const isUpgrade = previousPlan === 'free' && newPlanType === 'pro';
