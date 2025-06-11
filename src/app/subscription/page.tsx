@@ -349,17 +349,39 @@ export default function SubscriptionPage() {
             </div>
             
             <div className="p-6">
+              {/* Everything in Free tier plus header */}
+              <div className="mb-4">
+                <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-3">
+                  Everything in Free tier plus:
+                </p>
+              </div>
+              
+              {/* Pro-specific features only */}
               <ul className="space-y-3">
-                {features.map((feature, index) => (
-                  <li key={index} className="flex items-center gap-3">
-                    <div className="w-5 h-5 flex-shrink-0 flex items-center justify-center">
-                      {renderCheckmark(feature.included.pro)}
-                    </div>
-                    <span className={`text-sm ${!feature.included.pro ? 'text-gray-500 dark:text-gray-500' : 'dark:text-gray-300'}`}>
-                      {feature.name}
-                    </span>
-                  </li>
-                ))}
+                <li className="flex items-center gap-3">
+                  <div className="w-5 h-5 flex-shrink-0 flex items-center justify-center">
+                    <FaCheck className="text-green-500" />
+                  </div>
+                  <span className="text-sm dark:text-gray-300">
+                    Image Coder Tool
+                  </span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="w-5 h-5 flex-shrink-0 flex items-center justify-center">
+                    <FaCheck className="text-green-500" />
+                  </div>
+                  <span className="text-sm dark:text-gray-300">
+                    Advanced Trend Analysis
+                  </span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="w-5 h-5 flex-shrink-0 flex items-center justify-center">
+                    <FaCheck className="text-green-500" />
+                  </div>
+                  <span className="text-sm dark:text-gray-300">
+                    Track unlimited competitors
+                  </span>
+                </li>
               </ul>
               
               <button 
@@ -409,17 +431,39 @@ export default function SubscriptionPage() {
             </div>
             
             <div className="p-6">
+              {/* Everything in Pro tier plus header */}
+              <div className="mb-4">
+                <p className="text-sm font-medium text-purple-600 dark:text-purple-400 mb-3">
+                  Everything in Pro tier plus:
+                </p>
+              </div>
+              
+              {/* Pro+ specific features only */}
               <ul className="space-y-3">
-                {features.map((feature, index) => (
-                  <li key={index} className="flex items-center gap-3">
-                    <div className="w-5 h-5 flex-shrink-0 flex items-center justify-center">
-                      {renderCheckmark(feature.included.proPlus)}
-                    </div>
-                    <span className={`text-sm ${!feature.included.proPlus ? 'text-gray-500 dark:text-gray-500' : 'dark:text-gray-300'}`}>
-                      {feature.name}
-                    </span>
-                  </li>
-                ))}
+                <li className="flex items-center gap-3">
+                  <div className="w-5 h-5 flex-shrink-0 flex items-center justify-center">
+                    <FaCheck className="text-green-500" />
+                  </div>
+                  <span className="text-sm dark:text-gray-300">
+                    AI Content Recommendations
+                  </span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="w-5 h-5 flex-shrink-0 flex items-center justify-center">
+                    <FaCheck className="text-green-500" />
+                  </div>
+                  <span className="text-sm dark:text-gray-300">
+                    Advanced Audience Insights
+                  </span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="w-5 h-5 flex-shrink-0 flex items-center justify-center">
+                    <FaCheck className="text-green-500" />
+                  </div>
+                  <span className="text-sm dark:text-gray-300">
+                    Priority Support
+                  </span>
+                </li>
               </ul>
               
               <button 

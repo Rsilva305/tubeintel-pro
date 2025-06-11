@@ -22,6 +22,9 @@ export default function Home() {
           </div>
         </div>
         <div className="flex items-center space-x-4">
+          <Link href="/faq" className="text-[#CCC] hover:text-white transition-colors">
+            FAQ
+          </Link>
           <Link href="/login" className="text-[#CCC] hover:text-white transition-colors">
             Login
           </Link>
