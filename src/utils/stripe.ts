@@ -70,16 +70,5 @@ export const PRODUCTS = {
       'Image Coder Tool',
       'And all Free features'
     ]
-  },
-  PRO_PLUS: {
-    name: 'Pro Plus',
-    id: 'prod_SK8m02dc2KMvfO', // Pro Plus product ID
-    priceId: 'price_1RPUUjC02Im4s7TPSinXZPKZ', // Pro Plus price ID
-    features: [
-      'AI Content Recommendations',
-      'Advanced Audience Insights',
-      'Priority Support',
-      'And all Pro features'
-    ]
   }
 }; 

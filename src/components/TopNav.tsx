@@ -140,6 +140,8 @@ export default function TopNav({ username = 'User' }: TopNavProps): JSX.Element 
         href="/faq"
         className="block px-4 py-2 hover:bg-white/10 text-white"
         onClick={() => setDropdownOpen(false)}
+        target="_blank"
+        rel="noopener noreferrer"
       >
         FAQ
       </Link>
@@ -159,9 +161,22 @@ export default function TopNav({ username = 'User' }: TopNavProps): JSX.Element 
           </span>
         </div>
       </div>
-      <a href="#" onClick={handleComingSoonClick('Help & Support')} className="block px-4 py-2 hover:bg-white/10 text-white">
+      <a 
+        href="https://discord.gg/pMu8rbADTz" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="block px-4 py-2 hover:bg-white/10 text-white"
+        onClick={() => setDropdownOpen(false)}
+      >
         Help
       </a>
+      <Link 
+        href="/dashboard/settings"
+        className="block px-4 py-2 hover:bg-white/10 text-white"
+        onClick={() => setDropdownOpen(false)}
+      >
+        Settings
+      </Link>
       
       <div className="border-t border-white/30 mt-2 pt-2">
         <button 
@@ -183,13 +198,20 @@ export default function TopNav({ username = 'User' }: TopNavProps): JSX.Element 
       {/* User Controls */}
       <div className="flex items-center gap-4">
         {/* Extension Button */}
-        <button 
-          onClick={handleComingSoonClick('Browser Extension')}
-          className="flex items-center gap-1 text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-lg transition-colors"
-        >
-          <Zap className="h-4 w-4" />
-          <span className="text-sm font-medium">Extension</span>
-        </button>
+        <div className="relative">
+          <button 
+            onClick={handleComingSoonClick('Browser Extension')}
+            className="flex items-center gap-1 text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-full transition-colors"
+          >
+            <Zap className="h-4 w-4" />
+            <span className="text-sm font-medium">Extension</span>
+          </button>
+          <div className="absolute inset-0 flex items-center justify-end pr-4 pointer-events-none">
+            <span className="bg-purple-600 text-white px-2 py-0.5 rounded-full text-xs font-bold transform rotate-12">
+              COMING SOON
+            </span>
+          </div>
+        </div>
         
         {/* User profile dropdown */}
         <div className="relative" ref={dropdownRef}>
