@@ -7,7 +7,6 @@ import { FaPlus, FaTimes, FaEllipsisV, FaThumbtack, FaPencilAlt, FaCopy, FaTrash
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import CompetitorsDebug from './debug';
 import { useSubscription } from '@/hooks/useSubscription';
 
 // Interface for competitor lists
@@ -455,7 +454,6 @@ export default function CompetitorsPage() {
 
   return (
     <div className="w-full max-w-[1200px] mx-auto">
-      <CompetitorsDebug />
       
       <div className="mb-6 flex justify-between items-center">
         <h1 className="text-2xl font-bold dark:text-white">Tracked Competitors</h1>

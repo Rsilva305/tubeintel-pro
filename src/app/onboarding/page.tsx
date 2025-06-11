@@ -190,7 +190,8 @@ export default function OnboardingPage() {
         .from('profiles')
         .update({ 
           youtube_channel_id: channelId,
-          has_completed_onboarding: true 
+          has_completed_onboarding: true,
+          channel_change_cooldown: new Date().toISOString()
         })
         .eq('id', user.id);
         

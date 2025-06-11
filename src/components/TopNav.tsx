@@ -136,20 +136,31 @@ export default function TopNav({ username = 'User' }: TopNavProps): JSX.Element 
       >
         Discord
       </a>
+      <Link 
+        href="/faq"
+        className="block px-4 py-2 hover:bg-white/10 text-white"
+        onClick={() => setDropdownOpen(false)}
+      >
+        FAQ
+      </Link>
       <button 
         onClick={handleBillingClick}
         className="block w-full text-left px-4 py-2 hover:bg-white/10 text-white"
       >
         Billing
       </button>
-      <a href="#" onClick={handleComingSoonClick('Affiliates')} className="block px-4 py-2 hover:bg-white/10 text-white">
-        Affiliates
-      </a>
-      <a href="#" onClick={handleComingSoonClick('Contact Support')} className="block px-4 py-2 hover:bg-white/10 text-white">
-        Contact support
-      </a>
-      <a href="#" onClick={handleComingSoonClick('Bug Report')} className="block px-4 py-2 hover:bg-white/10 text-white">
-        Report a bug
+      <div className="relative">
+        <a href="#" onClick={handleComingSoonClick('Affiliates')} className="block px-4 py-2 hover:bg-white/10 text-white opacity-60">
+          Affiliates
+        </a>
+        <div className="absolute inset-0 flex items-center justify-end pr-4 pointer-events-none">
+          <span className="bg-purple-600 text-white px-2 py-0.5 rounded-full text-xs font-bold transform rotate-12">
+            COMING SOON
+          </span>
+        </div>
+      </div>
+      <a href="#" onClick={handleComingSoonClick('Help & Support')} className="block px-4 py-2 hover:bg-white/10 text-white">
+        Help
       </a>
       
       <div className="border-t border-white/30 mt-2 pt-2">
@@ -204,7 +215,7 @@ export default function TopNav({ username = 'User' }: TopNavProps): JSX.Element 
           {dropdownOpen && (
             <Portal>
               <div
-                className="fixed right-6 top-16 w-56 bg-white/20 backdrop-blur-md border border-white/30 rounded-lg shadow-lg z-[2147483647] py-2"
+                className="fixed right-6 top-16 w-56 bg-white/20 backdrop-blur-md border border-white/30 rounded-2xl shadow-lg z-[2147483647] py-2"
                 ref={dropdownRef}
               >
                 <div className="px-4 py-2 border-b border-white/30 mb-2">
