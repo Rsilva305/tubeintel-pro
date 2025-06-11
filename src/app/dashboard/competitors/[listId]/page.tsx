@@ -1020,9 +1020,11 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
 
   if (isLoading) {
     return (
-      <div className="w-full flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-        <p className="ml-4 text-gray-600 dark:text-gray-400">Loading competitors...</p>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading channels...</p>
+        </div>
       </div>
     );
   }
@@ -1209,7 +1211,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
           <button
             className="px-4 py-2 text-sm font-medium text-indigo-300 border-b-2 border-indigo-400"
           >
-            Competitor Videos
+            Channel Videos
           </button>
         </div>
         

@@ -8,25 +8,16 @@ interface FAQItem {
   id: string;
   question: string;
   answer: string;
-  category: 'general' | 'pricing' | 'features' | 'technical' | 'upgrade';
+  category: 'general' | 'pricing' | 'features' | 'technical' | 'upgrade' | 'support';
   isPro?: boolean;
 }
 
 const faqData: FAQItem[] = [
   // Upgrade-focused questions (most important)
   {
-    id: 'why-upgrade-pro',
+    id: 'why-upgrade',
     question: 'Why should I upgrade from Free to Pro?',
-    answer: `The Pro tier transforms your YouTube analytics experience with powerful features that serious creators need:
-
-• **Image Coder Tool** - Create stunning thumbnails and channel art with AI assistance
-• **Advanced Trend Analysis** - Identify viral content patterns before your competitors
-• **Unlimited Competitor Tracking** - Monitor as many channels as you want (Free: 5 channels max)
-• **Priority Support** - Get help when you need it most
-• **Advanced Performance Metrics** - Deeper insights into your audience behavior
-• **Export Capabilities** - Download your data for presentations and reports
-
-Pro users typically see 3x faster channel growth compared to free users. At just $29.99/month, it pays for itself with just one successful video optimization.`,
+    answer: 'The Pro tier transforms your YouTube analytics experience with powerful features that serious creators need:\n\n• **Unlimited Competitor Tracking** - Monitor as many channels as you want (Free: 5 channels max)\n• **Advanced Analytics Dashboard** - Deeper insights into your audience behavior and performance\n• **Priority Support** - Get faster response times through our Discord ticket system\n• **Advanced Performance Metrics** - Comprehensive analytics and reporting tools',
     category: 'upgrade',
     isPro: true
   },
@@ -37,19 +28,13 @@ Pro users typically see 3x faster channel growth compared to free users. At just
 
 **Free Tier Limits:**
 • Track up to 5 competitor channels
-• 1 competitor folder/list
 • Basic analytics dashboard
-• Standard support (email only)
-• Limited export options
+• Community support through Discord
 
 **Pro Tier Benefits:**
 • **Unlimited** competitor tracking
-• **Unlimited** folders and organization
-• Advanced trend analysis and predictions
-• Image Coder tool for thumbnails
-• Priority support with faster response times
-• Full data export capabilities
-• Advanced audience insights
+• Advanced analytics dashboard with deeper insights
+• Priority support through Discord ticket system with faster response times
 
 Most successful creators upgrade within their first month once they see the value of deeper analytics.`,
     category: 'upgrade',
@@ -61,17 +46,24 @@ Most successful creators upgrade within their first month once they see the valu
     answer: `Pro typically pays for itself within 1-2 optimized videos:
 
 **Real Examples:**
-• **Thumbnail Optimization**: Using our Image Coder tool, creators see 15-40% higher click-through rates
-• **Trend Analysis**: Identifying trending topics early can result in 10x more views
-• **Competitor Insights**: Learning from successful competitors helps avoid costly mistakes
+• **Advanced Analytics**: Better insights lead to 15-30% improvement in content performance
+• **Competitor Analysis**: Learning from successful competitors helps avoid costly mistakes
+• **Unlimited Tracking**: Monitor more channels to identify trending opportunities faster
 
 **Quick Math:**
 • Pro costs $29.99/month
 • Average YouTube RPM: $1-5 per 1,000 views
 • You only need 6,000-30,000 additional views per month to break even
-• Most Pro users see this increase in their first optimized video
+• Most Pro users see this increase through better content optimization
 
 Plus, the time saved on manual research and analysis is worth hundreds of dollars in opportunity cost.`,
+    category: 'upgrade',
+    isPro: true
+  },
+  {
+    id: 'upgrade-benefits',
+    question: 'What are the benefits of upgrading to Pro?',
+    answer: 'Pro subscribers get unlimited competitor tracking, advanced analytics dashboard, and priority support through our Discord ticket system. This means faster response times and dedicated support channels for all your needs.',
     category: 'upgrade',
     isPro: true
   },
@@ -103,20 +95,6 @@ Plus, the time saved on manual research and analysis is worth hundreds of dollar
     answer: 'Add any YouTube channel to your competitor lists and track their performance metrics, upload schedules, trending videos, and growth patterns. This helps you identify successful content strategies and stay ahead of trends in your niche. Pro users can track unlimited competitors with advanced filtering and analysis.',
     category: 'features'
   },
-  {
-    id: 'image-coder-tool',
-    question: 'What is the Image Coder tool?',
-    answer: 'The Image Coder tool (Pro feature) is an AI-powered thumbnail and channel art creator. It analyzes high-performing thumbnails in your niche and helps you create eye-catching designs that increase click-through rates. Many creators see 20-40% improvement in CTR after using this tool.',
-    category: 'features',
-    isPro: true
-  },
-  {
-    id: 'trend-analysis',
-    question: 'How accurate is the trend analysis?',
-    answer: 'Our Advanced Trend Analysis (Pro feature) uses machine learning to identify emerging trends with 85%+ accuracy. We analyze millions of data points across YouTube to predict which topics, formats, and styles are gaining momentum before they become mainstream, giving you a competitive advantage.',
-    category: 'features',
-    isPro: true
-  },
 
   // Pricing
   {
@@ -133,16 +111,9 @@ Plus, the time saved on manual research and analysis is worth hundreds of dollar
 **Pro Tier - $29.99/month** - For serious creators
 • Everything in Free
 • Unlimited competitor tracking
-• Advanced trend analysis
-• Image Coder tool
+• Advanced analytics dashboard
 • Priority support
-• Advanced exports
-
-**Pro+ Tier - $39.99/month** - Coming Soon
-• Everything in Pro
-• AI content recommendations
-• Advanced audience insights
-• Priority support`,
+• Advanced exports`,
     category: 'pricing'
   },
   {
@@ -182,6 +153,46 @@ Plus, the time saved on manual research and analysis is worth hundreds of dollar
     question: 'Which browsers are supported?',
     answer: 'ClikStats works on all modern browsers including Chrome, Firefox, Safari, and Edge. For the best experience, we recommend using the latest version of Chrome or Firefox. Our platform is also mobile-responsive for on-the-go analytics.',
     category: 'technical'
+  },
+
+  // Support
+  {
+    id: 'free-limits',
+    question: 'What are the limits of the Free tier?',
+    answer: 'The Free tier includes basic analytics dashboard, tracking up to 5 competitors, and basic insights. Support is provided through our Discord community.',
+    category: 'pricing'
+  },
+  {
+    id: 'pro-benefits',
+    question: 'What do I get with the Pro subscription?',
+    answer: 'Pro subscribers get unlimited competitor tracking, advanced analytics dashboard, and priority support through our Discord ticket system. Pro users get faster response times and dedicated support channels.',
+    category: 'pricing',
+    isPro: true
+  },
+  {
+    id: 'support-difference',
+    question: 'What\'s the difference between Free and Pro support?',
+    answer: 'Free users can access our Discord community for support. Pro users get priority access to our Discord ticket system with faster response times and dedicated support channels.',
+    category: 'support'
+  },
+  {
+    id: 'how-support',
+    question: 'How do I get support?',
+    answer: 'All support is handled through our Discord server. Free users can post in the community channels, while Pro users can create priority support tickets for faster assistance.',
+    category: 'support'
+  },
+  {
+    id: 'free-limitations',
+    question: 'What are the limitations of the Free tier?',
+    answer: 'The Free tier is limited to tracking up to 5 competitors and includes basic analytics features. Support is provided through our Discord community channels.',
+    category: 'upgrade'
+  },
+  {
+    id: 'pro-features',
+    question: 'What features are included in the Pro tier?',
+    answer: 'Pro tier includes unlimited competitor tracking, advanced analytics dashboard, and priority support through our Discord ticket system with faster response times.',
+    category: 'upgrade',
+    isPro: true
   }
 ];
 
@@ -190,11 +201,12 @@ const categories = [
   { id: 'general', name: 'General', icon: FaYoutube, color: 'text-red-500' },
   { id: 'features', name: 'Features', icon: FaRocket, color: 'text-blue-500' },
   { id: 'pricing', name: 'Pricing', icon: FaDollarSign, color: 'text-green-500' },
-  { id: 'technical', name: 'Technical', icon: FaCog, color: 'text-purple-500' }
+  { id: 'technical', name: 'Technical', icon: FaCog, color: 'text-purple-500' },
+  { id: 'support', name: 'Support', icon: FaCog, color: 'text-purple-500' }
 ];
 
 export default function FAQPage() {
-  const [openItems, setOpenItems] = useState<string[]>(['why-upgrade-pro']); // Open the most important question by default
+  const [openItems, setOpenItems] = useState<string[]>(['why-upgrade']); // Open the most important question by default
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   const toggleItem = (id: string) => {
@@ -379,4 +391,4 @@ export default function FAQPage() {
       </footer>
     </div>
   );
-} 
+}

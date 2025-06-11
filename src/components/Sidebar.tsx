@@ -12,7 +12,9 @@ import {
   FaCrown,
   FaStar,
   FaLock,
-  FaImage
+  FaImage,
+  FaPlay,
+  FaBook
 } from 'react-icons/fa';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useState, useEffect } from 'react';
@@ -20,7 +22,7 @@ import UpgradeButton from './UpgradeButton';
 import { useSubscription } from '@/hooks/useSubscription';
 
 // Subscription types
-type SubscriptionTier = 'free' | 'pro' | 'pro-plus';
+type SubscriptionTier = 'free' | 'pro';
 
 interface SidebarItemProps {
   icon: React.ReactNode;
@@ -49,10 +51,7 @@ const SidebarItem = ({
   const isFeatureLocked = locked || (
     requiredSubscription && 
     currentSubscription && 
-    (
-      (requiredSubscription === 'pro' && currentSubscription === 'free') ||
-      (requiredSubscription === 'pro-plus' && (currentSubscription === 'free' || currentSubscription === 'pro'))
-    )
+    requiredSubscription === 'pro' && currentSubscription === 'free'
   );
   
   return (
@@ -121,6 +120,15 @@ export default function Sidebar({ collapsed, toggleSidebar }: SidebarProps): JSX
   const borderColor = 'border-gray-700';
   const textColor = 'text-white';
   
+  const shouldShowUpgradePrompt = (
+    requiredSubscription: string,
+    currentSubscription: SubscriptionTier
+  ): boolean => {
+    return (
+      requiredSubscription === 'pro' && currentSubscription === 'free'
+    );
+  };
+  
   return (
     <div 
       className={`${
@@ -157,11 +165,9 @@ export default function Sidebar({ collapsed, toggleSidebar }: SidebarProps): JSX
             <span className={`font-bold text-xl ${textColor}`}>ClikStats</span>
             {subscriptionTier !== 'free' && (
               <span className={`${
-                subscriptionTier === 'pro-plus' 
-                  ? 'text-purple-500 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/30' 
-                  : 'text-blue-500 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30'
+                'text-blue-500 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30'
               } text-xs font-medium px-1.5 py-0.5 rounded`}>
-                {subscriptionTier === 'pro-plus' ? 'Pro+' : 'Pro'}
+                Pro
               </span>
             )}
           </Link>
@@ -182,89 +188,72 @@ export default function Sidebar({ collapsed, toggleSidebar }: SidebarProps): JSX
           icon={<FaChartLine size={18} />} 
           label="Dashboard" 
           href="/dashboard"
-          isActive={isActive('/dashboard') && !isActive('/dashboard/competitors') && !isActive('/dashboard/insights') && !isActive('/dashboard/settings')} 
+          isActive={isActive('/dashboard') && !isActive('/dashboard/competitors')} 
           collapsed={collapsed}
         />
+
+        {/* Tracker Section */}
+        <SectionDivider label="TRACKER" collapsed={collapsed} />
+        
         <SidebarItem 
           icon={<FaUsers size={18} />} 
-          label="Competitors" 
+          label="Channels" 
           href="/dashboard/competitors"
           isActive={isActive('/dashboard/competitors')} 
           collapsed={collapsed}
         />
-        <SidebarItem 
-          icon={<FaLightbulb size={18} />} 
-          label="Insights" 
-          href="/dashboard/insights"
-          isActive={isActive('/dashboard/insights')} 
-          collapsed={collapsed}
-        />
-        <SidebarItem 
-          icon={<FaCog size={18} />} 
-          label="Settings" 
-          href="/dashboard/settings"
-          isActive={isActive('/dashboard/settings')} 
-          collapsed={collapsed}
-        />
+        
+        {/* Videos placeholder */}
+        <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3 px-3'} py-3 rounded-lg transition-all duration-200 opacity-50 cursor-not-allowed`}>
+          <div className={collapsed ? 'flex justify-center items-center w-full' : ''}>
+            <FaPlay size={18} className="text-gray-500" />
+          </div>
+          {!collapsed && (
+            <>
+              <span className="text-sm font-medium text-gray-500 flex-1">Videos</span>
+              <span className="text-xs text-gray-600 bg-gray-800/50 px-2 py-0.5 rounded">Soon</span>
+            </>
+          )}
+        </div>
+        
+        {/* How to Guide placeholder */}
+        <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3 px-3'} py-3 rounded-lg transition-all duration-200 opacity-50 cursor-not-allowed`}>
+          <div className={collapsed ? 'flex justify-center items-center w-full' : ''}>
+            <FaBook size={18} className="text-gray-500" />
+          </div>
+          {!collapsed && (
+            <>
+              <span className="text-sm font-medium text-gray-500 flex-1">How to Guide</span>
+              <span className="text-xs text-gray-600 bg-gray-800/50 px-2 py-0.5 rounded">Soon</span>
+            </>
+          )}
+        </div>
       </div>
       
-      {/* Pro Features */}
-      <SectionDivider label="PRO FEATURES" collapsed={collapsed} />
+      {/* Pro Tools Section */}
+      <SectionDivider label="PRO TOOLS" collapsed={collapsed} />
       <div className="flex flex-col gap-1 px-2">
-        <SidebarItem 
-          icon={<FaCrown size={18} className="text-blue-400" />} 
-          label="Trend Analysis" 
-          href="/dashboard/trends"
-          isActive={isActive('/dashboard/trends')} 
-          collapsed={collapsed}
-          requiredSubscription="pro"
-          currentSubscription={subscriptionTier}
-        />
-        <SidebarItem 
-          icon={<FaImage size={18} className="text-blue-400" />} 
-          label="Image Coder" 
-          href="/image-coder"
-          isActive={isActive('/image-coder')} 
-          collapsed={collapsed}
-          requiredSubscription="pro"
-          currentSubscription={subscriptionTier}
-        />
-      </div>
-      
-      {/* Pro Plus Features */}
-      <SectionDivider label="PRO+ FEATURES" collapsed={collapsed} />
-      <div className="flex flex-col gap-1 px-2 relative">
-        {/* Coming Soon Overlay for Pro+ Features */}
-        {!collapsed && (
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-lg mx-1">
-            <div className="bg-purple-600 text-white px-3 py-1 rounded-full font-bold text-xs shadow-lg transform -rotate-12">
-              COMING SOON
+        <div className={`relative ${collapsed ? 'h-[70px]' : 'h-[90px]'} flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800/50`}>
+          <div className="text-center">
+            <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+              {collapsed ? 'Soon' : 'Coming Soon'}
+            </p>
+            {!collapsed && (
+              <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'} mt-1`}>
+                New tools in development
+              </p>
+            )}
+          </div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="transform -rotate-45 text-gray-300 dark:text-gray-600 text-xs font-bold tracking-wider">
+              {collapsed ? 'SOON' : 'COMING SOON'}
             </div>
           </div>
-        )}
-        
-        <SidebarItem 
-          icon={<FaStar size={18} className="text-purple-400" />} 
-          label="AI Recommendations" 
-          href="/dashboard/recommendations"
-          isActive={isActive('/dashboard/recommendations')} 
-          collapsed={collapsed}
-          requiredSubscription="pro-plus"
-          currentSubscription={subscriptionTier}
-        />
-        <SidebarItem 
-          icon={<FaUsers size={18} className="text-purple-400" />} 
-          label="Advanced Audience" 
-          href="/dashboard/audience"
-          isActive={isActive('/dashboard/audience')} 
-          collapsed={collapsed}
-          requiredSubscription="pro-plus"
-          currentSubscription={subscriptionTier}
-        />
+        </div>
       </div>
       
       {/* Subscription link */}
-      {!collapsed && subscriptionTier !== 'pro-plus' && (
+      {!collapsed && subscriptionTier !== 'pro' && (
         <div className="mt-4 mx-3">
           <UpgradeButton variant="full" className="w-full" />
         </div>
