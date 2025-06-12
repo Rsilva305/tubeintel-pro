@@ -66,8 +66,9 @@ export const PRODUCTS = {
     priceId: 'price_1RY4QjC02Im4s7TPr2nMPptU', // Your Stripe price ID
     features: [
       'Track unlimited competitors',
+      'Track unlimited videos',
       'Advanced Trend Analysis',
-      'Image Coder Tool',
+      'Priority Support',
       'And all Free features'
     ]
   }

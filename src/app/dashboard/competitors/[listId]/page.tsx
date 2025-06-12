@@ -1197,7 +1197,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2">
             <FaYoutube className="text-red-500" />
-            <h2 className="text-xl font-bold text-white">Related Videos</h2>
+            <h2 className="text-xl font-bold text-white">Channel Videos</h2>
             <div className="text-white/50 cursor-help" title="Videos from competitive channels and similar content">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1276,7 +1276,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Search related videos"
+                  placeholder="Search channel videos"
                   value={videoSearchQuery}
                   onChange={(e) => setVideoSearchQuery(e.target.value)}
                   className="w-60 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-gray-600"
@@ -1375,11 +1375,11 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500 dark:text-gray-400">Videos per row:</span>
-              <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-xl">
+              <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-xl p-1">
                 {[1, 2, 3, 4, 5, 6].map((columns) => (
                   <button 
                     key={columns}
-                    className={`px-2 py-1 text-sm ${videoGridColumns === columns ? 'bg-indigo-600 text-white' : 'text-gray-500 dark:text-gray-400'}`}
+                    className={`px-2 py-1 text-sm rounded-md transition-colors ${videoGridColumns === columns ? 'bg-blue-500 text-white' : 'text-gray-700 dark:text-gray-300 hover:text-white hover:bg-blue-500/20'}`}
                     onClick={() => handleVideoGridColumnsChange(columns)}
                   >
                     {columns}
@@ -1394,7 +1394,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
               <select
                 value={sortBy}
                 onChange={handleSortChange}
-                className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-xl text-sm border-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-xl text-sm border-none focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="date">Date</option>
                 <option value="likes">Likes</option>
@@ -1403,7 +1403,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
             </div>
             
             <button 
-              className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-xl text-sm"
+              className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-xl text-sm transition-colors"
               onClick={toggleVideoInfo}
               title={showVideoInfo ? "Hide video info" : "Show video info"}
             >
@@ -1733,7 +1733,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                 Channel Limit Reached
               </h3>
               <p className="text-sm text-gray-300 mb-6">
-                You have reached your channel limit on the Free plan. Upgrade to Pro to track more channels.
+                You have reached your competitor limit on the Free plan. Upgrade to Pro to track more competitors.
               </p>
               <div className="flex gap-3">
                 <button
