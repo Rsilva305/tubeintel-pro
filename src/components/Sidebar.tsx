@@ -33,6 +33,7 @@ interface SidebarItemProps {
   locked?: boolean;
   requiredSubscription?: SubscriptionTier;
   currentSubscription?: SubscriptionTier;
+  dataTourTarget?: string;
 }
 
 const SidebarItem = ({ 
@@ -43,7 +44,8 @@ const SidebarItem = ({
   collapsed, 
   locked = false,
   requiredSubscription,
-  currentSubscription 
+  currentSubscription,
+  dataTourTarget
 }: SidebarItemProps): JSX.Element => {
   const { theme } = useTheme();
   
@@ -62,6 +64,7 @@ const SidebarItem = ({
           ? `${theme === 'dark' ? 'bg-[#00264d] text-blue-200' : 'bg-blue-100 text-blue-800'}` 
           : `${theme === 'dark' ? 'text-gray-400 hover:bg-gray-800 hover:text-white' : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900'}`
       } ${isFeatureLocked ? 'opacity-70' : ''}`}
+      data-tour-target={dataTourTarget}
     >
       <div className={collapsed ? 'flex justify-center items-center w-full' : ''}>
         {icon}
@@ -190,6 +193,7 @@ export default function Sidebar({ collapsed, toggleSidebar }: SidebarProps): JSX
           href="/dashboard"
           isActive={isActive('/dashboard') && !isActive('/dashboard/competitors')} 
           collapsed={collapsed}
+          dataTourTarget="dashboard"
         />
 
         {/* Tracker Section */}
@@ -222,28 +226,6 @@ export default function Sidebar({ collapsed, toggleSidebar }: SidebarProps): JSX
         />
       </div>
       
-      {/* Pro Tools Section */}
-      <SectionDivider label="PRO TOOLS" collapsed={collapsed} />
-      <div className="flex flex-col gap-1 px-2">
-        <div className={`relative ${collapsed ? 'h-[70px]' : 'h-[90px]'} flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800/50`}>
-          <div className="text-center">
-            <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-              {collapsed ? 'Soon' : 'Coming Soon'}
-            </p>
-            {!collapsed && (
-              <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'} mt-1`}>
-                New tools in development
-              </p>
-            )}
-          </div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="transform -rotate-45 text-gray-300 dark:text-gray-600 text-xs font-bold tracking-wider">
-              {collapsed ? 'SOON' : 'COMING SOON'}
-            </div>
-          </div>
-        </div>
-      </div>
-      
       {/* Subscription link */}
       {!collapsed && subscriptionTier !== 'pro' && (
         <div className="mt-4 mx-3">
@@ -253,9 +235,25 @@ export default function Sidebar({ collapsed, toggleSidebar }: SidebarProps): JSX
       
       <div className="mt-auto px-4">
         {!collapsed && (
-          <div className={`border-t ${borderColor} pt-4`}>
-            <p className={`${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'} text-xs`}>© 2024 ClikStats</p>
-          </div>
+          <>
+            {/* Tour restart button */}
+            <button
+              onClick={() => {
+                localStorage.removeItem('clikstats-tour-completed');
+                // Dispatch custom event to restart tour without page refresh
+                window.dispatchEvent(new CustomEvent('restart-tour'));
+              }}
+              className="w-full mb-4 flex items-center justify-center gap-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 px-3 py-2 rounded-full text-sm transition-colors border border-blue-500/30"
+              title="Restart Tour"
+            >
+              <FaPlay size={12} />
+              Take Tour
+            </button>
+            
+            <div className={`border-t ${borderColor} pt-4`}>
+              <p className={`${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'} text-xs`}>© 2024 ClikStats</p>
+            </div>
+          </>
         )}
       </div>
     </div>
