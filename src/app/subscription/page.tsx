@@ -231,6 +231,7 @@ export default function SubscriptionPage() {
         },
         body: JSON.stringify({
           planType,
+          priceId: PRODUCTS.PRO.priceId,
           successUrl: `${window.location.origin}/subscription?success=true`,
           cancelUrl: `${window.location.origin}/subscription?canceled=true`,
         }),
