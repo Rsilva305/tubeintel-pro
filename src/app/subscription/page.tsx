@@ -27,7 +27,11 @@ const features: Feature[] = [
     included: { free: true, pro: true }
   },
   {
-    name: 'Track up to 5 competitors',
+    name: 'Track up to 5 channels',
+    included: { free: true, pro: true }
+  },
+  {
+    name: 'Track up to 10 videos',
     included: { free: true, pro: true }
   },
   {
@@ -35,15 +39,15 @@ const features: Feature[] = [
     included: { free: true, pro: true }
   },
   {
-    name: 'Image Coder Tool',
-    included: { free: false, pro: true }
-  },
-  {
     name: 'Advanced Trend Analysis',
     included: { free: false, pro: true }
   },
   {
-    name: 'Track unlimited competitors',
+    name: 'Track unlimited channels',
+    included: { free: false, pro: true }
+  },
+  {
+    name: 'Track unlimited videos',
     included: { free: false, pro: true }
   },
   {
@@ -54,8 +58,12 @@ const features: Feature[] = [
 
 const proFeatures = [
   {
-    name: 'Unlimited Competitor Tracking',
-    description: 'Track unlimited competitor channels and get detailed analytics'
+    name: 'Unlimited Channel Tracking',
+    description: 'Track unlimited channels and get detailed analytics'
+  },
+  {
+    name: 'Unlimited Video Collections',
+    description: 'Save and organize unlimited videos for analysis and research'
   },
   {
     name: 'Advanced Analytics Dashboard',
@@ -325,7 +333,15 @@ export default function SubscriptionPage() {
                     <FaCheck className="text-green-500" />
                   </div>
                   <span className="text-sm dark:text-gray-300">
-                    Track up to 5 competitors
+                    Track up to 5 channels
+                  </span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="w-5 h-5 flex-shrink-0 flex items-center justify-center">
+                    <FaCheck className="text-green-500" />
+                  </div>
+                  <span className="text-sm dark:text-gray-300">
+                    Track up to 10 videos
                   </span>
                 </li>
                 <li className="flex items-center gap-3">
@@ -388,7 +404,15 @@ export default function SubscriptionPage() {
                     <FaCheck className="text-green-500" />
                   </div>
                   <span className="text-sm dark:text-gray-300">
-                    Track unlimited competitors
+                    Track unlimited channels
+                  </span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="w-5 h-5 flex-shrink-0 flex items-center justify-center">
+                    <FaCheck className="text-green-500" />
+                  </div>
+                  <span className="text-sm dark:text-gray-300">
+                    Track unlimited videos
                   </span>
                 </li>
                 <li className="flex items-center gap-3">
@@ -397,14 +421,6 @@ export default function SubscriptionPage() {
                   </div>
                   <span className="text-sm dark:text-gray-300">
                     Advanced Trend Analysis
-                  </span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <div className="w-5 h-5 flex-shrink-0 flex items-center justify-center">
-                    <FaCheck className="text-green-500" />
-                  </div>
-                  <span className="text-sm dark:text-gray-300">
-                    Image Coder Tool
                   </span>
                 </li>
                 <li className="flex items-center gap-3">

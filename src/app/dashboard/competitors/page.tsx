@@ -634,10 +634,9 @@ export default function CompetitorsPage() {
                 {upgradeReason === 'folders' ? 'Folder Limit Reached' : 'Channel Limit Reached'}
               </h3>
               <p className="text-sm text-gray-300 mb-6">
-                {upgradeReason === 'folders' 
-                  ? `You have reached your folder limit on the Free plan. Upgrade to Pro to create more niche folders.`
-                  : `You have reached your channel limit on the Free plan. Upgrade to Pro to track more channels.`
-                }
+                {plan === 'free' 
+                  ? `You have reached your channel limit on the Free plan. Upgrade to Pro to track more channels.`
+                  : 'Upgrade to Pro to unlock unlimited channel tracking and advanced analytics.'}
               </p>
               <div className="flex gap-3">
                 <button

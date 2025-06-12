@@ -203,31 +203,23 @@ export default function Sidebar({ collapsed, toggleSidebar }: SidebarProps): JSX
           collapsed={collapsed}
         />
         
-        {/* Videos placeholder */}
-        <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3 px-3'} py-3 rounded-lg transition-all duration-200 opacity-50 cursor-not-allowed`}>
-          <div className={collapsed ? 'flex justify-center items-center w-full' : ''}>
-            <FaPlay size={18} className="text-gray-500" />
-          </div>
-          {!collapsed && (
-            <>
-              <span className="text-sm font-medium text-gray-500 flex-1">Videos</span>
-              <span className="text-xs text-gray-600 bg-gray-800/50 px-2 py-0.5 rounded">Soon</span>
-            </>
-          )}
-        </div>
+        {/* Videos - now active */}
+        <SidebarItem 
+          icon={<FaPlay size={18} />} 
+          label="Videos" 
+          href="/dashboard/videos"
+          isActive={isActive('/dashboard/videos')} 
+          collapsed={collapsed}
+        />
         
-        {/* How to Guide placeholder */}
-        <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3 px-3'} py-3 rounded-lg transition-all duration-200 opacity-50 cursor-not-allowed`}>
-          <div className={collapsed ? 'flex justify-center items-center w-full' : ''}>
-            <FaBook size={18} className="text-gray-500" />
-          </div>
-          {!collapsed && (
-            <>
-              <span className="text-sm font-medium text-gray-500 flex-1">How to Guide</span>
-              <span className="text-xs text-gray-600 bg-gray-800/50 px-2 py-0.5 rounded">Soon</span>
-            </>
-          )}
-        </div>
+        {/* Beginner's Guide - now active */}
+        <SidebarItem 
+          icon={<FaBook size={18} />} 
+          label="Beginner's Guide" 
+          href="/dashboard/guide"
+          isActive={isActive('/dashboard/guide')} 
+          collapsed={collapsed}
+        />
       </div>
       
       {/* Pro Tools Section */}
