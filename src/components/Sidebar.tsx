@@ -20,6 +20,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useState, useEffect } from 'react';
 import UpgradeButton from './UpgradeButton';
 import { useSubscription } from '@/hooks/useSubscription';
+import { getTourCompletionStatus, resetTourCompletion } from '@/lib/tour-utils';
 
 // Subscription types
 type SubscriptionTier = 'free' | 'pro';
@@ -104,6 +105,8 @@ export default function Sidebar({ collapsed, toggleSidebar }: SidebarProps): JSX
   const { theme } = useTheme();
   const { plan, isLoading } = useSubscription();
   const [subscriptionTier, setSubscriptionTier] = useState<SubscriptionTier>('free');
+  const [tourCompleted, setTourCompleted] = useState<boolean>(false);
+  const [tourStatusLoading, setTourStatusLoading] = useState<boolean>(true);
   
   // Update subscription tier when the plan changes
   useEffect(() => {
@@ -114,6 +117,45 @@ export default function Sidebar({ collapsed, toggleSidebar }: SidebarProps): JSX
       console.log('Subscription plan from API:', plan);
     }
   }, [plan, isLoading]);
+  
+  // Check tour completion status
+  useEffect(() => {
+    const checkTourStatus = async () => {
+      try {
+        const completed = await getTourCompletionStatus();
+        setTourCompleted(completed);
+      } catch (error) {
+        console.error('Error checking tour status in sidebar:', error);
+        // Fallback to localStorage
+        const localCompleted = localStorage.getItem('clikstats-tour-completed') === 'true';
+        setTourCompleted(localCompleted);
+      } finally {
+        setTourStatusLoading(false);
+      }
+    };
+
+    checkTourStatus();
+
+    // Listen for tour completion events
+    const handleTourCompleted = () => {
+      setTourCompleted(true);
+    };
+
+    // Listen for storage changes (tour completion)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'clikstats-tour-completed') {
+        setTourCompleted(e.newValue === 'true');
+      }
+    };
+
+    window.addEventListener('tour-completed', handleTourCompleted);
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('tour-completed', handleTourCompleted);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
   
   const isActive = (path: string): boolean => {
     return pathname === path || pathname.startsWith(`${path}/`);
@@ -234,26 +276,36 @@ export default function Sidebar({ collapsed, toggleSidebar }: SidebarProps): JSX
       )}
       
       <div className="mt-auto px-4">
-        {!collapsed && (
+        {!collapsed && !tourCompleted && !tourStatusLoading && (
           <>
-            {/* Tour restart button */}
+            {/* Tour restart button - only show if tour not completed */}
             <button
-              onClick={() => {
-                localStorage.removeItem('clikstats-tour-completed');
-                // Dispatch custom event to restart tour without page refresh
-                window.dispatchEvent(new CustomEvent('restart-tour'));
+              onClick={async () => {
+                try {
+                  await resetTourCompletion();
+                  setTourCompleted(false);
+                  // Dispatch custom event to restart tour without page refresh
+                  window.dispatchEvent(new CustomEvent('restart-tour'));
+                } catch (error) {
+                  console.error('Error restarting tour:', error);
+                  // Fallback to localStorage method
+                  localStorage.removeItem('clikstats-tour-completed');
+                  window.dispatchEvent(new CustomEvent('restart-tour'));
+                }
               }}
               className="w-full mb-4 flex items-center justify-center gap-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 px-3 py-2 rounded-full text-sm transition-colors border border-blue-500/30"
-              title="Restart Tour"
+              title="Take Tour"
             >
               <FaPlay size={12} />
               Take Tour
             </button>
-            
-            <div className={`border-t ${borderColor} pt-4`}>
-              <p className={`${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'} text-xs`}>© 2024 ClikStats</p>
-            </div>
           </>
+        )}
+
+        {!collapsed && (
+          <div className={`border-t ${borderColor} pt-4`}>
+            <p className={`${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'} text-xs`}>© 2024 ClikStats</p>
+          </div>
         )}
       </div>
     </div>

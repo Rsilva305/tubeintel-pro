@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { FaTimes, FaArrowRight, FaArrowLeft, FaPlay } from 'react-icons/fa';
+import { getTourCompletionStatus, markTourAsCompleted } from '@/lib/tour-utils';
 
 interface TourStep {
   id: string;
@@ -32,16 +33,14 @@ const tourSteps: TourStep[] = [
     title: 'Channels',
     content: 'Here you can add and track YouTube channels to monitor their performance, growth, and content strategies.',
     target: '[href="/dashboard/competitors"]',
-    position: 'right',
-    action: 'Click to explore'
+    position: 'right'
   },
   {
     id: 'videos',
     title: 'Video Collections',
     content: 'Save and analyze specific videos that interest you. Perfect for studying successful content.',
     target: '[href="/dashboard/videos"]',
-    position: 'right',
-    action: 'Try adding a video'
+    position: 'right'
   },
   {
     id: 'guide',
@@ -72,25 +71,54 @@ export default function TourGuide({ onComplete }: TourGuideProps) {
 
   // Check if user has seen the tour before
   useEffect(() => {
-    const hasSeenTour = localStorage.getItem('clikstats-tour-completed');
-    if (!hasSeenTour) {
-      // Small delay to ensure page is fully loaded
-      setTimeout(() => {
-        setIsActive(true);
-      }, 1000);
-    }
-
-    // Listen for restart tour event
-    const handleRestartTour = () => {
-      setCurrentStep(0);
-      setIsActive(true);
+    const checkTourStatus = async () => {
+      try {
+        const hasSeenTour = await getTourCompletionStatus();
+        const isFromOnboarding = window.location.href.includes('from=onboarding') || 
+                                sessionStorage.getItem('just-completed-onboarding');
+        
+        console.log('TourGuide: Checking tour status', {
+          hasSeenTour,
+          isFromOnboarding,
+          shouldStartTour: !hasSeenTour || isFromOnboarding
+        });
+        
+        // Clear the onboarding flag if it exists
+        if (isFromOnboarding) {
+          sessionStorage.removeItem('just-completed-onboarding');
+          console.log('TourGuide: Cleared onboarding flag, starting tour');
+        }
+        
+        if (!hasSeenTour || isFromOnboarding) {
+          console.log('TourGuide: Starting tour with delay');
+          // Small delay to ensure page is fully loaded
+          setTimeout(() => {
+            setIsActive(true);
+          }, 1500); // Slightly longer delay for better reliability
+        }
+      } catch (error) {
+        console.error('TourGuide: Error checking tour status:', error);
+        // Fallback to localStorage check
+        const hasSeenTourLocal = localStorage.getItem('clikstats-tour-completed');
+        if (!hasSeenTourLocal) {
+          setTimeout(() => {
+            setIsActive(true);
+          }, 1500);
+        }
+      }
     };
 
-    window.addEventListener('restart-tour', handleRestartTour);
-    
-    return () => {
-      window.removeEventListener('restart-tour', handleRestartTour);
+    checkTourStatus();
+
+    // Listen for storage changes (in case user completes tour in another tab)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'clikstats-tour-completed' && e.newValue === 'true') {
+        setIsActive(false);
+      }
     };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   // Update target element and position when step changes
@@ -153,7 +181,7 @@ export default function TourGuide({ onComplete }: TourGuideProps) {
     if (currentStep < tourSteps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      completeTour();
+      handleComplete();
     }
   };
 
@@ -164,11 +192,26 @@ export default function TourGuide({ onComplete }: TourGuideProps) {
   };
 
   const skipTour = () => {
-    completeTour();
+    handleComplete();
   };
 
-  const completeTour = () => {
-    localStorage.setItem('clikstats-tour-completed', 'true');
+  const handleComplete = async () => {
+    console.log('TourGuide: Tour completed by user');
+    
+    try {
+      // Mark tour as completed in Supabase
+      await markTourAsCompleted();
+      console.log('TourGuide: Tour completion saved to database');
+      
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new CustomEvent('tour-completed'));
+    } catch (error) {
+      console.error('TourGuide: Error saving tour completion:', error);
+      // Fallback to localStorage is handled in markTourAsCompleted
+      // Still dispatch the event even if database save failed
+      window.dispatchEvent(new CustomEvent('tour-completed'));
+    }
+    
     setIsActive(false);
     onComplete?.();
   };
@@ -192,7 +235,7 @@ export default function TourGuide({ onComplete }: TourGuideProps) {
       {/* Overlay */}
       <div 
         ref={overlayRef}
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+        className="fixed inset-0 bg-black/20 z-50"
         style={{ pointerEvents: 'none' }}
       >
         {/* Highlight spotlight for target element */}
