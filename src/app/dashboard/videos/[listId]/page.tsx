@@ -320,17 +320,20 @@ export default function VideoCollectionDetail({ params }: { params: { listId: st
               <button
                 onClick={handleAddVideo}
                 disabled={isAddingVideo || !canAddVideo()}
-                className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 rounded-xl transition-colors ${
+                className={`absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1 px-2 py-1.5 rounded-xl transition-colors ${
                   canAddVideo() && !isAddingVideo
-                    ? 'text-blue-400 hover:text-blue-300 hover:bg-blue-500/20'
-                    : 'text-gray-500 cursor-not-allowed'
+                    ? 'bg-white/10 dark:bg-indigo-600/80 backdrop-blur-sm hover:bg-white/20 dark:hover:bg-indigo-700 text-white'
+                    : 'bg-gray-500/20 text-gray-400 cursor-not-allowed'
                 }`}
                 title={canAddVideo() ? 'Add video' : `Free plan allows only ${FREE_TIER_VIDEOS_PER_COLLECTION} videos per collection`}
               >
                 {isAddingVideo ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                 ) : (
-                  <FaPlus size={16} />
+                  <>
+                    <FaPlus size={14} />
+                    <span className="text-xs sm:text-sm">Add video</span>
+                  </>
                 )}
               </button>
             </div>

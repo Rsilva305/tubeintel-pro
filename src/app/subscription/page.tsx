@@ -39,10 +39,6 @@ const features: Feature[] = [
     included: { free: true, pro: true }
   },
   {
-    name: 'Advanced Trend Analysis',
-    included: { free: false, pro: true }
-  },
-  {
     name: 'Track unlimited channels',
     included: { free: false, pro: true }
   },
@@ -66,16 +62,8 @@ const proFeatures = [
     description: 'Save and organize unlimited videos for analysis and research'
   },
   {
-    name: 'Advanced Analytics Dashboard',
-    description: 'Get deeper insights with advanced metrics and reporting'
-  },
-  {
     name: 'Priority Support',
     description: 'Get faster response times and priority assistance'
-  },
-  {
-    name: 'Export Data',
-    description: 'Export your analytics data in various formats'
   }
 ];
 
@@ -414,14 +402,6 @@ export default function SubscriptionPage() {
                   </div>
                   <span className="text-sm dark:text-gray-300">
                     Track unlimited videos
-                  </span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <div className="w-5 h-5 flex-shrink-0 flex items-center justify-center">
-                    <FaCheck className="text-green-500" />
-                  </div>
-                  <span className="text-sm dark:text-gray-300">
-                    Advanced Trend Analysis
                   </span>
                 </li>
                 <li className="flex items-center gap-3">
