@@ -3,6 +3,9 @@ import { smartVideoSync } from '@/services/api/smartVideoSync';
 
 const CRON_SECRET = process.env.CRON_SECRET;
 
+// Ensure this route is dynamic and not cached
+export const dynamic = 'force-dynamic';
+
 // POST /api/videos/sync - Manual sync for specific channels
 export async function POST(request: NextRequest) {
   try {
@@ -85,12 +88,25 @@ export async function POST(request: NextRequest) {
 // GET /api/videos/sync - Background sync via cron job
 export async function GET(request: NextRequest) {
   try {
-    // Verify cron secret for security
+    // FIXED: Use the exact format from Vercel's official documentation
     const authHeader = request.headers.get('authorization');
-    const providedSecret = authHeader?.replace('Bearer ', '');
+    
+    // Log for debugging (remove in production)
+    console.log('🔐 Auth header received:', authHeader);
+    console.log('🔐 Expected:', `Bearer ${CRON_SECRET}`);
+    
+    if (!CRON_SECRET) {
+      console.error('❌ CRON_SECRET environment variable is not set');
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
 
-    if (!CRON_SECRET || providedSecret !== CRON_SECRET) {
+    if (authHeader !== `Bearer ${CRON_SECRET}`) {
       console.error('❌ Unauthorized cron request');
+      console.error('❌ Received header:', authHeader);
+      console.error('❌ Expected header:', `Bearer ${CRON_SECRET}`);
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -115,6 +131,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-export const dynamic = 'force-dynamic'; 
+} 
