@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Video, Channel } from '@/types';
 import { videosApi, channelsApi } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
-import { FaTable, FaThLarge, FaChartLine, FaArrowUp, FaArrowDown } from 'react-icons/fa';
+import { FaTable, FaThLarge, FaChartLine, FaArrowUp, FaArrowDown, FaEyeSlash, FaEye } from 'react-icons/fa';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -19,6 +19,7 @@ import {
 import { getChannelTrendData } from '@/services/metrics/history';
 import { calculateOutlierScore, getTopPerformingVideos } from '@/services/metrics/outliers';
 import UpgradeButton from '@/components/UpgradeButton';
+import { applyShortsFiltering, isVideoShort } from '@/utils/videoFilters';
 
 // Register ChartJS components
 ChartJS.register(
@@ -59,6 +60,7 @@ export default function DashboardPage() {
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [showUpdateNotification, setShowUpdateNotification] = useState(false);
   const [selectedTimeFrame, setSelectedTimeFrame] = useState<TimeFrame>('7d');
+  const [includeShorts, setIncludeShorts] = useState(false); // Hide shorts by default
 
   // Calculate trends with historical data if available
   const [viewsTrend, setViewsTrend] = useState<TrendData>({ current: 0, previous: 0, percentage: 0 });
@@ -122,17 +124,21 @@ export default function DashboardPage() {
         });
       }
       
+      // Apply shorts filtering to recent videos
+      const filteredRecentVideos = applyShortsFiltering(recentVideosData, includeShorts);
+      
       // Get top performing videos using the new comprehensive ranking algorithm
-      const topVids = getTopPerformingVideos(recentVideosData, 4);
+      const topVids = getTopPerformingVideos(filteredRecentVideos, 4);
       console.log("Top videos with performance scores:", topVids.map(v => ({
         title: v.title.substring(0, 20),
         performanceScore: v.performanceScore,
         vph: v.vph,
-        views: v.viewCount
+        views: v.viewCount,
+        isShort: isVideoShort(v)
       })));
       
       setTopVideos(topVids);
-      setRecentVideos(recentVideosData);
+      setRecentVideos(filteredRecentVideos);
       setLastUpdated(new Date());
       setShowUpdateNotification(true);
       
@@ -149,12 +155,12 @@ export default function DashboardPage() {
   // Initial data fetch
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [includeShorts]); // Add includeShorts as dependency to refetch when filter changes
 
-  // Set up background updates every 4 hours
+  // Set up background updates every hour
   useEffect(() => {
-    const fourHours = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
-    const intervalId = setInterval(fetchData, fourHours);
+    const oneHour = 60 * 60 * 1000; // 1 hour in milliseconds
+    const intervalId = setInterval(fetchData, oneHour);
 
     return () => clearInterval(intervalId);
   }, []);
@@ -575,6 +581,21 @@ export default function DashboardPage() {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-semibold dark:text-white">Recent Videos</h2>
               <div className="flex items-center space-x-4">
+                {/* Shorts Toggle */}
+                <div className="flex items-center">
+                  <button
+                    onClick={() => setIncludeShorts(!includeShorts)}
+                    className={`flex items-center space-x-2 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                      includeShorts 
+                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300' 
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    }`}
+                    title={includeShorts ? 'Hide YouTube Shorts' : 'Show YouTube Shorts'}
+                  >
+                    {includeShorts ? <FaEye size={14} /> : <FaEyeSlash size={14} />}
+                    <span>Shorts</span>
+                  </button>
+                </div>
                 <div className="flex items-center">
                   <label htmlFor="sort" className="text-sm text-gray-600 dark:text-gray-400 mr-2">Sort by:</label>
                   <select

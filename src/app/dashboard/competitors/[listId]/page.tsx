@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { FaArrowLeft, FaPlus, FaTimes, FaYoutube, FaEllipsisV, FaChartBar, FaDownload, FaFilter, FaChevronDown, FaStar, FaRocket, FaTrophy, FaCheck, FaCalendarAlt, FaEye, FaEyeSlash, FaThLarge, FaSearch, FaExternalLinkAlt, FaPlay, FaBookmark, FaClipboard, FaChartLine, FaListUl, FaTh, FaInfoCircle, FaRegClock, FaLink, FaCrown, FaLock } from 'react-icons/fa';
+import { FaArrowLeft, FaPlus, FaTimes, FaYoutube, FaEllipsisV, FaChartBar, FaDownload, FaFilter, FaChevronDown, FaStar, FaRocket, FaTrophy, FaCheck, FaCalendarAlt, FaEye, FaEyeSlash, FaThLarge, FaSearch, FaExternalLinkAlt, FaPlay, FaBookmark, FaClipboard, FaChartLine, FaListUl, FaTh, FaInfoCircle, FaRegClock, FaLink, FaCrown, FaLock, FaSync, FaSpinner } from 'react-icons/fa';
 import Link from 'next/link';
 import { Competitor, Video } from '@/types';
 import { videosApi } from '@/services/api';
@@ -11,6 +11,14 @@ import { secureYoutubeService } from '@/services/api/youtube-secure';
 import SearchFilters from '@/components/SearchFilters';
 import { calculateOutlierScore, calculatePerformanceScore } from '@/services/metrics/outliers';
 import { useSubscription } from '@/hooks/useSubscription';
+import React from 'react';
+import { smartVideoSync } from '@/services/api/smartVideoSync';
+import { Label } from '@/components/ui/label';
+import { Select, SelectTrigger, SelectValue, SelectItem, SelectContent } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Loader2, RefreshCw, X } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
+import { applyShortsFiltering, isVideoShort } from '@/utils/videoFilters';
 
 // Format number to compact form
 const formatNumber = (num: number): string => {
@@ -46,6 +54,13 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   const [error, setError] = useState<string | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   
+  // Video sync states
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [channels, setChannels] = useState<{ id: string; name: string; youtubeChannelId: string; thumbnailUrl: string }[]>([]);
+  const [videosPerChannel, setVideosPerChannel] = useState(0); // 0 means no limit - fetch all videos
+  const [loadingStates, setLoadingStates] = useState<{[key: string]: boolean}>({});
+  const [fullSyncProgress, setFullSyncProgress] = useState<{[key: string]: { active: boolean; message: string }}>({});
+  
   // Free tier limits
   const FREE_TIER_CHANNEL_LIMIT = 5;
 
@@ -72,7 +87,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   // Chart and filter states
   const [chartMetric, setChartMetric] = useState('Subscribers');
   const [subscribersOnly, setSubscribersOnly] = useState(true);
-  const [sortBy, setSortBy] = useState<'date' | 'likes' | 'views'>('date');
+  const [sortBy, setSortBy] = useState<'date' | 'likes' | 'views' | 'vph'>('date');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTimeFrame, setSelectedTimeFrame] = useState<'30d' | '90d' | '180d' | '365d' | '3y' | 'all'>('30d');
@@ -112,6 +127,218 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   const [includeKeywords, setIncludeKeywords] = useState<string>("");
   const [excludeKeywords, setExcludeKeywords] = useState<string>("");
   const [isVideoLoading, setIsVideoLoading] = useState<boolean>(false);
+
+  // Add pagination state
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [videosPerPage] = useState<number>(24);
+  const [includeShorts, setIncludeShorts] = useState(false); // Hide shorts by default
+  
+  // NEW: Fetch videos using smart sync
+  const fetchVideos = async (showLoadingBar = true) => {
+    if (!competitors.length) return;
+
+    try {
+      if (showLoadingBar) {
+        setIsLoading(true);
+      }
+      setError('');
+
+      console.log('\n📺 === STARTING VIDEO FETCH ===');
+      console.log(`🎯 Target: ${videosPerChannel === 0 ? 'ALL videos' : `${videosPerChannel} videos per channel`}`);
+      console.log(`📋 Channels: ${competitors.length}`);
+      
+      // Extract channel IDs from competitors
+      const channelIds = competitors.map(c => c.youtubeId);
+      console.log('🔍 Using smart sync for channels:', channelIds);
+      
+      let allVideos: Video[] = [];
+
+      if (videosPerChannel === 0) {
+        // For unlimited videos, process channels one at a time (full sync)
+        console.log('🚀 Processing channels individually for unlimited video fetching...');
+        
+        for (let i = 0; i < channelIds.length; i++) {
+          const channelId = channelIds[i];
+          const competitor = competitors.find(c => c.youtubeId === channelId);
+          
+          console.log(`\n📺 Processing channel ${i + 1}/${channelIds.length}: ${competitor?.name || channelId}`);
+          
+          try {
+            const response = await fetch('/api/videos/sync', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                channelIds: [channelId], // Single channel for full sync
+                videosPerChannel: 0 // Explicitly send 0 for unlimited
+              }),
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              console.error(`❌ Sync failed for channel ${channelId}:`, errorData);
+              continue; // Skip this channel and continue with others
+            }
+
+            const syncResult = await response.json();
+            console.log(`✅ Sync result for ${channelId}:`, syncResult);
+
+            // Now fetch the stored videos for this channel
+            const storedResponse = await fetch(
+              `/api/videos/stored?channelIds=${channelId}` // No limit = fetch all
+            );
+
+            if (storedResponse.ok) {
+              const storedVideosResponse = await storedResponse.json();
+              const channelVideos = storedVideosResponse.data?.videos || [];
+              console.log(`📦 Retrieved ${channelVideos.length} videos for channel ${channelId}`);
+              allVideos.push(...channelVideos);
+            }
+          } catch (error) {
+            console.error(`💥 Error processing channel ${channelId}:`, error);
+            // Continue with next channel
+          }
+        }
+      } else {
+        // For limited videos, process all channels together
+        const response = await fetch('/api/videos/sync', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            channelIds,
+            videosPerChannel,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to sync videos');
+        }
+
+        const syncResult = await response.json();
+        console.log('✅ Sync result:', syncResult);
+
+        // Now fetch the stored videos for display
+        const storedResponse = await fetch(
+          `/api/videos/stored?channelIds=${channelIds.join(',')}&limit=${videosPerChannel}`
+        );
+
+        if (!storedResponse.ok) {
+          throw new Error('Failed to fetch stored videos');
+        }
+
+        const storedVideosResponse = await storedResponse.json();
+        console.log('📦 Stored videos API response:', storedVideosResponse);
+        
+        // Extract the videos array from the API response
+        allVideos = storedVideosResponse.data?.videos || [];
+      }
+
+      console.log(`💾 Retrieved ${allVideos.length} total videos for display`);
+
+      // Group by channel and ensure we have the right amount per channel
+      const videosByChannel = allVideos.reduce((acc, video) => {
+        if (!acc[video.channelId]) acc[video.channelId] = [];
+        acc[video.channelId].push(video);
+        return acc;
+      }, {} as Record<string, Video[]>);
+
+      // Sort each channel's videos by date
+      Object.keys(videosByChannel).forEach(channelId => {
+        videosByChannel[channelId].sort((a, b) => 
+          new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+        );
+      });
+
+      // Create final video list with proper channel distribution
+      const finalVideos: Video[] = [];
+      
+      if (videosPerChannel === 0) {
+        // For unlimited, add all videos sorted by date
+        finalVideos.push(...allVideos.sort((a, b) => 
+          new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+        ));
+      } else {
+        // For limited, ensure equal distribution per channel
+        channelIds.forEach(channelId => {
+          const channelVideos = videosByChannel[channelId] || [];
+          finalVideos.push(...channelVideos.slice(0, videosPerChannel));
+        });
+      }
+
+      setCompetitorVideos(finalVideos);
+      console.log(`🎉 Successfully loaded ${finalVideos.length} videos`);
+
+    } catch (error: any) {
+      console.error('💥 Error fetching videos:', error);
+      setError(error.message || 'Failed to fetch videos');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // NEW: Manual full sync for a specific channel
+  const performFullSync = async (channelId: string, channelName: string) => {
+    try {
+      setFullSyncProgress(prev => ({
+        ...prev,
+        [channelId]: { active: true, message: `Preparing to fetch ALL videos from ${channelName}...` }
+      }));
+
+      console.log(`🚀 Starting full sync for channel: ${channelId} (${channelName})`);
+      
+      const response = await fetch('/api/videos/sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          channelIds: [channelId],
+          fullSync: true
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log(`🎉 Full sync complete: ${result.videoCount} videos for ${channelName}`);
+        
+        // Refresh the videos display
+        await fetchVideos(false);
+      } else {
+        throw new Error(result.error || 'Full sync failed');
+      }
+
+    } catch (err) {
+      console.error('💥 Error in full sync:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Full sync failed';
+      setError(`Full sync error for ${channelName}: ${errorMessage}`);
+    } finally {
+      setFullSyncProgress(prev => ({
+        ...prev,
+        [channelId]: { active: false, message: '' }
+      }));
+    }
+  };
+
+  // NEW: Remove channel function
+  const handleRemoveChannel = async (competitorId: string) => {
+    try {
+      await competitorListsApi.removeCompetitorFromList(competitorId);
+      // Refresh competitors list
+      await fetchCompetitors();
+    } catch (error) {
+      console.error('Error removing channel:', error);
+      setError('Failed to remove channel');
+    }
+  };
 
   // Helper function to render engagement rate with deterministic values
   const renderEngagementRate = (channelId: string) => {
@@ -159,129 +386,71 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
     );
   };
 
-  // Call the check on mount
-  useEffect(() => {
-    fetchCompetitors();
-  }, []);
-  
-  // Add a useEffect to handle clicks outside the context menu
+  // Hook for click outside to close the context menu
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (contextMenuRef.current && !contextMenuRef.current.contains(event.target as Node)) {
         setShowVideoContextMenu(false);
       }
     };
-    
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
+
+    if (showVideoContextMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showVideoContextMenu]);
 
   const fetchCompetitors = async () => {
     try {
       setIsLoading(true);
+      setError(null);
       
-      console.log(`Fetching competitors for list ${params.listId}...`);
+      const trackedCompetitors = await competitorListsApi.getCompetitorsInList(params.listId);
       
-      // Get the competitor list from Supabase
-      try {
-        const competitors = await competitorListsApi.getCompetitorsInList(params.listId);
-        console.log(`Found ${competitors.length} competitors in list ${params.listId}`);
-        
-        // Convert from DB format to our app format
-        const formattedCompetitors: Competitor[] = [];
-        
-        // For each competitor, get fresh data from YouTube
-        for (const c of competitors) {
-          try {
-            // Try to get fresh data from YouTube
-            console.log(`Fetching updated data for channel ${c.name} (${c.youtubeId})...`);
-            const channelData = await secureYoutubeService.getChannelById(c.youtubeId);
-            
-            // Use the fresh data but keep our database ID
-            formattedCompetitors.push({
-              id: c.id,
-              youtubeId: c.youtubeId,
-              name: channelData.name,
-              thumbnailUrl: channelData.thumbnailUrl,
-              subscriberCount: channelData.subscriberCount,
-              videoCount: channelData.videoCount,
-              viewCount: channelData.viewCount
-            });
-            
-            console.log(`Updated data received for ${channelData.name}`);
-          } catch (error) {
-            console.error(`Error fetching data for channel ${c.youtubeId}:`, error);
-            
-            // Fall back to database data if YouTube API fails
-            formattedCompetitors.push({
-              id: c.id,
-              youtubeId: c.youtubeId,
-              name: c.name,
-              thumbnailUrl: c.thumbnailUrl || '',
-              subscriberCount: c.subscriberCount || 0,
-              videoCount: c.videoCount || 0,
-              viewCount: c.viewCount || 0
-            });
-          }
-        }
-        
-        setCompetitors(formattedCompetitors);
-        
-        // After getting competitors, fetch their videos
-        if (formattedCompetitors.length > 0) {
-          fetchCompetitorVideos(formattedCompetitors);
-        } else {
-          setIsLoading(false);
-        }
-      } catch (error) {
-        console.error('Error fetching competitors for list:', error);
-        if (error instanceof Error && error.message.includes('not found')) {
-          // List not found, redirect to the main competitors page
-          router.push('/dashboard/competitors');
-        }
-        setIsLoading(false);
-      }
-    } catch (error) {
-      console.error('Error in fetchCompetitors:', error);
+      // Convert TrackedCompetitor[] to Competitor[] 
+      const competitors: Competitor[] = trackedCompetitors.map(tc => ({
+        id: tc.id,
+        youtubeId: tc.youtubeId,
+        name: tc.name,
+        thumbnailUrl: tc.thumbnailUrl || '', // Handle null values
+        subscriberCount: tc.subscriberCount || 0,
+        videoCount: tc.videoCount || 0,
+        viewCount: tc.viewCount || 0
+      }));
+      
+      setCompetitors(competitors);
+      
+    } catch (err) {
+      console.error('Error fetching competitors:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load competitors');
+    } finally {
       setIsLoading(false);
     }
   };
-  
+
+  // Hook to fetch videos when competitors change
+  useEffect(() => {
+    if (competitors.length > 0) {
+      fetchVideos();
+    }
+  }, [competitors, videosPerChannel]);
+
+  // UPDATED: Use our new smart sync system instead of direct YouTube API calls
   const fetchCompetitorVideos = async (competitorsList: Competitor[]) => {
+    if (!competitorsList.length) return;
+
     try {
-      setIsVideoLoading(true);
-      const allVideos: Video[] = [];
+      console.log('\n🎯 === SMART SYNC VIDEO FETCH ===');
+      console.log(`📋 Channels: ${competitorsList.length}`);
+      console.log(`🎯 Videos per channel: ${videosPerChannel}`);
       
-      // Process all competitors
-      const competitorsToFetch = competitorsList;
+      // Use our smart sync system
+      const channelIds = competitorsList.map(c => c.youtubeId);
+      await fetchVideos(true);
       
-      // Fetch videos for each competitor (10 videos per competitor)
-      for (const competitor of competitorsToFetch) {
-        try {
-          console.log(`Fetching videos for channel ${competitor.name} (${competitor.youtubeId})...`);
-          const videos = await secureYoutubeService.getVideosByChannelId(competitor.youtubeId, 10);
-          allVideos.push(...videos);
-          console.log(`Found ${videos.length} videos for channel ${competitor.name}`);
-        } catch (error) {
-          console.error(`Error fetching videos for channel ${competitor.youtubeId}:`, error);
-        }
-      }
-      
-      // Sort videos by published date (newest first)
-      const sortedVideos = allVideos.sort((a, b) => 
-        new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
-      );
-      
-      setCompetitorVideos(sortedVideos);
-      setFilteredCompetitorVideos(sortedVideos); // Also set filtered videos initially
-      setIsVideoLoading(false);
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error fetching competitor videos:', error);
-      setIsVideoLoading(false);
-      setIsLoading(false);
+    } catch (err) {
+      console.error('💥 Error in fetchCompetitorVideos:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch competitor videos');
     }
   };
 
@@ -549,14 +718,14 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
   };
   
   // Helper function to detect if a video is a YouTube Short
-  const isShort = (video: Video): boolean => {
-    // YouTube Shorts are typically vertical videos less than 60 seconds
-    // This is an approximation based on metadata we have available
-    return video.title.toLowerCase().includes('#shorts') || 
-           video.description.toLowerCase().includes('#shorts') ||
-           video.title.toLowerCase().includes('#short') || 
-           video.description.toLowerCase().includes('#short');
-  };
+  // const isShort = (video: Video): boolean => {
+  //   // YouTube Shorts are typically vertical videos less than 60 seconds
+  //   // This is an approximation based on metadata we have available
+  //   return video.title.toLowerCase().includes('#shorts') || 
+  //          video.description.toLowerCase().includes('#shorts') ||
+  //          video.title.toLowerCase().includes('#short') || 
+  //          video.description.toLowerCase().includes('#short');
+  // };
 
   // Updated handleApplyFilters function
   const handleApplyFilters = (filters: any) => {
@@ -566,11 +735,14 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
     // Close the filter modal
     setIsFilterOpen(false);
     
+    // Apply shorts filtering first
+    let videosToFilter = applyShortsFiltering(competitorVideos, includeShorts);
+    
     // Filter the videos based on the selected criteria
-    const filtered = competitorVideos.filter(video => {
-      // Filter by content format (Videos vs Shorts)
-      if (filters.contentFormat === 'Videos' && isShort(video)) return false;
-      if (filters.contentFormat === 'Shorts' && !isShort(video)) return false;
+    const filtered = videosToFilter.filter(video => {
+      // Filter by content format (Videos vs Shorts) - this is now handled by applyShortsFiltering
+      // if (filters.contentFormat === 'Videos' && isVideoShort(video)) return false;
+      // if (filters.contentFormat === 'Shorts' && !isVideoShort(video)) return false;
       
       // Filter by views
       if (filters.viewsMin) {
@@ -914,20 +1086,31 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
     setShowVideoContextMenu(true);
   };
 
-  // Update the filteredVideos definition
-  const filteredVideos = activeVideoTab === 'competitors' 
-    ? (videoSearchQuery 
-        ? filteredCompetitorVideos.filter(video => 
-            video.title.toLowerCase().includes(videoSearchQuery.toLowerCase()) || 
-            video.description.toLowerCase().includes(videoSearchQuery.toLowerCase()))
-        : filteredCompetitorVideos)
-    : (videoSearchQuery 
-        ? similarVideos.filter(video => 
-            video.title.toLowerCase().includes(videoSearchQuery.toLowerCase()) || 
-            video.description.toLowerCase().includes(videoSearchQuery.toLowerCase()))
-        : similarVideos);
-      
-  // Removed the channel grouping functionality and renamed to getSortedVideos
+  // Update the filteredVideos definition to handle all videos and respect advanced filters
+  const filteredVideos = useMemo(() => {
+    // Start with the appropriate base array
+    let baseVideos: Video[];
+    
+    // If advanced filters are active, use the filtered results
+    if (activeFilters) {
+      baseVideos = filteredCompetitorVideos;
+    } else {
+      // Otherwise, apply shorts filtering to all competitor videos
+      baseVideos = applyShortsFiltering(competitorVideos, includeShorts);
+    }
+    
+    // Apply search query filter if present
+    if (videoSearchQuery) {
+      return baseVideos.filter(video => 
+        video.title.toLowerCase().includes(videoSearchQuery.toLowerCase()) || 
+        video.description.toLowerCase().includes(videoSearchQuery.toLowerCase())
+      );
+    }
+    
+    return baseVideos;
+  }, [competitorVideos, filteredCompetitorVideos, activeFilters, includeShorts, videoSearchQuery]);
+
+  // Update getSortedVideos to handle all videos
   const getSortedVideos = () => {
     return filteredVideos.sort((a, b) => {
       switch (sortBy) {
@@ -937,6 +1120,8 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
           return b.likeCount - a.likeCount;
         case 'views':
           return b.viewCount - a.viewCount;
+        case 'vph':
+          return b.vph - a.vph;
         default:
           return 0;
       }
@@ -1015,7 +1200,22 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
 
   // Add handler for sort change
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSortBy(e.target.value as 'date' | 'likes' | 'views');
+    setSortBy(e.target.value as 'date' | 'likes' | 'views' | 'vph');
+  };
+
+  // Add pagination helper functions
+  const indexOfLastVideo = currentPage * videosPerPage;
+  const indexOfFirstVideo = indexOfLastVideo - videosPerPage;
+  const currentVideos = getSortedVideos().slice(indexOfFirstVideo, indexOfLastVideo);
+  const totalPages = Math.ceil(getSortedVideos().length / videosPerPage);
+  
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+    // Scroll to top of video section
+    const videoSection = document.getElementById('video-grid');
+    if (videoSection) {
+      videoSection.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   if (isLoading) {
@@ -1399,6 +1599,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                 <option value="date">Date</option>
                 <option value="likes">Likes</option>
                 <option value="views">Views</option>
+                <option value="vph">Views per Hour</option>
               </select>
             </div>
             
@@ -1421,8 +1622,13 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
           </div>
         ) : filteredVideos.length > 0 ? (
           <div>
+            {/* Video count summary */}
+            <div className="mb-4 text-sm text-gray-400">
+              Showing {filteredVideos.length} videos from {competitors.length} channels
+            </div>
+            
             {/* Combined video grid */}
-            <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${videoGridColumns}, minmax(0, 1fr))` }}>
+            <div id="video-grid" className="grid gap-4" style={{ gridTemplateColumns: `repeat(${videoGridColumns}, minmax(0, 1fr))` }}>
               {getSortedVideos().map((video) => (
                 <div 
                   key={video.id} 
@@ -1430,7 +1636,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                   onClick={() => openVideoOnYouTube(video.youtubeId)}
                   onContextMenu={(e) => handleVideoContextMenu(e, video.youtubeId)}
                 >
-                  <div className="relative pt-[56.25%]"> {/* 16:9 aspect ratio */}
+                  <div className="relative pt-[56.25%]">
                     <img 
                       src={video.thumbnailUrl} 
                       alt={video.title} 
@@ -1443,7 +1649,7 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                     <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
                       {new Date(video.publishedAt).toLocaleDateString()}
                     </div>
-                    {/* Add channel info badge */}
+                    {/* Channel badge */}
                     <div className="absolute top-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded-full flex items-center">
                       {competitors.find(c => c.youtubeId === video.channelId)?.name || 'Unknown Channel'}
                     </div>
@@ -1464,46 +1670,10 @@ export default function CompetitorListDetail({ params }: { params: { listId: str
                           {formatNumber(video.likeCount)} likes
                         </span>
                         
-                        {/* VPH with performance level */}
-                        {(() => {
-                          const outlierData = calculateOutlierScore(video, getSortedVideos());
-                          const performanceLevel = outlierData.performanceLevel;
-                          return (
-                            <span className={`text-xs ${
-                              performanceLevel === 'low' ? 'bg-gray-100 dark:bg-gray-900/50 text-gray-800 dark:text-gray-300' : 
-                              performanceLevel === 'high' ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300' : 
-                              performanceLevel === 'exceptional' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300' : 
-                              'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'
-                            } rounded-xl px-2 py-0.5 font-medium inline-flex items-center`}>
-                              {formatNumber(video.vph)} VPH
-                              {performanceLevel === 'exceptional' && <span className="ml-1">🔥</span>}
-                            </span>
-                          );
-                        })()}
-                        
-                        {/* Outlier Score Badge */}
-                        {(() => {
-                          const outlierData = calculateOutlierScore(video, getSortedVideos());
-                          const xColor = outlierData.xFactor > 1.2 ? 'bg-blue-200 text-blue-800' : 
-                                        outlierData.xFactor < 0.8 ? 'bg-red-200 text-red-800' : 
-                                        'bg-gray-200 text-gray-800';
-                          
-                          return (
-                            <span className={`text-xs font-bold rounded-xl px-2 py-0.5 ${xColor} inline-flex items-center`}>
-                              {outlierData.xFactor.toFixed(1)}x
-                            </span>
-                          );
-                        })()}
-                        
-                        {/* Performance Score Badge */}
-                        {(() => {
-                          const performanceScore = calculatePerformanceScore(video, getSortedVideos());
-                          return (
-                            <span className="text-xs font-bold rounded-xl px-2 py-0.5 bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300 inline-flex items-center">
-                              {Math.round(performanceScore)} Score
-                            </span>
-                          );
-                        })()}
+                        {/* VPH Badge */}
+                        <span className="text-xs bg-white/20 dark:bg-white/10 text-gray-800 dark:text-gray-200 rounded-xl px-2 py-1">
+                          {formatNumber(video.vph)} VPH
+                        </span>
                       </div>
                     </div>
                   )}

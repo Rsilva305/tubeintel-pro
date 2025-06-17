@@ -21,7 +21,7 @@ class APICache {
     subscription: { ttl: 5 * 60 * 1000, staleWhileRevalidate: 30 * 60 * 1000 }, // 5min fresh, 30min stale
     profile: { ttl: 10 * 60 * 1000, staleWhileRevalidate: 60 * 60 * 1000 }, // 10min fresh, 1hr stale
     youtube_channel: { ttl: 24 * 60 * 60 * 1000, staleWhileRevalidate: 7 * 24 * 60 * 60 * 1000 }, // 24hr fresh, 7d stale
-    youtube_videos: { ttl: 4 * 60 * 60 * 1000, staleWhileRevalidate: 24 * 60 * 60 * 1000 }, // 4hr fresh, 24hr stale
+    youtube_videos: { ttl: 30 * 60 * 1000, staleWhileRevalidate: 4 * 60 * 60 * 1000 }, // 30min fresh, 4hr stale
     competitors: { ttl: 15 * 60 * 1000, staleWhileRevalidate: 60 * 60 * 1000 }, // 15min fresh, 1hr stale
     default: { ttl: 5 * 60 * 1000, staleWhileRevalidate: 15 * 60 * 1000 } // 5min fresh, 15min stale
   };

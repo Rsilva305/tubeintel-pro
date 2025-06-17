@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get('q');
     const channelId = searchParams.get('channelId');
     const type = searchParams.get('type') || 'video';
-    const maxResults = searchParams.get('maxResults') || '10';
+    const maxResults = searchParams.get('maxResults') || '20';
     const part = searchParams.get('part') || 'snippet';
     const order = searchParams.get('order') || 'relevance';
     

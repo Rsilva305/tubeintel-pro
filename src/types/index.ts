@@ -49,6 +49,7 @@ export interface Video {
   commentCount: number;
   vph: number; // Views Per Hour
   performanceScore?: number;
+  duration?: number; // Duration in seconds (for shorts filtering)
 }
 
 // Alert types
