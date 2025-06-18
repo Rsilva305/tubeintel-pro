@@ -12,14 +12,25 @@ const isBrowser = typeof window !== 'undefined';
 
 // Functions to get and set the API mode
 export const getUseYoutubeApi = () => {
-  // When in server-side rendering, default to false to avoid API calls
-  if (!isBrowser) {
-    return false;
-  }
-  
   // Check for environment variable first (highest priority)
   if (typeof process !== 'undefined' && process.env && process.env.NEXT_PUBLIC_USE_REAL_API === 'true') {
     return true;
+  }
+  
+  // In production, always use real API unless explicitly disabled
+  if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'production') {
+    return true;
+  }
+  
+  // When in server-side rendering, check if we have API key configured
+  if (!isBrowser) {
+    // If we have YouTube API key configured, use real API
+    const hasYouTubeKey = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY || process.env.SERVER_YOUTUBE_API_KEY;
+    if (hasYouTubeKey) {
+      return true;
+    }
+    // Default to false only if no API key is configured on server-side
+    return false;
   }
   
   // On client-side, check localStorage
@@ -33,13 +44,9 @@ export const getUseYoutubeApi = () => {
 
 export const setUseYoutubeApi = (value: boolean) => {
   USE_YOUTUBE_API = value;
-  
-  // Save to localStorage for persistence across page refreshes
   if (isBrowser) {
-    localStorage.setItem('useYoutubeApi', value ? 'true' : 'false');
+    localStorage.setItem('useYoutubeApi', value.toString());
   }
-  
-  return USE_YOUTUBE_API;
 };
 
 // Initialize during client-side only
@@ -90,7 +97,6 @@ export const getApiSettings = () => API_SETTINGS;
 // Set API settings
 export const setApiSettings = (settings: Partial<typeof API_SETTINGS>) => {
   API_SETTINGS = { ...API_SETTINGS, ...settings };
-  return API_SETTINGS;
 };
 
 // Simulate API delay
