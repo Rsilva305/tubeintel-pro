@@ -51,20 +51,20 @@ class SecureAuthService {
       if (data.user) {
         const secureUser = this.createSecureUser(data.user, false);
         this.updateCache(secureUser);
-        
+
         // Only store non-sensitive preferences
         secureStorage.setPreference('lastLoginTime', Date.now());
-        
+
         return { user: secureUser, session: data.session };
       }
 
       return { user: null, session: null };
     } catch (error) {
       console.error('Secure sign up error:', error);
-      return { 
-        user: null, 
-        session: null, 
-        error: error instanceof Error ? error.message : 'Sign up failed' 
+      return {
+        user: null,
+        session: null,
+        error: error instanceof Error ? error.message : 'Sign up failed'
       };
     }
   }
@@ -74,6 +74,7 @@ class SecureAuthService {
    */
   async signIn(email: string, password: string): Promise<AuthResult> {
     try {
+      // Standard Supabase Auth call (now that the client is fixed via hardcoding in supabase.ts)
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -86,7 +87,7 @@ class SecureAuthService {
       if (data.user && data.session) {
         // Get profile data for onboarding status
         const hasCompletedOnboarding = await this.checkOnboardingStatus(data.user.id);
-        
+
         const secureUser = this.createSecureUser(data.user, hasCompletedOnboarding);
         this.updateCache(secureUser);
 
@@ -103,10 +104,10 @@ class SecureAuthService {
       return { user: null, session: null };
     } catch (error) {
       console.error('Secure sign in error:', error);
-      return { 
-        user: null, 
-        session: null, 
-        error: error instanceof Error ? error.message : 'Sign in failed' 
+      return {
+        user: null,
+        session: null,
+        error: error instanceof Error ? error.message : 'Sign in failed'
       };
     }
   }
@@ -123,7 +124,7 @@ class SecureAuthService {
 
       // Get user from Supabase session
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (!user) {
         this.clearCache();
         return null;
@@ -132,7 +133,7 @@ class SecureAuthService {
       // Get fresh profile data only if cache expired
       const hasCompletedOnboarding = await this.checkOnboardingStatus(user.id);
       const secureUser = this.createSecureUser(user, hasCompletedOnboarding);
-      
+
       this.updateCache(secureUser);
       return secureUser;
 
@@ -250,6 +251,7 @@ class SecureAuthService {
           accessToken: session.access_token,
           refreshToken: session.refresh_token,
           expiresAt: session.expires_at,
+          user: session.user,
         }),
       });
     } catch (error) {
@@ -307,20 +309,20 @@ class SecureAuthService {
 export const secureAuth = SecureAuthService.getInstance();
 
 // Helper functions for backward compatibility
-export const secureSignUp = (email: string, password: string) => 
+export const secureSignUp = (email: string, password: string) =>
   secureAuth.signUp(email, password);
 
-export const secureSignIn = (email: string, password: string) => 
+export const secureSignIn = (email: string, password: string) =>
   secureAuth.signIn(email, password);
 
-export const secureGetCurrentUser = () => 
+export const secureGetCurrentUser = () =>
   secureAuth.getCurrentUser();
 
-export const secureSignOut = () => 
+export const secureSignOut = () =>
   secureAuth.signOut();
 
-export const secureIsAuthenticated = () => 
+export const secureIsAuthenticated = () =>
   secureAuth.isAuthenticated();
 
-export const secureGetSession = () => 
-  secureAuth.getSession(); 
+export const secureGetSession = () =>
+  secureAuth.getSession();

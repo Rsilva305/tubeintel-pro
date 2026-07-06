@@ -2,34 +2,37 @@
 export const getEnv = (key: string, defaultValue: string = ''): string => {
   // Check for browser environment variables (Next.js prefixed with NEXT_PUBLIC_)
   const value = process.env[`NEXT_PUBLIC_${key}`] || defaultValue;
-  
+
   // In development, log when important environment variables are missing
   if (process.env.NODE_ENV === 'development' && !value && !defaultValue) {
     console.warn(`Warning: Environment variable NEXT_PUBLIC_${key} is missing`);
   }
-  
-  return value;
+
+  return value ? value.trim() : value;
 };
 
 // Helper to get server-side only environment variables
 export const getServerEnv = (key: string, defaultValue: string = ''): string => {
   // First try the regular environment variable (server-side only)
   const value = process.env[key] || defaultValue;
-  
+
   // In development, log when important environment variables are missing
   if (process.env.NODE_ENV === 'development' && !value && !defaultValue) {
     console.warn(`Warning: Environment variable ${key} is missing`);
   }
-  
-  return value;
+
+  return value ? value.trim() : value;
 };
 
 // Environment variables with fallbacks
 // In production, these would be set in the real environment or .env.local file
 
 // Use environment variables if available, otherwise fallback to defaults
-export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-export const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ? process.env.NEXT_PUBLIC_SUPABASE_URL.trim() : '';
+export const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.trim() : '';
+
+// YouTube API key (public/client-side)
+export const YOUTUBE_API_KEY = getEnv('YOUTUBE_API_KEY');
 
 // YouTube API key for server-side API routes only
 export const SERVER_YOUTUBE_API_KEY = getServerEnv('YOUTUBE_API_KEY');
@@ -55,4 +58,4 @@ export const getEnvironmentInfo = () => {
     supabaseKey: SUPABASE_ANON_KEY ? 'Set' : 'Not set',
     serverYoutubeApiKey: hasServerYouTubeApiKey ? 'Set' : 'Not set'
   };
-}; 
+};

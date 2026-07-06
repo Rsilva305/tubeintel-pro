@@ -15,7 +15,9 @@ export async function POST() {
 
     response.cookies.set('sb-access-token', '', cookieOptions);
     response.cookies.set('sb-refresh-token', '', cookieOptions);
-    
+
+    response.cookies.set('sb-auth-token', '', cookieOptions);
+
     // Clear session metadata cookie
     response.cookies.set('session-active', '', {
       httpOnly: false,
