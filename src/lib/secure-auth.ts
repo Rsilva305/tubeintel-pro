@@ -302,8 +302,6 @@ class SecureAuthService {
     legacyKeys.forEach(key => {
       localStorage.removeItem(key);
     });
-
-    console.log('🧹 Cleaned up legacy authentication data');
   }
 }
 
