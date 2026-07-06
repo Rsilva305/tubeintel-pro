@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { accessToken, refreshToken, expiresAt } = await request.json();
+    const requestBody = await request.json();
+    const { accessToken, refreshToken, expiresAt } = requestBody;
 
     if (!accessToken || !refreshToken) {
       return NextResponse.json(
@@ -35,7 +36,18 @@ export async function POST(request: NextRequest) {
       expires: refreshExpiresDate,
     });
 
-    // Set session metadata (non-sensitive)
+    response.cookies.set('sb-auth-token', JSON.stringify({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      user: requestBody.user,
+    }), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+      expires: expiresDate,
+    });
+
     response.cookies.set('session-active', 'true', {
       httpOnly: false, // Accessible to client for UI state
       secure: process.env.NODE_ENV === 'production',

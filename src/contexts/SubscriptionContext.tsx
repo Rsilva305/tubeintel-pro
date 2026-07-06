@@ -32,13 +32,13 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   const [status, setStatus] = useState<SubscriptionState>('loading');
   const [plan, setPlan] = useState<SubscriptionStatus>('free');
   const [expiresAt, setExpiresAt] = useState<Date | null>(null);
-  
+
   const checkSubscription = async () => {
     try {
       console.log('Checking subscription status...');
       const response = await fetch('/api/subscription/status');
       const data = await response.json();
-      
+
       if (response.ok) {
         if (data.subscribed) {
           console.log('Active subscription found:', data.plan);
@@ -62,24 +62,24 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       setPlan('free');
     }
   };
-  
+
   // Special function to check after an upgrade
   const checkAfterUpgrade = async () => {
     console.log('Checking subscription after upgrade...');
     setStatus('loading');
     await checkSubscription();
   };
-  
+
   // Set up Supabase auth listener to detect login/logout
   useEffect(() => {
     // Initial subscription check on mount
     checkSubscription();
-    
+
     // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('Auth state changed:', event);
-        
+
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           // User just signed in, check their subscription
           console.log('User signed in, checking subscription');
@@ -93,20 +93,20 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         }
       }
     );
-    
+
     // No visibility change handler, no periodic checks
-    
+
     // Clean up
     return () => {
       subscription.unsubscribe();
     };
   }, []);
-  
+
   const refreshSubscription = async () => {
     setStatus('loading');
     await checkSubscription();
   };
-  
+
   const value = {
     plan,
     status,
@@ -116,7 +116,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     refreshSubscription,
     checkAfterUpgrade
   };
-  
+
   return (
     <SubscriptionContext.Provider value={value}>
       {children}

@@ -49,10 +49,24 @@ export async function POST(req: NextRequest) {
         if (userId && planType) {
           // Store subscription data in your database
           const supabase = createClient();
-          
+
           // Check if customer exists
           let customerId = session.customer;
-          
+
+          // Get the real billing period end from Stripe instead of guessing 30 days
+          let periodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+          if (session.subscription) {
+            try {
+              const subResponse = await stripeInstance.subscriptions.retrieve(session.subscription as string);
+              const sub = subResponse as unknown as Stripe.Subscription & { current_period_end: number };
+              if (sub.current_period_end) {
+                periodEnd = new Date(sub.current_period_end * 1000);
+              }
+            } catch (subError) {
+              console.error('Could not retrieve subscription period from Stripe, using 30-day fallback');
+            }
+          }
+
           // Update user's subscription in database
           const { error } = await supabase
             .from('user_subscriptions')
@@ -62,7 +76,7 @@ export async function POST(req: NextRequest) {
               stripe_subscription_id: session.subscription,
               plan_type: planType,
               status: 'active',
-              current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now as placeholder
+              current_period_end: periodEnd.toISOString(),
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             });

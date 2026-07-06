@@ -41,3 +41,6 @@ next-env.d.ts
 
 # OS generated files
 Thumbs.db 
+# AI tooling artifacts
+.agents/
+skills-lock.json
