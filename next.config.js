@@ -6,6 +6,15 @@ const nextConfig = {
   experimental: {
     instrumentationHook: true,
   },
+
+  compiler: {
+    // Strip console.log/debug/info from production builds; keep error and warn
+    // so server logs and Sentry breadcrumbs still work. Dev keeps everything.
+    removeConsole:
+      process.env.NODE_ENV === 'production'
+        ? { exclude: ['error', 'warn'] }
+        : false,
+  },
 };
 
 module.exports = withSentryConfig(nextConfig, {
