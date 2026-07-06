@@ -1,7 +1,12 @@
 const { withSentryConfig } = require('@sentry/nextjs');
 
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+  // Required on Next 14 for instrumentation.ts register() to run (default in Next 15+)
+  experimental: {
+    instrumentationHook: true,
+  },
+};
 
 module.exports = withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG,
