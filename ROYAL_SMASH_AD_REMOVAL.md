@@ -21,9 +21,11 @@ This is a **split APK / XAPK** bundle. You need an installer that supports XAPK:
 
 Steps:
 
-1. Download `RoyalSmash-no-ads.xapk`
+1. Download `RoyalSmash-no-ads-v2.xapk` from the GitHub release (all split APKs are signed with the same key)
 2. Uninstall the Play Store version first (signatures differ)
 3. Open the XAPK with your XAPK installer and install all splits
+
+If you see **"one or more of the APKs was invalid"**, you likely have an older build where only the base APK was re-signed. Use **v2** from the release.
 
 ## Rebuild from source APK
 
