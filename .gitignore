@@ -44,3 +44,10 @@ Thumbs.db
 # AI tooling artifacts
 .agents/
 skills-lock.json
+*.apk
+*.xapk
+apk_analysis/
+xapk_extracted/
+xapk_noads/
+tools/
+app.xapk
