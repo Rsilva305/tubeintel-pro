@@ -10,8 +10,8 @@ ORIGINAL = Path("/workspace/xapk_extracted/com.cyphergames.royalsmash.apk")
 PATCHED = Path("/workspace/apk_analysis/royalsmash-noads-unsigned.apk")
 OUTPUT = Path("/workspace/apk_analysis/royalsmash-noads-merged.apk")
 
-# Only replace dex we actually patch (ads + license)
-DEX_TO_REPLACE = {"classes.dex", "classes2.dex"}
+# Only replace dex we actually patch
+DEX_TO_REPLACE = {"classes.dex", "classes2.dex", "classes8.dex"}
 
 
 def main() -> None:

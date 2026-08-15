@@ -117,4 +117,77 @@ patch_file(
     "exitAction bypass",
 )
 
+patch_file(
+    "smali_classes2/com/pairip/licensecheck/LicenseClient.smali",
+    """.method public initializeLicenseCheck()V
+    .locals 3
+
+    .line 245
+    sget-object v0, Lcom/pairip/licensecheck/LicenseClient;->licenseCheckState:Lcom/pairip/licensecheck/LicenseClient$LicenseCheckState;""",
+    """.method public initializeLicenseCheck()V
+    .locals 1
+
+    sget-object v0, Lcom/pairip/licensecheck/LicenseClient$LicenseCheckState;->FULL_CHECK_OK:Lcom/pairip/licensecheck/LicenseClient$LicenseCheckState;
+
+    sput-object v0, Lcom/pairip/licensecheck/LicenseClient;->licenseCheckState:Lcom/pairip/licensecheck/LicenseClient$LicenseCheckState;
+
+    return-void
+
+    .line 245
+    sget-object v0, Lcom/pairip/licensecheck/LicenseClient;->licenseCheckState:Lcom/pairip/licensecheck/LicenseClient$LicenseCheckState;""",
+    "initializeLicenseCheck bypass",
+)
+
+patch_file(
+    "smali_classes2/com/pairip/licensecheck/LicenseClient.smali",
+    """.method static stopTrial(Landroid/content/Context;)V
+    .locals 2
+    .annotation system Ldalvik/annotation/MethodParameters;
+        accessFlags = {
+            0x0
+        }
+        names = {
+            "context"
+        }
+    .end annotation
+
+    .line 181
+    const-string v0, "LicenseClient\"""",
+    """.method static stopTrial(Landroid/content/Context;)V
+    .locals 2
+    .annotation system Ldalvik/annotation/MethodParameters;
+        accessFlags = {
+            0x0
+        }
+        names = {
+            "context"
+        }
+    .end annotation
+
+    return-void
+
+    .line 181
+    const-string v0, "LicenseClient\"""",
+    "stopTrial bypass",
+)
+
+patch_file(
+    "smali_classes2/com/pairip/licensecheck/LicenseActivity.smali",
+    """.method protected exitApp()V
+    .locals 1
+
+    .line 122
+    invoke-virtual {p0}, Lcom/pairip/licensecheck/LicenseActivity;->finishAndRemoveTask()V""",
+    """.method protected exitApp()V
+    .locals 1
+
+    invoke-virtual {p0}, Lcom/pairip/licensecheck/LicenseActivity;->finish()V
+
+    return-void
+
+    .line 122
+    invoke-virtual {p0}, Lcom/pairip/licensecheck/LicenseActivity;->finishAndRemoveTask()V""",
+    "LicenseActivity.exitApp bypass",
+)
+
 print("License patches applied.")

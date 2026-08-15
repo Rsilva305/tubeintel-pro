@@ -275,4 +275,71 @@ patch_file(
     "showAppOpenAd bypass",
 )
 
+# Stop loading ads (prevents startup app-open / interstitial load crashes)
+for method in ["loadAppOpenAd", "loadInterstitial", "loadRewardedAd"]:
+    patch_file(
+        MANAGER,
+        f""".method public {method}(Ljava/lang/String;)V
+    .locals 0
+
+    .line""",
+        f""".method public {method}(Ljava/lang/String;)V
+    .locals 0
+
+    return-void
+
+    .line""",
+        f"{method} noop",
+    )
+
+patch_file(
+    MANAGER,
+    """.method public showCmpForExistingUser()V
+    .locals 2
+
+    .line 534
+    iget-object v0, p0, Lcom/applovin/mediation/unity/MaxUnityAdManager;->sdk:Lcom/applovin/sdk/AppLovinSdk;""",
+    """.method public showCmpForExistingUser()V
+    .locals 0
+
+    return-void
+
+    .line 534
+    iget-object v0, p0, Lcom/applovin/mediation/unity/MaxUnityAdManager;->sdk:Lcom/applovin/sdk/AppLovinSdk;""",
+    "showCmpForExistingUser noop",
+)
+
+# Block fullscreen ad display at SDK layer (app-open / interstitial / rewarded)
+FULLSCREEN = "smali/com/applovin/impl/mediation/ads/MaxFullscreenAdImpl.smali"
+path = BASE / FULLSCREEN
+text = path.read_text()
+start = text.index(".method public isReady()Z")
+end = text.index(".end method", start) + len(".end method")
+text = text[:start] + """.method public isReady()Z
+    .locals 1
+
+    const/4 v0, 0x1
+
+    return v0
+.end method""" + text[end:]
+path.write_text(text)
+print("OK: MaxFullscreenAdImpl.isReady always true")
+
+patch_file(
+    FULLSCREEN,
+    """.method public showAd(Ljava/lang/String;Ljava/lang/String;Landroid/app/Activity;)V
+    .locals 2
+
+    .line 1
+    iget-object v0, p0, Lcom/applovin/impl/mediation/ads/a;->sdk:Lcom/applovin/impl/sdk/l;""",
+    """.method public showAd(Ljava/lang/String;Ljava/lang/String;Landroid/app/Activity;)V
+    .locals 0
+
+    return-void
+
+    .line 1
+    iget-object v0, p0, Lcom/applovin/impl/mediation/ads/a;->sdk:Lcom/applovin/impl/sdk/l;""",
+    "MaxFullscreenAdImpl.showAd noop",
+)
+
 print("All patches applied.")

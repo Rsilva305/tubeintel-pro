@@ -19,6 +19,7 @@ java -jar "$APKTOOL" d -r -f -o "$DECODE_DIR" "$SRC_APK"
 echo "==> Apply patches"
 python3 /workspace/patch_license.py
 python3 /workspace/patch_ads.py
+python3 /workspace/patch_appsflyer.py
 
 echo "==> Build dex via apktool"
 java -jar "$APKTOOL" b "$DECODE_DIR" -o /workspace/apk_analysis/royalsmash-dex-only.apk
