@@ -3,43 +3,29 @@
 
 from pathlib import Path
 
+from patch_utils import patch_method_file, replace_method
+
 BASE = Path("/workspace/apk_analysis/apktool")
+MANAGER = BASE / "smali/com/applovin/mediation/unity/MaxUnityAdManager.smali"
+FULLSCREEN = BASE / "smali/com/applovin/impl/mediation/ads/MaxFullscreenAdImpl.smali"
 
-def patch_file(rel_path: str, old: str, new: str, label: str) -> None:
-    path = BASE / rel_path
-    text = path.read_text()
-    if old not in text:
-        raise SystemExit(f"PATCH FAILED [{label}]: pattern not found in {rel_path}")
-    path.write_text(text.replace(old, new, 1))
-    print(f"OK: {label}")
-
-
-MANAGER = "smali/com/applovin/mediation/unity/MaxUnityAdManager.smali"
-
-# License patches are in patch_license.py (run first)
 
 # Always report ads as ready
 for method in ["isRewardedAdReady", "isInterstitialReady", "isAppOpenAdReady"]:
-    old = f""".method public {method}(Ljava/lang/String;)Z
-    .locals 0
-
-    """
-    # read method from file and replace whole method
-    path = BASE / MANAGER
-    text = path.read_text()
-    start = text.index(f".method public {method}(Ljava/lang/String;)Z")
-    end = text.index(".end method", start) + len(".end method")
-    new_method = f""".method public {method}(Ljava/lang/String;)Z
+    patch_method_file(
+        MANAGER,
+        f"{method}(Ljava/lang/String;)Z",
+        f""".method public {method}(Ljava/lang/String;)Z
     .locals 1
 
     const/4 p1, 0x1
 
     return p1
-.end method"""
-    path.write_text(text[:start] + new_method + text[end:])
-    print(f"OK: {method}")
+.end method""",
+        method,
+    )
 
-# Block banner / MREC ads
+# Block banner / MREC / load methods
 for method in [
     "loadBanner",
     "showBanner",
@@ -47,19 +33,18 @@ for method in [
     "showMRec",
     "startBannerAutoRefresh",
     "startMRecAutoRefresh",
+    "loadAppOpenAd",
+    "loadInterstitial",
+    "loadRewardedAd",
 ]:
-    patch_file(
+    patch_method_file(
         MANAGER,
+        f"{method}(Ljava/lang/String;)V",
         f""".method public {method}(Ljava/lang/String;)V
-    .locals 1
-
-    .line""",
-        f""".method public {method}(Ljava/lang/String;)V
-    .locals 1
+    .locals 0
 
     return-void
-
-    .line""",
+.end method""",
         f"{method} noop",
     )
 
@@ -70,47 +55,35 @@ for method in ["createBanner", "createMRec"]:
         "(Ljava/lang/String;Ljava/lang/String;)V",
         "(Ljava/lang/String;FF)V",
     ]:
-        old = f""".method public {method}{sig}
-    .locals 6
-
-    .line"""
-        path = BASE / MANAGER
-        text = path.read_text()
-        if old not in text:
+        token = f"{method}{sig}"
+        text = MANAGER.read_text()
+        if token not in text:
             continue
-        text = text.replace(
-            old,
-            f""".method public {method}{sig}
-    .locals 6
-
-    return-void
-
-    .line""",
-            1,
-        )
-        path.write_text(text)
-        print(f"OK: {method}{sig} noop")
-
-# Skip rewarded ads but grant reward instantly
-patch_file(
-    MANAGER,
-    """.method public showRewardedAd(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
-    .locals 1
-
-    .line 498
-    invoke-direct {p0, p1}, Lcom/applovin/mediation/unity/MaxUnityAdManager;->retrieveRewardedAd(Ljava/lang/String;)Lcom/applovin/mediation/ads/MaxRewardedAd;
-
-    move-result-object p1
-
-    .line 499
-    invoke-static {}, Lcom/applovin/mediation/unity/MaxUnityAdManager;->getCurrentActivity()Landroid/app/Activity;
-
-    move-result-object v0
-
-    invoke-virtual {p1, p2, p3, v0}, Lcom/applovin/mediation/ads/MaxRewardedAd;->showAd(Ljava/lang/String;Ljava/lang/String;Landroid/app/Activity;)V
+        patch_method_file(
+            MANAGER,
+            token,
+            f""".method public {token}
+    .locals 0
 
     return-void
 .end method""",
+            f"{token} noop",
+        )
+
+patch_method_file(
+    MANAGER,
+    "showCmpForExistingUser()V",
+    """.method public showCmpForExistingUser()V
+    .locals 0
+
+    return-void
+.end method""",
+    "showCmpForExistingUser noop",
+)
+
+patch_method_file(
+    MANAGER,
+    "showRewardedAd(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V",
     """.method public showRewardedAd(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
     .locals 2
 
@@ -194,26 +167,9 @@ patch_file(
     "showRewardedAd bypass",
 )
 
-# Skip interstitial ads
-patch_file(
+patch_method_file(
     MANAGER,
-    """.method public showInterstitial(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
-    .locals 1
-
-    .line 422
-    invoke-direct {p0, p1}, Lcom/applovin/mediation/unity/MaxUnityAdManager;->retrieveInterstitial(Ljava/lang/String;)Lcom/applovin/mediation/ads/MaxInterstitialAd;
-
-    move-result-object p1
-
-    .line 423
-    invoke-static {}, Lcom/applovin/mediation/unity/MaxUnityAdManager;->getCurrentActivity()Landroid/app/Activity;
-
-    move-result-object v0
-
-    invoke-virtual {p1, p2, p3, v0}, Lcom/applovin/mediation/ads/MaxInterstitialAd;->showAd(Ljava/lang/String;Ljava/lang/String;Landroid/app/Activity;)V
-
-    return-void
-.end method""",
+    "showInterstitial(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V",
     """.method public showInterstitial(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
     .locals 2
 
@@ -251,22 +207,9 @@ patch_file(
     "showInterstitial bypass",
 )
 
-# Skip app open ads
-patch_file(
+patch_method_file(
     MANAGER,
-    """.method public showAppOpenAd(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
-    .locals 0
-
-    .line 460
-    invoke-direct {p0, p1}, Lcom/applovin/mediation/unity/MaxUnityAdManager;->retrieveAppOpenAd(Ljava/lang/String;)Lcom/applovin/mediation/ads/MaxAppOpenAd;
-
-    move-result-object p1
-
-    .line 461
-    invoke-virtual {p1, p2, p3}, Lcom/applovin/mediation/ads/MaxAppOpenAd;->showAd(Ljava/lang/String;Ljava/lang/String;)V
-
-    return-void
-.end method""",
+    "showAppOpenAd(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V",
     """.method public showAppOpenAd(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
     .locals 0
 
@@ -275,71 +218,28 @@ patch_file(
     "showAppOpenAd bypass",
 )
 
-# Stop loading ads (prevents startup app-open / interstitial load crashes)
-for method in ["loadAppOpenAd", "loadInterstitial", "loadRewardedAd"]:
-    patch_file(
-        MANAGER,
-        f""".method public {method}(Ljava/lang/String;)V
-    .locals 0
-
-    .line""",
-        f""".method public {method}(Ljava/lang/String;)V
-    .locals 0
-
-    return-void
-
-    .line""",
-        f"{method} noop",
-    )
-
-patch_file(
-    MANAGER,
-    """.method public showCmpForExistingUser()V
-    .locals 2
-
-    .line 534
-    iget-object v0, p0, Lcom/applovin/mediation/unity/MaxUnityAdManager;->sdk:Lcom/applovin/sdk/AppLovinSdk;""",
-    """.method public showCmpForExistingUser()V
-    .locals 0
-
-    return-void
-
-    .line 534
-    iget-object v0, p0, Lcom/applovin/mediation/unity/MaxUnityAdManager;->sdk:Lcom/applovin/sdk/AppLovinSdk;""",
-    "showCmpForExistingUser noop",
-)
-
-# Block fullscreen ad display at SDK layer (app-open / interstitial / rewarded)
-FULLSCREEN = "smali/com/applovin/impl/mediation/ads/MaxFullscreenAdImpl.smali"
-path = BASE / FULLSCREEN
-text = path.read_text()
-start = text.index(".method public isReady()Z")
-end = text.index(".end method", start) + len(".end method")
-text = text[:start] + """.method public isReady()Z
+patch_method_file(
+    FULLSCREEN,
+    "isReady()Z",
+    """.method public isReady()Z
     .locals 1
 
     const/4 v0, 0x1
 
     return v0
-.end method""" + text[end:]
-path.write_text(text)
-print("OK: MaxFullscreenAdImpl.isReady always true")
+.end method""",
+    "MaxFullscreenAdImpl.isReady always true",
+)
 
-patch_file(
+patch_method_file(
     FULLSCREEN,
-    """.method public showAd(Ljava/lang/String;Ljava/lang/String;Landroid/app/Activity;)V
-    .locals 2
-
-    .line 1
-    iget-object v0, p0, Lcom/applovin/impl/mediation/ads/a;->sdk:Lcom/applovin/impl/sdk/l;""",
+    "showAd(Ljava/lang/String;Ljava/lang/String;Landroid/app/Activity;)V",
     """.method public showAd(Ljava/lang/String;Ljava/lang/String;Landroid/app/Activity;)V
     .locals 0
 
     return-void
-
-    .line 1
-    iget-object v0, p0, Lcom/applovin/impl/mediation/ads/a;->sdk:Lcom/applovin/impl/sdk/l;""",
+.end method""",
     "MaxFullscreenAdImpl.showAd noop",
 )
 
-print("All patches applied.")
+print("All ad patches applied.")

@@ -20,6 +20,7 @@ echo "==> Apply patches"
 python3 /workspace/patch_license.py
 python3 /workspace/patch_ads.py
 python3 /workspace/patch_appsflyer.py
+python3 /workspace/patch_moloco.py
 
 echo "==> Build dex via apktool"
 java -jar "$APKTOOL" b "$DECODE_DIR" -o /workspace/apk_analysis/royalsmash-dex-only.apk
@@ -44,7 +45,7 @@ for f in *.apk; do
     --out "${f%.apk}-signed.apk" "${f%.apk}-aligned.apk"
 done
 
-VERSION="${1:-v5}"
+VERSION="${1:-v7}"
 OUT="/workspace/RoyalSmash-no-ads-${VERSION}.xapk"
 rm -rf "/workspace/xapk_out"
 mkdir -p "/workspace/xapk_out"
